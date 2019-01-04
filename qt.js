@@ -34,7 +34,7 @@ function servisebi (i,o) {
                       }
 					  var isDay = function (t) {
 						var n = parseInt(t, 10)
-                        if (isNaN(n)) {
+                                                if (isNaN(n)) {
 						  return false
   						} else if (1 <= n && n <= 31) {
     						return true
