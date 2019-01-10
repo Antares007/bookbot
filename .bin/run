@@ -1,0 +1,5 @@
+#!node
+require("@babel/register")
+if (process.argv[2]) {
+  require(require("path").join("..", process.argv[2]))
+}
