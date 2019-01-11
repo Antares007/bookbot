@@ -9,112 +9,127 @@ export opaque type O =
   | { tag: "Origin", io: IO<number, O, void> }
   | { tag: "Delay", delay: number, io: IO<number, O, void> }
 
-export function Local(io: IO<number, O, void>): O {
-  return { tag: "Local", io }
-}
-export function Origin(io: IO<number, O, void>): O {
-  return { tag: "Origin", io }
-}
-export function Delay(delay: number): (IO<number, O, void>) => O {
-  return io => ({ tag: "Origin", delay, io })
-}
+export const Local: (IO<number, O, void>) => O = io => ({ tag: "Local", io })
+export const Origin: (IO<number, O, void>) => O = io => ({ tag: "Origin", io })
+export const Delay: number => (IO<number, O, void>) => O = delay => io => ({
+  tag: "Delay",
+  delay,
+  io
+})
 
 type CancelRef = { value: boolean }
 
-function ring(
-  cref: CancelRef,
-  offset: number
-): (IO<number, O, void>) => IO<number, O, void> {
-  return io => o => now => {
-    if (cref.value) return
-    io(r => {
-      if (r.tag === "Local") o(Local(ring(cref, 0 - now)(r.io)))
-      else if (r.tag === "Origin") o(Origin(ring(cref, 0)(r.io)))
-      else if (r.tag === "Delay") o(Delay(r.delay)(ring(cref, offset)(r.io)))
-      else throw new Error("never")
-    })(now + offset)
+const cancelOffsetRing: (
+  CancelRef,
+  number,
+  IO<number, O, void>
+) => IO<number, O, void> = (canceled, offset, io) => o => i =>
+  canceled.value
+    ? void 0
+    : io(v => {
+        switch (v.tag) {
+          case "Local":
+            o(Local(cancelOffsetRing(canceled, 0 - i, v.io)))
+            break
+          case "Origin":
+            o(Origin(cancelOffsetRing(canceled, 0, v.io)))
+            break
+          case "Delay":
+            o(Delay(v.delay)(cancelOffsetRing(canceled, offset, v.io)))
+            break
+          default:
+            throw new Error("never")
+        }
+      })(i + offset)
+
+const runAllNows: (
+  [number, IO<number, O, void>]
+) => IO<void, [number, IO<number, O, void>], void> = pair => oo => () => {
+  const ring: (
+    IO<number, O, void>
+  ) => IO<number, [number, IO<number, O, void>], void> = io => o => now => {
+    io(v => {
+      switch (v.tag) {
+        case "Local":
+        case "Origin":
+          ring(v.io)(oo)(now)
+          break
+        case "Delay":
+          o([v.delay + now, v.io])
+          break
+        default:
+          throw new Error("never")
+      }
+    })(now)
   }
+  ring(pair[1])(oo)(pair[0])
 }
 
-function runAllNows(
-  now: number
-): (IO<number, O, void>) => IO<void, [number, IO<number, O, void>], void> {
-  return io => oo => () => {
-    const ring: (
-      IO<number, O, void>
-    ) => IO<number, [number, IO<number, O, void>], void> = io => o => i => {
-      io(r => {
-        if (r.tag === "Local" || r.tag === "Origin") {
-          ring(r.io)(oo)(now)
-        } else if (r.tag === "Delay") {
-          o([r.delay + now, io])
-        } else throw new Error("never")
-      })(i)
-    }
-    ring(io)(oo)(now)
-  }
-}
-const tlappend = (l, r) => o => i => {
+const ioAppend = (l, r) => o => i => {
   l(o)(i)
   r(o)(i)
 }
-export function mkScheduler(
+export function mkScheduler<H>(
   tf: () => number,
-  requestNextFrame: (() => void) => void
+  requestNextFrame: (() => void) => H
 ): O => Disposable {
   var now = tf()
   var mainTimeLine = null
+  var h: ?H = null
   const onNextFrame = () => {
     now = tf()
-    if (mainTimeLine != null) {
+    if (mainTimeLine) {
       const bounds = timeLine.getBounds(mainTimeLine)
       if (bounds[1] <= now) {
-        const run = runAllNows(now)
-        var restIO: IO<
+        var leftIO: IO<
           void,
           [number, IO<number, O, void>],
           void
         > = o => () => {}
-        const restTl1 = timeLine.runTo(tlappend, now, mainTimeLine)(r => {
-          restIO = o => () => {
-            const left = restIO
-            const right = run(r[1])
+        const restTl1 = timeLine.runTo(ioAppend, now, mainTimeLine)(v => {
+          const left = leftIO
+          leftIO = o => () => {
             left(o)()
-            right(o)()
+            runAllNows(v)(o)()
           }
         })()
-        const restTl2 = timeLine.fromIO(tlappend, restIO)
+        const restTl2 = timeLine.fromIO(ioAppend, leftIO)
         mainTimeLine =
           restTl1 != null && restTl2 != null
-            ? timeLine.mappend(tlappend, restTl1, restTl2)
+            ? timeLine.mappend(ioAppend, restTl1, restTl2)
             : restTl1 != null
             ? restTl1
             : restTl2
       }
     }
-    requestNextFrame(onNextFrame)
+    if (mainTimeLine) {
+      h = requestNextFrame(onNextFrame)
+    } else {
+      h = null
+    }
   }
-  requestNextFrame(onNextFrame)
-  return r => {
-    const cancelRef: CancelRef = { value: false }
+  return v => {
+    if (h == null) {
+      now = tf()
+      h = requestNextFrame(onNextFrame)
+    }
+    const canceled: CancelRef = { value: false }
     const offset = 0 - now
     const io =
-      r.tag === "Local"
-        ? ring(cancelRef, offset)(r.io)
-        : r.tag === "Origin"
-        ? ring(cancelRef, 0)(r.io)
-        : ring(cancelRef, offset)(o => i => {
-            o(Delay(r.delay)(r.io))
-          })
-    const tl = timeLine.fromIO(tlappend, runAllNows(now)(io))
+      v.tag === "Local"
+        ? cancelOffsetRing(canceled, offset, v.io)
+        : v.tag === "Origin"
+        ? cancelOffsetRing(canceled, 0, v.io)
+        : cancelOffsetRing(canceled, offset, o => i => o(Delay(v.delay)(v.io)))
+    const tl = timeLine.fromIO(ioAppend, runAllNows([now, io]))
     mainTimeLine =
       tl != null && mainTimeLine != null
-        ? timeLine.mappend(tlappend, mainTimeLine, tl)
+        ? timeLine.mappend(ioAppend, mainTimeLine, tl)
         : tl != null
         ? tl
         : mainTimeLine
     return disposable.rtrn(() => {
-      cancelRef.value = true
+      canceled.value = true
     })
   }
 }

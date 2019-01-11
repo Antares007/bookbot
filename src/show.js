@@ -42,11 +42,16 @@ let rest = tl.runTo(add, -2, line)(x => {
 if (rest == null) throw new Error("never")
 tl.show(rest)
 
-const see = s.Delay(20)(o => i => {
-  console.log(i)
+const see = s.Local(o => i => {
+  console.log("a", i)
   o(
-    s.Delay(1000)(o => i => {
-      console.log(i)
+    s.Delay(2000)(o => i => {
+      console.log("b", i)
+      o(
+        s.Delay(3000)(o => i => {
+          console.log("c", i)
+        })
+      )
     })
   )
 })
