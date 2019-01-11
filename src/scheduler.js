@@ -73,10 +73,11 @@ export function mkScheduler<H>(
   tf: () => number,
   requestNextFrame: (() => void) => H
 ): O => Disposable {
-  var now = tf()
+  var now = -1
   var mainTimeLine = null
   var h: ?H = null
   const onNextFrame = () => {
+    console.group(".")
     now = tf()
     if (mainTimeLine) {
       const bounds = timeLine.getBounds(mainTimeLine)
@@ -107,8 +108,10 @@ export function mkScheduler<H>(
     } else {
       h = null
     }
+    console.groupEnd()
   }
   return v => {
+    console.group("run")
     if (h == null) {
       now = tf()
       h = requestNextFrame(onNextFrame)
@@ -121,13 +124,15 @@ export function mkScheduler<H>(
         : v.tag === "Origin"
         ? cancelOffsetRing(canceled, 0, v.io)
         : cancelOffsetRing(canceled, offset, o => i => o(Delay(v.delay)(v.io)))
-    const tl = timeLine.fromIO(ioAppend, runAllNows([now, io]))
+    const io2 = runAllNows([now, io])
+    const tl = timeLine.fromIO(ioAppend, io2)
     mainTimeLine =
       tl != null && mainTimeLine != null
         ? timeLine.mappend(ioAppend, mainTimeLine, tl)
         : tl != null
         ? tl
         : mainTimeLine
+    console.groupEnd()
     return disposable.rtrn(() => {
       canceled.value = true
     })
