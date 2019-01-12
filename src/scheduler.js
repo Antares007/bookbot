@@ -45,24 +45,22 @@ const cancelOffsetRing: (
 const runAllNows: (
   [number, IO<number, O, void>]
 ) => IO<void, [number, IO<number, O, void>], void> = pair => oo => () => {
-  const ring: (
-    IO<number, O, void>
-  ) => IO<number, [number, IO<number, O, void>], void> = io => o => now => {
+  const ring = io => o => () => {
     io(v => {
       switch (v.tag) {
         case "Local":
         case "Origin":
-          ring(v.io)(oo)(now)
+          ring(v.io)(oo)()
           break
         case "Delay":
-          o([v.delay + now, v.io])
+          o([v.delay + pair[0], v.io])
           break
         default:
           throw new Error("never")
       }
-    })(now)
+    })(pair[0])
   }
-  ring(pair[1])(oo)(pair[0])
+  ring(pair[1])(oo)()
 }
 
 const ioAppend = (l, r) => o => i => {
@@ -81,7 +79,7 @@ export function mkScheduler<H>(
     now = tf()
     if (mainTimeLine) {
       const bounds = timeLine.getBounds(mainTimeLine)
-      if (bounds[1] <= now) {
+      if (bounds[0] <= now) {
         var leftIO: IO<
           void,
           [number, IO<number, O, void>],
@@ -111,19 +109,18 @@ export function mkScheduler<H>(
     console.groupEnd()
   }
   return v => {
-    console.group("run")
+    console.group(">")
     if (h == null) {
       now = tf()
       h = requestNextFrame(onNextFrame)
     }
     const canceled: CancelRef = { value: false }
-    const offset = 0 - now
     const io =
       v.tag === "Local"
-        ? cancelOffsetRing(canceled, offset, v.io)
+        ? cancelOffsetRing(canceled, 0 - now, v.io)
         : v.tag === "Origin"
         ? cancelOffsetRing(canceled, 0, v.io)
-        : cancelOffsetRing(canceled, offset, o => i => o(Delay(v.delay)(v.io)))
+        : cancelOffsetRing(canceled, 0 - now, o => i => o(Delay(v.delay)(v.io)))
     const io2 = runAllNows([now, io])
     const tl = timeLine.fromIO(ioAppend, io2)
     mainTimeLine =
