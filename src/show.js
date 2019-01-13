@@ -1,37 +1,16 @@
 //@flow
-import * as s from "./scheduler.js"
+import { mkScheduler } from "./scheduler.js"
 import * as tl from "./timeline.js"
 import * as io from "./io.js"
-import * as stream from "./stream.js"
-import * as sch from "./scheduler.js"
+import * as s from "./stream.js"
 
 const initDate = Date.now()
 
-export const run = s.mkScheduler(
+export const scheduler = mkScheduler(
   () => Date.now() - initDate,
-  f => setTimeout(f, 1000)
+  f => setTimeout(f, 16.17)
 )
 
-// run(
-//   sch.Delay(0)(o => t => {
-//     console.log(t)
-//     run(
-//       sch.Delay(0)(o => t => {
-//         console.log(t)
-//       })
-//     )
-//   })
-// )
-const str = stream.take(3, stream.periodic(100))
+const str = s.take(3, s.periodic(100))
 
-stream.run(
-  v => console.log("S", v),
-  run,
-  stream.join(
-    stream.fromArray([
-      stream.at(1000, 1),
-      stream.at(2000, 2),
-      stream.at(3000, 3)
-    ])
-  )
-)
+s.run(v => console.log("S", v), scheduler, s.join(s.fromArray([str, str, str])))
