@@ -133,28 +133,18 @@ export function join<A>(xs: S<S<A>>): S<A> {
     const d = disposable.rtrn(() => {
       for (var key in dmap) dmap[key].dispose()
     })
-    const onEnd = index => {
-      delete dmap[index]
-      if (--size === 0) o()
-    }
-    const onError = (index, err) => {
-      d.dispose()
-      o(err)
-    }
     const index = i++
     size++
     dmap[index] = xs(v => {
-      if (v == null) onEnd(index)
-      else if (v instanceof Error) onError(index, v)
+      if (v == null) delete dmap[index], --size === 0 ? o() : void 0
+      else if (v instanceof Error) d.dispose(), o(v)
       else {
         const index = i++
         size++
         dmap[index] = v(v => {
-          if (v == null) onEnd(index)
-          else if (v instanceof Error) onError(index, v)
-          else {
-            o(v)
-          }
+          if (v == null) delete dmap[index], --size === 0 ? o() : void 0
+          else if (v instanceof Error) d.dispose(), o(v)
+          else o(v)
         })(run)
       }
     })(run)
