@@ -8,9 +8,13 @@ const initDate = Date.now()
 
 export const scheduler = mkScheduler(
   () => Date.now() - initDate,
-  f => setTimeout(f, 100)
+  f => setTimeout(f, 20)
 )
 
 const str = s.take(3, s.periodic(100))
 
-s.run(v => console.log("S", v), scheduler, s.join(s.fromArray([str, str, str])))
+s.run(
+  (v, t) => console.log("S", t, v),
+  scheduler,
+  s.join(s.at(300, s.join(s.fromArray([str]))))
+)

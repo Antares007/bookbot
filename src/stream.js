@@ -5,9 +5,15 @@ import { Delay } from "./scheduler"
 import type { Disposable } from "./disposable"
 import * as disposable from "./disposable"
 
-export opaque type S<A> = IO<(O) => Disposable, ?A | Error, Disposable>
+export opaque type S<A> = (
+  (?A | Error, number) => void
+) => ((O) => Disposable) => Disposable
 
-export function run<A>(o: (?A | Error) => void, run: O => Disposable, s: S<A>) {
+export function run<A>(
+  o: (?A | Error, number) => void,
+  run: O => Disposable,
+  s: S<A>
+) {
   return s(o)(run)
 }
 
@@ -20,10 +26,10 @@ export function at<A>(t: number, a: A): S<A> {
     run(
       Delay(t)(_ => t => {
         try {
-          o(a)
-          o()
+          o(a, t)
+          o(null, t)
         } catch (exn) {
-          exn instanceof Error ? o(exn) : o(new Error())
+          exn instanceof Error ? o(exn, t) : o(new Error(), t)
         }
       })
     )
@@ -34,10 +40,10 @@ export function fromArray<A>(xs: Array<A>): S<A> {
     run(
       Delay(0)(_ => t => {
         try {
-          for (var i = 0, l = xs.length; i < l; i++) o(xs[i])
-          o()
+          for (var i = 0, l = xs.length; i < l; i++) o(xs[i], t)
+          o(null, t)
         } catch (exn) {
-          exn instanceof Error ? o(exn) : o(new Error())
+          exn instanceof Error ? o(exn, t) : o(new Error(), t)
         }
       })
     )
@@ -52,10 +58,10 @@ export function periodic(period: number): S<number> {
     var i = 0
     const p = so => t => {
       try {
-        o(i++)
+        o(i++, t)
         so(Delay(period)(p))
       } catch (exn) {
-        exn instanceof Error ? o(exn) : o(new Error())
+        exn instanceof Error ? o(exn, t) : o(new Error(), t)
       }
     }
     return run(Delay(0)(p))
@@ -64,37 +70,37 @@ export function periodic(period: number): S<number> {
 
 export function map<A, B>(f: A => B, s: S<A>): S<B> {
   return o => run =>
-    s(v => {
-      if (v == null || v instanceof Error) o(v)
-      else o(f(v))
+    s((v, t) => {
+      if (v == null || v instanceof Error) o(v, t)
+      else o(f(v), t)
     })(run)
 }
 
 export function tap<A>(f: A => void, s: S<A>): S<A> {
   return o => run =>
-    s(v => {
-      if (v == null || v instanceof Error) o(v)
-      else o((f(v), v))
+    s((v, t) => {
+      if (v == null || v instanceof Error) o(v, t)
+      else o((f(v), v), t)
     })(run)
 }
 
 export function filter<A>(f: A => boolean, s: S<A>): S<A> {
   return o => run =>
-    s(v => {
-      if (v == null || v instanceof Error) o(v)
-      else if (f(v)) o(v)
+    s((v, t) => {
+      if (v == null || v instanceof Error) o(v, t)
+      else if (f(v)) o(v, t)
     })(run)
 }
 
 export function take<A>(n: number, s: S<A>): S<A> {
   return o => run => {
     var i = 0
-    const d = s(v => {
+    const d = s((v, t) => {
       i++
-      if (i <= n) o(v)
+      if (i <= n) o(v, t)
       if (i >= n) {
         d.dispose()
-        o()
+        o(null, t)
       }
     })(run)
     return d
@@ -108,16 +114,14 @@ export function mergeArray<A>(xs: Array<S<A>>): S<A> {
     const d = disposable.rtrn(() => {
       for (var key in dmap) dmap[key].dispose()
     })
-    const oo = (key: number) => v => {
+    const oo = (key: number) => (v, t) => {
       if (v == null) {
         delete dmap[key]
         size--
-        if (size === 0) o()
-      } else if (v instanceof Error) {
-        d.dispose()
-        o(v)
+        if (size === 0) o(null, t)
       } else {
-        o(v)
+        if (v instanceof Error) d.dispose()
+        o(v, t)
       }
     }
     for (var i = 0, l = xs.length; i < l; i++) dmap[i] = xs[i](oo(i))(run)
@@ -135,16 +139,24 @@ export function join<A>(xs: S<S<A>>): S<A> {
     })
     const index = i++
     size++
-    dmap[index] = xs(v => {
-      if (v == null) delete dmap[index], --size === 0 ? o() : void 0
-      else if (v instanceof Error) d.dispose(), o(v)
-      else {
+    dmap[index] = xs((v, t0) => {
+      if (v == null) {
+        delete dmap[index]
+        if (--size === 0) o(null, t0)
+      } else if (v instanceof Error) {
+        d.dispose()
+        o(v, t0)
+      } else {
         const index = i++
         size++
-        dmap[index] = v(v => {
-          if (v == null) delete dmap[index], --size === 0 ? o() : void 0
-          else if (v instanceof Error) d.dispose(), o(v)
-          else o(v)
+        dmap[index] = v((v, t1) => {
+          if (v == null) {
+            delete dmap[index]
+            if (--size === 0) o(null, t0 + t1)
+          } else {
+            if (v instanceof Error) d.dispose()
+            o(v, t0 + t1)
+          }
         })(run)
       }
     })(run)
