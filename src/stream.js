@@ -1,7 +1,7 @@
 //@flow
 import type { IO } from "./io"
 import type { O } from "./scheduler"
-import { Delay } from "./scheduler"
+import { Delay, Origin } from "./scheduler"
 import type { Disposable } from "./disposable"
 import * as disposable from "./disposable"
 
@@ -51,6 +51,20 @@ export function fromArray<A>(xs: Array<A>): S<A> {
 
 export function now<A>(a: A): S<A> {
   return at<A>(0, a)
+}
+
+export function on(event: string, et: EventTarget): S<Event> {
+  return o => run => {
+    var d0 = disposable.empty
+    const d1 = run(
+      Origin(_ => t0 => {
+        const listener = (e: Event) => run(Origin(_ => t1 => o(e, t1 - t0)))
+        et.addEventListener(event, listener)
+        d0 = disposable.rtrn(() => et.removeEventListener(event, listener))
+      })
+    )
+    return disposable.rtrn(() => (d0.dispose(), d1.dispose()))
+  }
 }
 
 export function periodic(period: number): S<number> {

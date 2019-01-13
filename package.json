@@ -9,6 +9,7 @@
     "@babel/preset-env": "^7.2.3",
     "@babel/preset-flow": "^7.0.0",
     "@babel/register": "^7.0.0",
+    "electron": "^4.0.1",
     "flow-bin": "^0.90.0",
     "rimraf": "^2.6.3"
   },
