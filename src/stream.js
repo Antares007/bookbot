@@ -75,15 +75,15 @@ export function filter<A>(f: A => boolean, s: S<A>): S<A> {
 export function take<A>(n: number, s: S<A>): S<A> {
   return o => run => {
     var i = 0
-    const dispose = s(v => {
+    const d = s(v => {
       i++
       if (i <= n) o(v)
       if (i >= n) {
-        dispose()
+        d.dispose()
         o()
       }
     })(run)
-    return dispose
+    return d
   }
 }
 
@@ -91,8 +91,8 @@ export function mergeArray<A>(xs: Array<S<A>>): S<A> {
   return o => run => {
     var size = xs.length
     const dmap: { [number | string]: Disposable } = {}
-    const dispose = disposable.rtrn(() => {
-      for (var key in dmap) dmap[key]()
+    const d = disposable.rtrn(() => {
+      for (var key in dmap) dmap[key].dispose()
     })
     const oo = (key: number) => v => {
       if (v == null) {
@@ -100,13 +100,52 @@ export function mergeArray<A>(xs: Array<S<A>>): S<A> {
         size--
         if (size === 0) o()
       } else if (v instanceof Error) {
-        dispose()
+        d.dispose()
         o(v)
       } else {
         o(v)
       }
     }
     for (var i = 0, l = xs.length; i < l; i++) dmap[i] = xs[i](oo(i))(run)
-    return dispose
+    return d
+  }
+}
+
+export function join<A>(xs: S<S<A>>): S<A> {
+  return o => run => {
+    var i = 0
+    var size = 0
+    const dmap: { [number | string]: Disposable } = {}
+    const d = disposable.rtrn(() => {
+      for (var key in dmap) dmap[key].dispose()
+    })
+    const onEnd = index => {
+      delete dmap[index]
+      if (--size === 0) o()
+    }
+    const onError = (index, err) => {
+      d.dispose()
+      o(err)
+    }
+    const index = i++
+    const d_ = xs(v => {
+      if (v == null) onEnd(index)
+      else if (v instanceof Error) onError(index, v)
+      else {
+        const index = i++
+        const d_ = v(v => {
+          if (v == null) onEnd(index)
+          else if (v instanceof Error) onError(index, v)
+          else {
+            o(v)
+          }
+        })(run)
+        dmap[index] = d_
+        size++
+      }
+    })(run)
+    dmap[index] = d_
+    size++
+    return d
   }
 }

@@ -1,6 +1,7 @@
 //@flow
 import type { IO } from "./io.js"
 import type { Disposable } from "./disposable.js"
+import type { Timeline } from "./timeline.js"
 import * as disposable from "./disposable.js"
 import * as timeLine from "./timeline.js"
 
@@ -67,38 +68,38 @@ const ioAppend = (l, r) => o => i => {
   l(o)(i)
   r(o)(i)
 }
+
 export function mkScheduler<H>(
   tf: () => number,
   requestNextFrame: (() => void) => H
 ): O => Disposable {
   var now = -1
-  var mainTimeLine = null
+  var mainTimeLine: ?Timeline<IO<number, O, void>> = null
   var h: ?H = null
   const onNextFrame = () => {
-    // console.group(".")
+    console.group("." + now)
     now = tf()
     if (mainTimeLine) {
-      const bounds = timeLine.getBounds(mainTimeLine)
+      const mtl = mainTimeLine
+      const bounds = timeLine.getBounds(mtl)
       if (bounds[0] <= now) {
-        var leftIO: IO<
-          void,
-          [number, IO<number, O, void>],
-          void
-        > = o => () => {}
-        const restTl1 = timeLine.runTo(ioAppend, now, mainTimeLine)(v => {
-          const left = leftIO
-          leftIO = o => () => {
-            left(o)()
-            runAllNows(v)(o)()
-          }
-        })()
-        const restTl2 = timeLine.fromIO(ioAppend, leftIO)
+        mainTimeLine = (null: ?Timeline<IO<number, O, void>>)
+        var tl1 = (null: ?Timeline<IO<number, O, void>>)
+        const tl2 = timeLine.fromIO(ioAppend, o => () => {
+          tl1 = timeLine.runTo(ioAppend, now, mtl)(v => runAllNows(v)(o)())()
+        })
+        const tl =
+          tl1 != null && tl2 != null
+            ? timeLine.mappend(ioAppend, tl1, tl2)
+            : tl1 != null
+            ? tl1
+            : tl2
         mainTimeLine =
-          restTl1 != null && restTl2 != null
-            ? timeLine.mappend(ioAppend, restTl1, restTl2)
-            : restTl1 != null
-            ? restTl1
-            : restTl2
+          tl != null && mainTimeLine != null
+            ? timeLine.mappend(ioAppend, mainTimeLine, tl)
+            : tl != null
+            ? tl
+            : mainTimeLine
       }
     }
     if (mainTimeLine) {
@@ -106,7 +107,7 @@ export function mkScheduler<H>(
     } else {
       h = null
     }
-    // console.groupEnd()
+    console.groupEnd()
   }
   return v => {
     console.group(">")
