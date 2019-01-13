@@ -9,10 +9,11 @@
     "@babel/preset-env": "^7.2.3",
     "@babel/preset-flow": "^7.0.0",
     "@babel/register": "^7.0.0",
-    "flow-bin": "^0.89.0"
+    "flow-bin": "^0.90.0",
+    "rimraf": "^2.6.3"
   },
   "scripts": {
-    "build": "babel src/ -d lib/",
+    "build": "rimraf lib;babel src/ -d lib/",
     "prepublish": "yarn run build"
   }
 }
