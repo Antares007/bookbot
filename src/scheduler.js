@@ -75,7 +75,7 @@ export function mkScheduler<H>(
   var mainTimeLine = null
   var h: ?H = null
   const onNextFrame = () => {
-    console.group(".")
+    // console.group(".")
     now = tf()
     if (mainTimeLine) {
       const bounds = timeLine.getBounds(mainTimeLine)
@@ -106,7 +106,7 @@ export function mkScheduler<H>(
     } else {
       h = null
     }
-    console.groupEnd()
+    // console.groupEnd()
   }
   return v => {
     console.group(">")

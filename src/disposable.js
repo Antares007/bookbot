@@ -16,3 +16,5 @@ export function mappend(l: Disposable, r: Disposable): Disposable {
     r()
   }
 }
+
+export const empty: Disposable = () => {}
