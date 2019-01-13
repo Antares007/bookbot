@@ -64,11 +64,6 @@ const runAllNows: (
   ring(pair[1])(oo)()
 }
 
-const ioAppend = (l, r) => o => i => {
-  l(o)(i)
-  r(o)(i)
-}
-
 export function mkScheduler<H>(
   tf: () => number,
   requestNextFrame: (() => void) => H
@@ -76,6 +71,10 @@ export function mkScheduler<H>(
   var now = -1
   var mainTimeLine: ?Timeline<IO<number, O, void>> = null
   var h: ?H = null
+  const ioAppend = (l, r) => o => i => {
+    l(o)(i)
+    r(o)(i)
+  }
   const onNextFrame = () => {
     console.group("." + now)
     now = tf()
@@ -122,8 +121,7 @@ export function mkScheduler<H>(
         : v.tag === "Origin"
         ? cancelOffsetRing(canceled, 0, v.io)
         : cancelOffsetRing(canceled, 0 - now, o => i => o(Delay(v.delay)(v.io)))
-    const io2 = runAllNows([now, io])
-    const tl = timeLine.fromIO(ioAppend, io2)
+    const tl = timeLine.fromIO(ioAppend, runAllNows([now, io]))
     mainTimeLine =
       tl != null && mainTimeLine != null
         ? timeLine.mappend(ioAppend, mainTimeLine, tl)
