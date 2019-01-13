@@ -64,12 +64,26 @@ export function periodic(period: number): S<number> {
 
 export function map<A, B>(f: A => B, s: S<A>): S<B> {
   return o => run =>
-    s(v => (v == null || v instanceof Error ? o(v) : o(f(v))))(run)
+    s(v => {
+      if (v == null || v instanceof Error) o(v)
+      else o(f(v))
+    })(run)
+}
+
+export function tap<A>(f: A => void, s: S<A>): S<A> {
+  return o => run =>
+    s(v => {
+      if (v == null || v instanceof Error) o(v)
+      else o((f(v), v))
+    })(run)
 }
 
 export function filter<A>(f: A => boolean, s: S<A>): S<A> {
   return o => run =>
-    s(v => (v == null || v instanceof Error ? o(v) : f(v) ? o(v) : void 0))(run)
+    s(v => {
+      if (v == null || v instanceof Error) o(v)
+      else if (f(v)) o(v)
+    })(run)
 }
 
 export function take<A>(n: number, s: S<A>): S<A> {
