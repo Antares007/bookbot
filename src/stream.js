@@ -128,24 +128,22 @@ export function join<A>(xs: S<S<A>>): S<A> {
       o(err)
     }
     const index = i++
-    const d_ = xs(v => {
+    size++
+    dmap[index] = xs(v => {
       if (v == null) onEnd(index)
       else if (v instanceof Error) onError(index, v)
       else {
         const index = i++
-        const d_ = v(v => {
+        size++
+        dmap[index] = v(v => {
           if (v == null) onEnd(index)
           else if (v instanceof Error) onError(index, v)
           else {
             o(v)
           }
         })(run)
-        dmap[index] = d_
-        size++
       }
     })(run)
-    dmap[index] = d_
-    size++
     return d
   }
 }
