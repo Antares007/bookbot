@@ -147,3 +147,7 @@ export function join<A>(xs: S<S<A>>): S<A> {
     return d
   }
 }
+
+export function chain<A, B>(f: A => S<B>, s: S<A>): S<B> {
+  return join(map(f, s))
+}
