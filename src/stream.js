@@ -71,9 +71,6 @@ export function filter<A>(f: A => boolean, s: S<A>): S<A> {
   return o => run =>
     s(v => (v == null || v instanceof Error ? o(v) : f(v) ? o(v) : void 0))(run)
 }
-export function fold<A, B>(f: (B, A) => B, i: S, s: S<A>): S<B> {
-  return o => run => s(v => {})(run)
-}
 
 export function take<A>(n: number, s: S<A>): S<A> {
   return o => run => {
@@ -90,18 +87,18 @@ export function take<A>(n: number, s: S<A>): S<A> {
   }
 }
 
-export function mergeArray<A>(s: Array<S<A>>): S<A> {
+export function mergeArray<A>(xs: Array<S<A>>): S<A> {
   return o => run => {
-    const dmap: { [string]: Disposable } = {}
-    var dmapSize = 0
+    var size = xs.length
+    const dmap: { [number | string]: Disposable } = {}
     const dispose = disposable.rtrn(() => {
-      for (var key in map) dmap[key]()
+      for (var key in dmap) dmap[key]()
     })
-    const oo = (key: string) => v => {
+    const oo = (key: number) => v => {
       if (v == null) {
-        delete map[key]
-        dmapSize--
-        if (dmapSize === 0) o()
+        delete dmap[key]
+        size--
+        if (size === 0) o()
       } else if (v instanceof Error) {
         dispose()
         o(v)
@@ -109,11 +106,7 @@ export function mergeArray<A>(s: Array<S<A>>): S<A> {
         o(v)
       }
     }
-    for (var i = 0, l = s.length; i < l; i++) {
-      var key = i + ""
-      dmap[key] = s[i](oo(key))(run)
-      dmapSize++
-    }
+    for (var i = 0, l = xs.length; i < l; i++) dmap[i] = xs[i](oo(i))(run)
     return dispose
   }
 }
