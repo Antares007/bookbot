@@ -78,28 +78,25 @@ export function mkScheduler<H>(
   const onNextFrame = () => {
     console.group("." + now)
     now = tf()
-    if (mainTimeLine) {
+    if (mainTimeLine && timeLine.getBounds(mainTimeLine)[0] <= now) {
       const mtl = mainTimeLine
-      const bounds = timeLine.getBounds(mtl)
-      if (bounds[0] <= now) {
-        mainTimeLine = (null: ?Timeline<IO<number, O, void>>)
-        var tl1 = (null: ?Timeline<IO<number, O, void>>)
-        const tl2 = timeLine.fromIO(ioAppend, o => () => {
-          tl1 = timeLine.runTo(ioAppend, now, mtl)(v => runAllNows(v)(o)())()
-        })
-        const tl =
-          tl1 != null && tl2 != null
-            ? timeLine.mappend(ioAppend, tl1, tl2)
-            : tl1 != null
-            ? tl1
-            : tl2
-        mainTimeLine =
-          tl != null && mainTimeLine != null
-            ? timeLine.mappend(ioAppend, mainTimeLine, tl)
-            : tl != null
-            ? tl
-            : mainTimeLine
-      }
+      mainTimeLine = (null: ?Timeline<IO<number, O, void>>)
+      var tl1 = (null: ?Timeline<IO<number, O, void>>)
+      const tl2 = timeLine.fromIO(ioAppend, o => () => {
+        tl1 = timeLine.runTo(ioAppend, now, mtl)(v => runAllNows(v)(o)())()
+      })
+      const tl =
+        tl1 != null && tl2 != null
+          ? timeLine.mappend(ioAppend, tl1, tl2)
+          : tl1 != null
+          ? tl1
+          : tl2
+      mainTimeLine =
+        tl != null && mainTimeLine != null
+          ? timeLine.mappend(ioAppend, mainTimeLine, tl)
+          : tl != null
+          ? tl
+          : mainTimeLine
     }
     if (mainTimeLine) {
       h = requestNextFrame(onNextFrame)

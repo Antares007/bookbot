@@ -8,7 +8,7 @@ const initDate = Date.now()
 
 export const scheduler = mkScheduler(
   () => Date.now() - initDate,
-  f => setTimeout(f, 16.17)
+  f => setTimeout(f, 100)
 )
 
 const str = s.take(3, s.periodic(100))
