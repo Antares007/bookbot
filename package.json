@@ -1,6 +1,6 @@
 {
   "name": "sakhe_bookbot",
-  "version": "0.0.7",
+  "version": "0.0.9",
   "main": "dist/main.js",
   "license": "MIT",
   "devDependencies": {
