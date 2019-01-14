@@ -8,3 +8,4 @@ console.log(
   fs.readFileSync(path.join(__dirname, "..", process.argv[2]), "utf8")
 )
 console.log(pkg)
+fs.writeFileSync(path.join(__dirname, "..", process.argv[2]), "#utf8")
