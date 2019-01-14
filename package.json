@@ -1,6 +1,6 @@
 {
   "name": "sakhe_bookbot",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "main": "index.js",
   "license": "MIT",
   "devDependencies": {
@@ -9,12 +9,14 @@
     "@babel/preset-env": "^7.2.3",
     "@babel/preset-flow": "^7.0.0",
     "@babel/register": "^7.0.0",
+    "babel-loader": "^8.0.5",
     "electron": "^4.0.1",
     "flow-bin": "^0.90.0",
-    "rimraf": "^2.6.3"
+    "webpack": "^4.28.4",
+    "webpack-cli": "^3.2.1"
   },
   "scripts": {
-    "build": "rimraf lib;babel src/ -d lib/",
-    "prepublish": "yarn run build"
+    "build": "webpack",
+    "prepublish": "npm run build"
   }
 }
