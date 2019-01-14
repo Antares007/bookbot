@@ -1,6 +1,6 @@
 {
-  "name": "sakheflow",
-  "version": "1.0.0",
+  "name": "sakhe_bookbot",
+  "version": "0.0.4",
   "main": "index.js",
   "license": "MIT",
   "devDependencies": {
