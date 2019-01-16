@@ -19,12 +19,12 @@ s.run(
   s.join(s.at(300, s.join(s.fromArray([str]))))
 )
 
-function doSomething() {
-  console.log(document.getElementById("root-node"))
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", doSomething)
-} else {
-  doSomething()
-}
+// function doSomething() {
+//   console.log(document.getElementById("root-node"))
+// }
+//
+// if (document.readyState === "loading") {
+//   document.addEventListener("DOMContentLoaded", doSomething)
+// } else {
+//   doSomething()
+// }
