@@ -11,8 +11,6 @@ console.log(
           console.log(1)
           done()
           console.log(2)
-
-          //
         })
       )
       o(
@@ -20,8 +18,6 @@ console.log(
           console.log(3)
           done()
           console.log(4)
-
-          //
         })
       )
       console.log(5)
