@@ -1,7 +1,7 @@
 //@flow
 import type { IO } from "../src/io.js"
 
-type T =
+export opaque type T =
   | { tag: "Test", name: string, f: ((?Error) => void) => void }
   | { tag: "Ring", name: string, io: IO<void, T, void> }
 
