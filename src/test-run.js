@@ -1,4 +1,3 @@
-//@flow
 import type { T } from "./test.js"
 import type { IO } from "./io.js"
 import { Ring, run, Test } from "./test.js"

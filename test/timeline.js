@@ -1,4 +1,3 @@
-//@flow
 import { Ring, Test } from "../src/test.js"
 
 export default Ring("timeline", o => () => {
