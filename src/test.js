@@ -21,19 +21,16 @@ export function Ring(name: string, io: IO<void, T, void>): T {
   return { tag: "Ring", name, io }
 }
 
-type O =
-  | {
-      tag: "Result",
-      name: string,
-      pass: boolean,
-      time: number,
-      plan: number,
-      asserts: Array<?Error>
-    }
-  | { tag: "group", name: string }
-  | { tag: "groupEnd" }
+type O = {
+  tag: "Result",
+  name: string,
+  pass: boolean,
+  time: number,
+  plan: number,
+  asserts: Array<?Error>
+}
 
-export function run(v: T, o: O => void): Promise<[number, number]> {
+export function run(v: T, o: O => void): Promise<void> {
   return new Promise((resolve, reject) => {
     if (v.tag === "Test") {
       const asserts: Array<?Error> = []
@@ -67,17 +64,15 @@ export function run(v: T, o: O => void): Promise<[number, number]> {
       const plan = v.plan
       const rec = () => {
         const t2 = Date.now()
-        const time = t2 - t1
         var pass: boolean
         if (
           (pass =
-            asserts.length === plan && !asserts.some(v => v instanceof Error))
+            asserts.length === plan &&
+            !asserts.some(v => v instanceof Error)) ||
+          t2 - t1 > 99
         ) {
-          o({ tag: "Result", name, pass, time, plan, asserts })
-          resolve([1, 0])
-        } else if (t2 - t1 > 99) {
-          o({ tag: "Result", name, pass, time, plan, asserts })
-          resolve([0, 1])
+          o({ tag: "Result", name, pass, time: t2 - t1, plan, asserts })
+          resolve()
         } else {
           setTimeout(rec, 0)
         }
@@ -85,27 +80,20 @@ export function run(v: T, o: O => void): Promise<[number, number]> {
       setTimeout(rec, 0)
     } else {
       const io = v.io
-      const rez: [number, number] = [0, 0]
-      var p = Promise.resolve()
+      const promises = []
       var i = 0
       io(v => {
         const n = i++
-        p = p.then(
-          () =>
-            new Promise((resolve, reject) => {
-              var i = 0
-              io(v => {
-                if (i++ === n)
-                  run(v, o).then(rez2 => {
-                    rez[0] = rez[0] + rez2[0]
-                    rez[1] = rez[1] + rez2[1]
-                    resolve()
-                  }, reject)
-              })()
-            })
+        promises.push(
+          new Promise((resolve, reject) => {
+            var i = 0
+            io(v => {
+              if (i++ === n) run(v, o).then(resolve, reject)
+            })()
+          })
         )
       })()
-      p.then(() => resolve(rez))
+      Promise.all(promises).then(() => resolve())
     }
   })
 }
