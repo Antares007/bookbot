@@ -2,16 +2,24 @@
 import type { Assert } from "../src/test.js"
 import { run, generate } from "../src/test.js"
 
+const fail = "\u001b[31mfail\u001b[39m"
+const pass = "\u001b[32mpass\u001b[39m"
+
+const rez = [0, 0]
+
 run(
   v => {
     if (v.errors.length > 0) {
-      console.group(v.name, "fail")
+      rez[1]++
+      console.group(v.name, fail)
       v.errors.forEach(e => {
-        console.error(e)
+        console.log(JSON.stringify(e.message))
+        console.log(e.message)
       })
       console.groupEnd()
     } else {
-      console.log(v.name, "pass")
+      rez[0]++
+      console.log(v.name, pass)
     }
   },
   generate(__dirname, {
@@ -22,8 +30,8 @@ run(
   })
 )
 
-export function a1_plan1_assert1(a: Assert) {
-  a.deepStrictEqual({ a: 42 }, { a: 43 })
+export function a1_sheamocme(a: Assert) {
+  a.deepStrictEqual({ a: 43 }, { a: 43 })
 }
 export function a1_simple_test(a: Assert) {
   a.ok(true)
