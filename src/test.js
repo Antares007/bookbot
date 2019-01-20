@@ -17,7 +17,31 @@ type Require = {
   +require: string => any
 }
 
-export function* run(
+export function run<a>(
+  o: a => void,
+  it: Iterable<Promise<a>>,
+  n: number = 4
+): void {
+  let i = 0
+  const req = (n: number) => {
+    const taken = [
+      ...map(
+        p =>
+          p.then(a => {
+            o(a)
+            run(o, it, Math.max(n - i, 0))
+          }),
+        take(n, it)
+      )
+    ]
+    if (taken.length === 0) return
+    i = i + taken.length
+    Promise.all(taken)
+  }
+  req(n)
+}
+
+export function* generate(
   prefix: string,
   platform: Assert & FS & Require,
   f: string => boolean = name => name.endsWith(".js")
@@ -94,4 +118,17 @@ function* ls(path: string, fs: FS): Iterable<string> {
 
 function* filter<T>(f: T => boolean, xs: Iterable<T>): Iterable<T> {
   for (let x of xs) if (f(x)) yield x
+}
+
+function* map<a, b>(f: a => b, bs: Iterable<a>): Iterable<b> {
+  for (let a of bs) yield f(a)
+}
+
+function* take<a>(n: number, xs: Iterable<a>): Iterable<a> {
+  if (n <= 0) return
+  let i = 0
+  for (let x of xs) {
+    yield x
+    if (++i === n) return
+  }
 }
