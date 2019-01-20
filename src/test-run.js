@@ -1,6 +1,5 @@
 //@flow
 import type { IO } from "./io.js"
-import { makeRun } from "./test.js"
 import * as fs from "fs"
 import * as path from "path"
 import { Readable } from "stream"

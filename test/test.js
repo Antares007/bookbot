@@ -1,18 +1,20 @@
 //@flow
-import { makeRun } from "../src/test.js"
+import type { Assert } from "../src/test.js"
+import { run } from "../src/test.js"
 
-const run = makeRun(require("assert"))
+for (let r of run(__dirname, {
+  ...require("fs"),
+  ...require("assert"),
+  ...require("path"),
+  require: (require: any)
+})) {
+  r.then(v => console.log(v))
+}
 
-run(1, a => {
-  console.log("ring1 test1 start")
-  a.ok(true)
-  console.log("ring1 test1 end")
-}).then(v => console.log(v))
+export function a1_simple_test(a: Assert) {
+  a.ok(false)
+}
 
-run(1, a => {
-  console.log("ring1 test2 start")
-  setTimeout(() => {
-    a.ok(true)
-    console.log("ring1 test2 end")
-  }, 90)
-}).then(v => console.log(v))
+export function a1_simple_async_test2(a: Assert) {
+  setTimeout(() => a.ok(true), 50)
+}
