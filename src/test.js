@@ -66,14 +66,14 @@ export function* generate(
         const plan = parseInt(rez[1], 10)
         yield runATest(platform, plan, exports[name]).then(errors => {
           return {
-            name: platform.join(path, name).slice(prefix.length),
+            name: platform.join(path, name).slice(prefix.length + 1),
             errors
           }
         })
       }
     } catch (err) {
       yield Promise.resolve({
-        name: path.slice(prefix.length),
+        name: path.slice(prefix.length + 1),
         errors: [err]
       })
     }
