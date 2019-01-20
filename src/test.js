@@ -1,7 +1,7 @@
 //@flow
 export type Assert = {
   +ok: (value: any, message?: string) => void,
-  +strictEqual: (value: any, message?: string) => void,
+  +strictEqual: (actual: any, expected: any, message?: string) => void,
   +deepStrictEqual: (actual: any, expected: any, message?: string) => void,
   +notStrictEqual: (actual: any, expected: any, message?: string) => void,
   +notDeepStrictEqual: (actual: any, expected: any, message?: string) => void
