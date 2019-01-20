@@ -6,25 +6,33 @@ export type Assert = {
   +notStrictEqual: (actual: any, expected: any, message?: string) => void,
   +notDeepStrictEqual: (actual: any, expected: any, message?: string) => void
 }
+
 type FS = {
   +readdirSync: string => Array<string>,
   +statSync: string => { +isDirectory: () => boolean },
   +join: (...Array<string>) => string
 }
-type Require = { +require: string => any }
+
+type Require = {
+  +require: string => any
+}
 
 export function* run(
-  rootPath: string,
+  prefix: string,
   platform: Assert & FS & Require,
-  filter: string => boolean = name => name.endsWith(".js")
-): Generator<Promise<Array<?Error>>, void, void> {
-  for (let path of ls(rootPath, platform)) {
-    if (!filter(path)) continue
+  f: string => boolean = name => name.endsWith(".js")
+): Iterable<Promise<{ name: string, errors: Array<Error> }>> {
+  for (let path of filter(f, ls(prefix, platform))) {
     const exports = platform.require(path)
     for (let name in exports) {
       const rez = /^a([0-9]+)_/.exec(name)
       if (!rez || typeof exports[name] !== "function") continue
-      yield runATest(platform, parseInt(rez[1], 10), exports[name])
+      const plan = parseInt(rez[1], 10)
+      yield runATest(platform, plan, exports[name]).then(asserts => {
+        const errors = asserts.filter(Boolean)
+        if (plan !== asserts.length) errors.push(new Error("plan !== asserts"))
+        return { name: platform.join(path, name).slice(prefix.length), errors }
+      })
     }
   }
 }
@@ -81,11 +89,15 @@ function* ls(
     +statSync: string => { +isDirectory: () => boolean },
     +join: (...Array<string>) => string
   }
-): Generator<string, void, void> {
+): Iterable<string> {
   if (fs.statSync(path).isDirectory()) {
     for (let name of fs.readdirSync(path))
       for (let x of ls(fs.join(path, name), fs)) yield x
   } else {
     yield path
   }
+}
+
+function* filter<T>(f: T => boolean, xs: Iterable<T>): Iterable<T> {
+  for (let x of xs) if (f(x)) yield x
 }
