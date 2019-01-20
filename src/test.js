@@ -18,25 +18,36 @@ type Require = {
 }
 
 export function run<a>(
-  o: a => void,
+  o: (?a) => void,
   it: Iterable<Promise<a>>,
   n: number = 4
 ): void {
   let i = 0
+  let p = Promise.resolve()
+  let endSent = false
   const req = (n: number) => {
     const taken = [
       ...map(
         p =>
           p.then(a => {
+            i--
+            req(Math.max(n - i, 0))
             o(a)
-            run(o, it, Math.max(n - i, 0))
           }),
         take(n, it)
       )
     ]
-    if (taken.length === 0) return
-    i = i + taken.length
-    Promise.all(taken)
+    if (taken.length === 0) {
+      if (!endSent) {
+        endSent = true
+        p = p.then(() => {
+          o()
+        })
+      }
+    } else {
+      i = i + taken.length
+      p = p.then(() => Promise.all(taken))
+    }
   }
   req(n)
 }
@@ -46,14 +57,24 @@ export function* generate(
   platform: Assert & FS & Require,
   f: string => boolean = name => name.endsWith(".js")
 ): Iterable<Promise<{ name: string, errors: Array<Error> }>> {
-  for (let path of filter(f, ls(prefix, platform))) {
-    const exports = platform.require(path)
-    for (let name in exports) {
-      const rez = /^a([0-9]+)_/.exec(name)
-      if (!rez || typeof exports[name] !== "function") continue
-      const plan = parseInt(rez[1], 10)
-      yield runATest(platform, plan, exports[name]).then(errors => {
-        return { name: platform.join(path, name).slice(prefix.length), errors }
+  for (let path of [...filter(f, ls(prefix, platform))]) {
+    try {
+      const exports = platform.require(path)
+      for (let name in exports) {
+        const rez = /^a([0-9]+)_/.exec(name)
+        if (!rez || typeof exports[name] !== "function") continue
+        const plan = parseInt(rez[1], 10)
+        yield runATest(platform, plan, exports[name]).then(errors => {
+          return {
+            name: platform.join(path, name).slice(prefix.length),
+            errors
+          }
+        })
+      }
+    } catch (err) {
+      yield Promise.resolve({
+        name: path.slice(prefix.length),
+        errors: [err]
       })
     }
   }
@@ -87,7 +108,7 @@ export function runATest(
         notDeepStrictEqual: mkAssertFn("notDeepStrictEqual")
       })
     } catch (err) {
-      return reject(err)
+      return resolve([err])
     }
     const t0 = Date.now()
     const rec = () => {
@@ -97,7 +118,13 @@ export function runATest(
       ) {
         const errors: Array<Error> = asserts.filter(Boolean)
         if (plan !== asserts.length)
-          errors.push(new Error(`plan(${plan}) !== asserts(${asserts.length})`))
+          errors.push(
+            new Error(
+              `\u001b[32mplan(${plan})\u001b[39m !== \u001b[31masserts(${
+                asserts.length
+              })\u001b[39m`
+            )
+          )
         resolve(errors)
       } else {
         setTimeout(rec, 0)

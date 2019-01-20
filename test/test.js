@@ -9,17 +9,21 @@ const rez = [0, 0]
 
 run(
   v => {
-    if (v.errors.length > 0) {
-      rez[1]++
-      console.group(v.name, fail)
-      v.errors.forEach(e => {
-        console.log(JSON.stringify(e.message))
-        console.log(e.message)
-      })
-      console.groupEnd()
+    if (v == null) {
+      console.log(pass, rez[0])
+      console.log(fail, rez[1])
     } else {
-      rez[0]++
-      console.log(v.name, pass)
+      if (v.errors.length > 0) {
+        rez[1]++
+        console.group(v.name, fail)
+        v.errors.forEach(e => {
+          console.log(e.message)
+        })
+        console.groupEnd()
+      } else {
+        rez[0]++
+        console.log(v.name, pass)
+      }
     }
   },
   generate(__dirname, {
