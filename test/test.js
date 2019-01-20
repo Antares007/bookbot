@@ -19,7 +19,7 @@ for (let r of run(__dirname, {
   })
 }
 
-export function a1_plan1_assert0(a: Assert) {}
+export function a11_plan1_assert0(a: Assert) {}
 export function a1_simple_test(a: Assert) {
   a.ok(false)
 }

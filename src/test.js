@@ -28,9 +28,7 @@ export function* run(
       const rez = /^a([0-9]+)_/.exec(name)
       if (!rez || typeof exports[name] !== "function") continue
       const plan = parseInt(rez[1], 10)
-      yield runATest(platform, plan, exports[name]).then(asserts => {
-        const errors = asserts.filter(Boolean)
-        if (plan !== asserts.length) errors.push(new Error("plan !== asserts"))
+      yield runATest(platform, plan, exports[name]).then(errors => {
         return { name: platform.join(path, name).slice(prefix.length), errors }
       })
     }
@@ -41,7 +39,7 @@ export function runATest(
   assert: Assert,
   plan: number,
   aTest: Assert => void
-): Promise<Array<?Error>> {
+): Promise<Array<Error>> {
   return new Promise((resolve, reject) => {
     const asserts: Array<?Error> = []
     const mkAssertFn = (name: string): any => (...args) => {
@@ -73,7 +71,10 @@ export function runATest(
         (asserts.length === plan && !asserts.some(v => v instanceof Error)) ||
         Date.now() - t0 > 99
       ) {
-        resolve(asserts)
+        const errors: Array<Error> = asserts.filter(Boolean)
+        if (plan !== asserts.length)
+          errors.push(new Error(`plan(${plan}) !== asserts(${asserts.length})`))
+        resolve(errors)
       } else {
         setTimeout(rec, 0)
       }
@@ -82,14 +83,7 @@ export function runATest(
   })
 }
 
-function* ls(
-  path: string,
-  fs: {
-    +readdirSync: string => Array<string>,
-    +statSync: string => { +isDirectory: () => boolean },
-    +join: (...Array<string>) => string
-  }
-): Iterable<string> {
+function* ls(path: string, fs: FS): Iterable<string> {
   if (fs.statSync(path).isDirectory()) {
     for (let name of fs.readdirSync(path))
       for (let x of ls(fs.join(path, name), fs)) yield x
