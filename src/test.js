@@ -1,41 +1,22 @@
 //@flow
-import type { IO } from "../src/io.js"
-import assert_ from "assert"
 
-type Assert = {|
-  ok: (value: any, message?: string) => void,
-  equal: (value: any, message?: string) => void,
-  deepEqual: (actual: any, expected: any, message?: string) => void,
-  notEqual: (actual: any, expected: any, message?: string) => void,
-  notDeepEqual: (actual: any, expected: any, message?: string) => void
-|}
+export type ATest = Assert => void
 
-export opaque type T =
-  | { tag: "Test", name: string, plan: number, f: Assert => void }
-  | { tag: "Ring", name: string, io: IO<void, T, void> }
-
-export function Test(name: string, plan: number, f: Assert => void): T {
-  return { tag: "Test", name, plan, f }
-}
-export function Ring(name: string, io: IO<void, T, void>): T {
-  return { tag: "Ring", name, io }
+type Assert = {
+  +ok: (value: any, message?: string) => void,
+  +strictEqual: (value: any, message?: string) => void,
+  +deepStrictEqual: (actual: any, expected: any, message?: string) => void,
+  +notStrictEqual: (actual: any, expected: any, message?: string) => void,
+  +notDeepStrictEqual: (actual: any, expected: any, message?: string) => void
 }
 
-type O = {
-  tag: "Result",
-  name: string,
-  pass: boolean,
-  time: number,
-  plan: number,
-  asserts: Array<?Error>
-}
-
-export function run(v: T, o: O => void): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (v.tag === "Test") {
+export function makeRun(
+  assert: Assert
+): (plan: number, aTest: ATest) => Promise<Array<?Error>> {
+  return (plan, aTest) => {
+    return new Promise((resolve, reject) => {
       const asserts: Array<?Error> = []
-      const assert = (assert_: any).strict
-      const mkAssertFn = name => (...args) => {
+      const mkAssertFn = (name: string): any => (...args) => {
         try {
           assert[name](...args)
           asserts.push(null)
@@ -47,53 +28,45 @@ export function run(v: T, o: O => void): Promise<void> {
           }
         }
       }
-      const t0 = Date.now()
       try {
-        v.f({
+        aTest({
           ok: mkAssertFn("ok"),
-          equal: mkAssertFn("equal"),
-          notEqual: mkAssertFn("notEqual"),
-          deepEqual: mkAssertFn("deepEqual"),
-          notDeepEqual: mkAssertFn("notDeepEqual")
+          strictEqual: mkAssertFn("strictEqual"),
+          deepStrictEqual: mkAssertFn("deepStrictEqual"),
+          notStrictEqual: mkAssertFn("notStrictEqual"),
+          notDeepStrictEqual: mkAssertFn("notDeepStrictEqual")
         })
       } catch (err) {
         return reject(err)
       }
-      const t1 = Date.now()
-      const name = v.name
-      const plan = v.plan
+      const t0 = Date.now()
       const rec = () => {
-        const t2 = Date.now()
-        var pass: boolean
         if (
-          (pass =
-            asserts.length === plan &&
-            !asserts.some(v => v instanceof Error)) ||
-          t2 - t1 > 99
+          (asserts.length === plan && !asserts.some(v => v instanceof Error)) ||
+          Date.now() - t0 > 99
         ) {
-          o({ tag: "Result", name, pass, time: t2 - t1, plan, asserts })
-          resolve()
+          resolve(asserts)
         } else {
           setTimeout(rec, 0)
         }
       }
-      setTimeout(rec, 0)
-    } else {
-      const io = v.io
-      const promises = []
-      var i = 0
-      io(v => {
-        const n = i++
-        promises.push(
-          new Promise((resolve, reject) => {
-            var i = 0
-            io(v => {
-              if (i++ === n) run(v, o).then(resolve, reject)
-            })()
-          })
-        )
-      })()
-      Promise.all(promises).then(() => resolve())
-    }
-  })
+      rec()
+    })
+  }
+}
+
+function* ls(
+  path: string,
+  fs: {
+    +readdirSync: string => Array<string>,
+    +statSync: string => { +isDirectory: () => boolean },
+    +join: (...Array<string>) => string
+  }
+): Generator<string, void, void> {
+  if (fs.statSync(path).isDirectory()) {
+    for (let name of fs.readdirSync(path))
+      for (let x of ls(fs.join(path, name), fs)) yield x
+  } else {
+    yield path
+  }
 }

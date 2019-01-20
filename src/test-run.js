@@ -1,46 +1,59 @@
-import type { T } from "./test.js"
+//@flow
 import type { IO } from "./io.js"
-import { Ring, run, Test } from "./test.js"
-import { statSync, readdirSync } from "fs"
-import { join, basename, extname } from "path"
+import { makeRun } from "./test.js"
+import * as fs from "fs"
+import * as path from "path"
+import { Readable } from "stream"
 
-const _require = require
-const dirmap: { [string]: boolean } = {}
-const isdir = (path: string) => {
-  if (dirmap[path]) return true
-  dirmap[path] = statSync(path).isDirectory()
-  return dirmap[path]
-}
-const isTlike = (path: string) => extname(path) === ".js" || isdir(path)
-const isT = (e: any): boolean => {
-  if (e == null) return false
-  return (
-    (e.tag === "Test" &&
-      typeof e.name === "string" &&
-      typeof e.f === "function") ||
-    (e.tag === "Ring" &&
-      typeof e.name === "string" &&
-      typeof e.io === "function")
+drain(
+  tap(
+    n => console.log(n),
+    take(
+      25,
+      ls(path.join(__dirname, ".."), { ...require("fs"), ...require("path") })
+    )
   )
-}
+)
 
-function fs2io(path: string): IO<void, T, void> {
-  if (isdir(path)) {
-    const entries = readdirSync(path)
-    return o => () => {
-      for (var i = 0, l = entries.length; i < l; i++)
-        if (isTlike) o(Ring(entries[i], fs2io(join(path, entries[i]))))
-    }
+function* ls(
+  path: string,
+  fs: {
+    +readdirSync: string => Array<string>,
+    +statSync: string => { +isDirectory: () => boolean },
+    +join: (...Array<string>) => string
+  }
+): Generator<string, void, void> {
+  if (fs.statSync(path).isDirectory()) {
+    for (let name of fs.readdirSync(path))
+      for (let x of ls(fs.join(path, name), fs)) yield x
   } else {
-    return o => () => {
-      const e = _require(path).default
-      if (isT(e)) o(e)
-    }
+    yield path
   }
 }
 
-const p = join(__dirname, "..", process.argv[3])
-if (!isTlike(p)) throw new Error(`path [${p}] is not T like`)
-const rez = run(Ring(basename(p), fs2io(p)))
-console.log(rez)
-if (rez[1] > 0) process.exitCode = 1
+const r = new Readable({
+  read() {
+    //
+  }
+})
+
+function drain<T>(xs: Iterable<T>): void {
+  for (let x of xs) {
+  }
+}
+
+function* tap<T>(f: T => void, xs: Iterable<T>): Iterable<T> {
+  for (let x of xs) {
+    f(x)
+    yield x
+  }
+}
+
+function* take<T>(n: number, xs: Iterable<T>): Iterable<T> {
+  if (n <= 0) return
+  let i = 0
+  for (let x of xs) {
+    yield x
+    if (++i === n) return
+  }
+}
