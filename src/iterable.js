@@ -1,11 +1,12 @@
-export function run<a>(
-  o: (?a) => void,
+//@flow
+export function awaitPromises<a>(
+  o: (?a | Error) => void,
   it: Iterable<Promise<a>>,
   n: number = 4
 ): void {
   let i = 0
   let p = Promise.resolve()
-  let endSent = false
+  let endAttached = false
   const req = (n: number) => {
     const taken = [
       ...map(
@@ -19,9 +20,9 @@ export function run<a>(
       )
     ]
     if (taken.length === 0) {
-      if (!endSent) {
-        endSent = true
-        p = p.then(() => o())
+      if (!endAttached) {
+        endAttached = true
+        p = p.then(() => o(), err => o(err))
       }
     } else {
       i = i + taken.length
@@ -31,7 +32,7 @@ export function run<a>(
   req(n)
 }
 
-export function* filter<T>(f: T => boolean, xs: Iterable<T>): Iterable<T> {
+export function* filter<a>(f: a => boolean, xs: Iterable<a>): Iterable<a> {
   for (let x of xs) if (f(x)) yield x
 }
 

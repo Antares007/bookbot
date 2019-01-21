@@ -1,5 +1,5 @@
 //@flow
-import { map, take, filter, run } from "./iterable.js"
+import { map, take, filter } from "./iterable.js"
 export type A = {
   +ok: (value: any, message?: string) => void,
   +strictEqual: (actual: any, expected: any, message?: string) => void,
@@ -19,7 +19,34 @@ type Require = {
   +require: string => any
 }
 
-export function runATest(
+export function* run(
+  prefix: string,
+  platform: A & FS & Require,
+  f: string => boolean = name => name.endsWith(".js")
+): Iterable<Promise<{ name: string, errors: Array<Error> }>> {
+  for (let path of [...filter(f, ls(prefix, platform))]) {
+    try {
+      const exports = platform.require(path)
+      for (let name in exports) {
+        if (!name.startsWith("a_") || typeof exports[name] !== "function")
+          continue
+        yield runATest(platform, exports[name]).then(errors => {
+          return {
+            name: platform.join(path, name).slice(prefix.length + 1),
+            errors
+          }
+        })
+      }
+    } catch (err) {
+      yield Promise.resolve({
+        name: path.slice(prefix.length + 1),
+        errors: [err]
+      })
+    }
+  }
+}
+
+function runATest(
   assert: A,
   aTest: (f: A & Test) => void
 ): Promise<Array<Error>> {
@@ -70,33 +97,6 @@ export function runATest(
     }
     rec()
   })
-}
-
-export function* generate(
-  prefix: string,
-  platform: A & FS & Require,
-  f: string => boolean = name => name.endsWith(".js")
-): Iterable<Promise<{ name: string, errors: Array<Error> }>> {
-  for (let path of [...filter(f, ls(prefix, platform))]) {
-    try {
-      const exports = platform.require(path)
-      for (let name in exports) {
-        if (!name.startsWith("a_") || typeof exports[name] !== "function")
-          continue
-        yield runATest(platform, exports[name]).then(errors => {
-          return {
-            name: platform.join(path, name).slice(prefix.length + 1),
-            errors
-          }
-        })
-      }
-    } catch (err) {
-      yield Promise.resolve({
-        name: path.slice(prefix.length + 1),
-        errors: [err]
-      })
-    }
-  }
 }
 
 function* ls(path: string, fs: FS): Iterable<string> {

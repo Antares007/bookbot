@@ -1,18 +1,20 @@
 //@flow
 import type { Test, A } from "../src/test.js"
-import { run } from "../src/iterable.js"
-import { generate } from "../src/test.js"
+import { awaitPromises } from "../src/iterable.js"
+import { run } from "../src/test.js"
 
 const fail = "\u001b[31mfail\u001b[39m"
 const pass = "\u001b[32mpass\u001b[39m"
 
 const rez = [0, 0]
 
-run(
+awaitPromises(
   v => {
     if (v == null) {
       console.log(pass, rez[0])
       console.log(fail, rez[1])
+    } else if (v instanceof Error) {
+      throw v
     } else {
       if (v.errors.length > 0) {
         rez[1]++
@@ -28,7 +30,7 @@ run(
       }
     }
   },
-  generate(__dirname, {
+  run(__dirname, {
     ...require("fs"),
     ...require("assert"),
     ...require("path"),
