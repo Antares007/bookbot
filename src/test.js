@@ -1,4 +1,5 @@
 //@flow
+import { map, take, filter, run } from "./iterable.js"
 export type A = {
   +ok: (value: any, message?: string) => void,
   +strictEqual: (actual: any, expected: any, message?: string) => void,
@@ -71,39 +72,6 @@ export function runATest(
   })
 }
 
-export function run<a>(
-  o: (?a) => void,
-  it: Iterable<Promise<a>>,
-  n: number = 4
-): void {
-  let i = 0
-  let p = Promise.resolve()
-  let endSent = false
-  const req = (n: number) => {
-    const taken = [
-      ...map(
-        p =>
-          p.then(a => {
-            i--
-            req(Math.max(n - i, 0))
-            o(a)
-          }),
-        take(n, it)
-      )
-    ]
-    if (taken.length === 0) {
-      if (!endSent) {
-        endSent = true
-        p = p.then(() => o())
-      }
-    } else {
-      i = i + taken.length
-      p = p.then(() => Promise.all(taken))
-    }
-  }
-  req(n)
-}
-
 export function* generate(
   prefix: string,
   platform: A & FS & Require,
@@ -137,22 +105,5 @@ function* ls(path: string, fs: FS): Iterable<string> {
       for (let x of ls(fs.join(path, name), fs)) yield x
   } else {
     yield path
-  }
-}
-
-function* filter<T>(f: T => boolean, xs: Iterable<T>): Iterable<T> {
-  for (let x of xs) if (f(x)) yield x
-}
-
-function* map<a, b>(f: a => b, bs: Iterable<a>): Iterable<b> {
-  for (let a of bs) yield f(a)
-}
-
-function* take<a>(n: number, xs: Iterable<a>): Iterable<a> {
-  if (n <= 0) return
-  let i = 0
-  for (let x of xs) {
-    yield x
-    if (++i === n) return
   }
 }
