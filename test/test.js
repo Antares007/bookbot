@@ -36,13 +36,13 @@ run(
 )
 
 export function a_sheamocme(a: A) {
-  a.deepStrictEqual({ a: 42 }, { a: 43 })
+  a.deepStrictEqual({ a: 43 }, { a: 43 })
 }
 
 export function a_simple_async_test2(a: A & Test) {
   setTimeout(
     a(() => {
-      a.ok(false)
+      a.ok(true)
     }),
     50
   )
