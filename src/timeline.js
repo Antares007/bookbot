@@ -5,6 +5,23 @@ export opaque type Timeline<T> =
   | { tag: "Line", line: Array<[number, T]> }
   | { tag: "LR", left: Timeline<T>, right: Timeline<T> }
 
+export function fromPith<a>(
+  mappend: (a, a) => a,
+  pith: (([number, a]) => void) => void
+): ?Timeline<a> {
+  const line = []
+  pith(na => {
+    const i = findAppendPosition(na[0], line)
+    if (i > -1 && line[i][0] === na[0]) {
+      line[i][1] = mappend(line[i][1], na[1])
+    } else {
+      line.splice(i + 1, 0, na)
+    }
+  })
+  if (line.length === 0) return null
+  return { tag: "Line", line }
+}
+
 export function show<T>(tl: Timeline<T>) {
   const go = tl => {
     if (tl.tag === "Line") {

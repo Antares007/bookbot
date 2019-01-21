@@ -67,7 +67,7 @@ function runATest(
         plan++
         return function ring(...args: Array<any>) {
           try {
-            return f.apply(this, args)
+            f.apply(this, args)
           } catch (err) {
             errors.push(err)
           }
@@ -83,18 +83,19 @@ function runATest(
       return resolve([err])
     }
     const t0 = Date.now()
+    let ms = 0
     const rec = () => {
       if (asserts === plan) {
         resolve(errors)
-      } else if (Date.now() - t0 > 99) {
+      } else if ((ms = Date.now() - t0) > 1000) {
         errors.push(
           new Error(
-            `\u001b[32mplan(${plan})\u001b[39m !== \u001b[31masserts(${asserts})\u001b[39m`
+            `timeout ${ms}ms \u001b[32mplan(${plan})\u001b[39m !== \u001b[31masserts(${asserts})\u001b[39m`
           )
         )
         resolve(errors)
       } else {
-        setTimeout(rec, 0)
+        setTimeout(rec, 4)
       }
     }
     rec()

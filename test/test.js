@@ -18,6 +18,7 @@ awaitPromises(
     } else {
       if (v.errors.length > 0) {
         rez[1]++
+        console.log()
         console.group(v.name, fail)
         v.errors.forEach(e => {
           console.log(e)
@@ -47,7 +48,7 @@ export function a_simple_async_test2(a: A & Test) {
     a(() => {
       a.ok(true)
     }),
-    50
+    90
   )
   a.ok(true)
 }
