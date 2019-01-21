@@ -1,5 +1,5 @@
 //@flow
-import type { Assert } from "../src/test.js"
+import type { Test, A } from "../src/test.js"
 import { run, generate } from "../src/test.js"
 
 const fail = "\u001b[31mfail\u001b[39m"
@@ -17,9 +17,10 @@ run(
         rez[1]++
         console.group(v.name, fail)
         v.errors.forEach(e => {
-          console.log(e.message)
+          console.log(e)
         })
         console.groupEnd()
+        console.log()
       } else {
         rez[0]++
         console.log(v.name, pass)
@@ -34,13 +35,16 @@ run(
   })
 )
 
-export function a1_sheamocme(a: Assert) {
-  a.deepStrictEqual({ a: 43 }, { a: 43 })
-}
-export function a1_simple_test(a: Assert) {
-  a.ok(true)
+export function a_sheamocme(a: A) {
+  a.deepStrictEqual({ a: 42 }, { a: 43 })
 }
 
-export function a1_simple_async_test2(a: Assert) {
-  setTimeout(() => a.ok(true), 50)
+export function a_simple_async_test2(a: A & Test) {
+  setTimeout(
+    a(() => {
+      a.ok(false)
+    }),
+    50
+  )
+  a.ok(true)
 }
