@@ -1,5 +1,6 @@
 //@flow
 import { map, take, filter } from "./iterable.js"
+
 export type A = {
   +ok: (value: any, message?: string) => void,
   +strictEqual: (actual: any, expected: any, message?: string) => void,
@@ -8,7 +9,8 @@ export type A = {
   +notDeepStrictEqual: (actual: any, expected: any, message?: string) => void
 }
 
-export type Test = <a, b, c, d, o>((a, b, c, d) => o) => (a, b, c, d) => o
+export type Test = <a, b, c, d>((a, b, c, d) => void) => (a, b, c, d) => void
+
 type FS = {
   +readdirSync: string => Array<string>,
   +statSync: string => { +isDirectory: () => boolean },

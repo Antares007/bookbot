@@ -1,7 +1,7 @@
 //@flow
-import type { Test, A } from "../src/test.js"
+import type { A, Test } from "../src/atest.js"
 import { awaitPromises } from "../src/iterable.js"
-import { run } from "../src/test.js"
+import { run } from "../src/atest.js"
 
 const fail = "\u001b[31mfail\u001b[39m"
 const pass = "\u001b[32mpass\u001b[39m"
