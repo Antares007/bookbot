@@ -53,16 +53,21 @@ function runATest(
   aTest: (f: A & Test) => void
 ): Promise<Array<Error>> {
   return new Promise((resolve, reject) => {
-    let plan: number = 1
-    let asserts: number = 0
-    const errors: Array<Error> = []
-
-    const mkAssertFn = (name): any =>
-      function aRing(...args) {
-        asserts++
-        assert[name].apply(this, args)
-      }
     try {
+      let plan: number = 1
+      let asserts: number = 0
+      let timeoutId
+      const errors: Array<Error> = []
+
+      const mkAssertFn = (name): any =>
+        function aRing(...args) {
+          asserts++
+          assert[name].apply(this, args)
+          if (asserts === plan) {
+            clearTimeout(timeoutId)
+            resolve(errors)
+          }
+        }
       const f: any = f => {
         plan++
         return function ring(...args: Array<any>) {
@@ -78,27 +83,23 @@ function runATest(
       f.deepStrictEqual = mkAssertFn("deepStrictEqual")
       f.notStrictEqual = mkAssertFn("notStrictEqual")
       f.notDeepStrictEqual = mkAssertFn("notDeepStrictEqual")
+
       aTest(f)
-    } catch (err) {
-      return resolve([err])
-    }
-    const t0 = Date.now()
-    let ms = 0
-    const rec = () => {
-      if (asserts === plan) {
-        resolve(errors)
-      } else if ((ms = Date.now() - t0) > 1000) {
+
+      const t0 = Date.now()
+      if (asserts === plan) return resolve(errors)
+      timeoutId = setTimeout(() => {
         errors.push(
           new Error(
-            `timeout ${ms}ms \u001b[32mplan(${plan})\u001b[39m !== \u001b[31masserts(${asserts})\u001b[39m`
+            `timeout ${Date.now() -
+              t0}ms \u001b[32mplan(${plan})\u001b[39m !== \u001b[31masserts(${asserts})\u001b[39m`
           )
         )
         resolve(errors)
-      } else {
-        setTimeout(rec, 4)
-      }
+      }, 100)
+    } catch (err) {
+      resolve([err])
     }
-    rec()
   })
 }
 

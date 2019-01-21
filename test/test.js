@@ -48,7 +48,7 @@ export function a_simple_async_test2(a: A & Test) {
     a(() => {
       a.ok(true)
     }),
-    90
+    0
   )
   a.ok(true)
 }
