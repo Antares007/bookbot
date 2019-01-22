@@ -3,7 +3,7 @@ import type { IO } from "./io.js"
 
 export opaque type Timeline<T> =
   | Array<[number, T]>
-  | { l: Timeline<T>, r: Timeline<T>, b: [number, number, number, number] }
+  | { l: Timeline<T>, r: Timeline<T> }
 
 function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
   var l = 0
@@ -57,7 +57,7 @@ export function getBounds<T>(tl: Timeline<T>): [number, number] {
   if (Array.isArray(tl)) {
     return [tl[0][0], tl[tl.length - 1][0]]
   } else {
-    return [tl.b[0], tl.b[3]]
+    return [getBounds(tl.l)[0], getBounds(tl.r)[1]]
   }
 }
 
@@ -69,7 +69,7 @@ export function mappend<T>(
   const lb = getBounds(l)
   const rb = getBounds(r)
   if (lb[0] > rb[0]) return mappend(mappenda, r, l)
-  if (lb[1] < rb[0]) return { l, r, b: ([...lb, ...rb]: any) }
+  if (lb[1] < rb[0]) return { l, r }
 
   if (Array.isArray(l)) {
     if (Array.isArray(r)) {
@@ -80,17 +80,15 @@ export function mappend<T>(
         for (let i = 0, len = b.length; i < len; i++) o(b[i])
       }): any)
     } else {
-      if (l[l.length - 1][0] < r.b[2]) {
+      if (lb[1] < getBounds(r.r)[0]) {
         const a = l
         const b = r.l
-        const nl: Timeline<T> = (fromPith(mappenda, o => {
-          for (let i = 0, len = a.length; i < len; i++) o(a[i])
-          toPith(b)(o)
-        }): any)
         return {
-          l: nl,
-          r: r.r,
-          b: ([...getBounds(nl), ...getBounds(r.r)]: any)
+          l: (fromPith(mappenda, o => {
+            for (let i = 0, len = a.length; i < len; i++) o(a[i])
+            toPith(b)(o)
+          }): any),
+          r: r.r
         }
       }
       const a = l
@@ -102,19 +100,23 @@ export function mappend<T>(
     }
   } else {
     if (Array.isArray(r)) {
-      if (l.b[1] < r[0][0]) {
+      if (getBounds(l.l)[1] < rb[0]) {
         const a = l.r
         const b = r
-        const nr: Timeline<T> = (fromPith(mappenda, o => {
-          toPith(a)(o)
-          for (let i = 0, len = b.length; i < len; i++) o(b[i])
-        }): any)
         return {
           l: l.l,
-          r: nr,
-          b: ([...getBounds(l.l), ...getBounds(nr)]: any)
+          r: (fromPith(mappenda, o => {
+            toPith(a)(o)
+            for (let i = 0, len = b.length; i < len; i++) o(b[i])
+          }): any)
         }
       }
+      const a = l
+      const b = r
+      return (fromPith(mappenda, o => {
+        toPith(a)(o)
+        for (let i = 0, len = b.length; i < len; i++) o(b[i])
+      }): any)
     } else {
       const a = l
       const b = r

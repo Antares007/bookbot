@@ -2,6 +2,7 @@
 import type { A, Test } from "../src/atest.js"
 
 const tl: any = require("../src/timeline.js")
+const add = (a: string, b: string) => a + b
 
 export function a_fromPith_returns_line(a: A & Test) {
   a.deepStrictEqual(
@@ -35,14 +36,14 @@ export function a_toPith_returns_line(a: A & Test) {
 export function a_mappend_lr(a: A & Test) {
   const l = [[0, "l"]]
   const r = [[1, "r"]]
-  const e = { l, r, b: [0, 0, 1, 1] }
+  const e = { l, r }
   a.deepStrictEqual(tl.mappend((a, b) => a, l, r), e)
 }
 
 export function a_mappend_rl(a: A & Test) {
   const l = [[1, "r"]]
   const r = [[0, "l"]]
-  const e = { l: r, r: l, b: [0, 0, 1, 1] }
+  const e = { l: r, r: l }
   a.deepStrictEqual(tl.mappend((a, b) => a, l, r), e)
 }
 
@@ -50,9 +51,9 @@ export function a_mappend_abc(assert: A & Test) {
   const a = [[0, "a"]]
   const b = [[1, "b"]]
   const c = [[2, "c"]]
-  const l = { l: a, r: b, b: [0, 0, 1, 1] }
+  const l = { l: a, r: b }
   const r = c
-  const e = { l, r: c, b: [0, 1, 2, 2] }
+  const e = { l, r: c }
   assert.deepStrictEqual(tl.mappend((a, b) => a, l, r), e)
 }
 
@@ -60,8 +61,8 @@ export function a_mappend_abc2(assert: A & Test) {
   const a = [[0, "a"]]
   const b = [[1, "b"]]
   const c = [[1, "c"]]
-  const l = { l: a, r: b, b: [0, 0, 1, 1] }
+  const l = { l: a, r: b }
   const r = c
-  const e = { l: a, r: [[1, "bc"]], b: [0, 0, 1, 1] }
+  const e = { l: a, r: [[1, "bc"]] }
   assert.deepStrictEqual(tl.mappend((a, b) => a + b, l, r), e)
 }
