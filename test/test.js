@@ -19,7 +19,7 @@ awaitPromises(
       if (v.errors.length > 0) {
         rez[1]++
         console.log()
-        console.group(v.name, fail)
+        console.group(`${v.name}(${v.time})`, fail)
         v.errors.forEach(e => {
           console.log(e)
         })
@@ -27,7 +27,7 @@ awaitPromises(
         console.log()
       } else {
         rez[0]++
-        console.log(v.name, pass)
+        console.log(`${v.name}(${v.time})`, pass)
       }
     }
   },
@@ -48,7 +48,7 @@ export function a_simple_async_test2(a: A & Test) {
     a(() => {
       a.ok(true)
     }),
-    0
+    10
   )
   a.ok(true)
 }

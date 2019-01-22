@@ -24,17 +24,20 @@ type Require = {
 export function* run(
   prefix: string,
   platform: A & FS & Require,
-  f: string => boolean = name => name.endsWith(".js")
-): Iterable<Promise<{ name: string, errors: Array<Error> }>> {
+  f: string => boolean = name => name.endsWith(".js"),
+  timeout: number = 1000
+): Iterable<Promise<{ name: string, time: number, errors: Array<Error> }>> {
   for (let path of [...filter(f, ls(prefix, platform))]) {
     try {
       const exports = platform.require(path)
       for (let name in exports) {
         if (!name.startsWith("a_") || typeof exports[name] !== "function")
           continue
-        yield runATest(platform, exports[name]).then(errors => {
+        let t0 = Date.now()
+        yield runATest(platform, exports[name], timeout).then(errors => {
           return {
             name: platform.join(path, name).slice(prefix.length + 1),
+            time: Date.now() - t0,
             errors
           }
         })
@@ -42,6 +45,7 @@ export function* run(
     } catch (err) {
       yield Promise.resolve({
         name: path.slice(prefix.length + 1),
+        time: 0,
         errors: [err]
       })
     }
@@ -50,7 +54,8 @@ export function* run(
 
 function runATest(
   assert: A,
-  aTest: (f: A & Test) => void
+  aTest: (f: A & Test) => void,
+  timeout: number
 ): Promise<Array<Error>> {
   return new Promise((resolve, reject) => {
     try {
@@ -86,17 +91,15 @@ function runATest(
 
       aTest(f)
 
-      const t0 = Date.now()
       if (asserts === plan) return resolve(errors)
       timeoutId = setTimeout(() => {
         errors.push(
           new Error(
-            `timeout ${Date.now() -
-              t0}ms \u001b[32mplan(${plan})\u001b[39m !== \u001b[31masserts(${asserts})\u001b[39m`
+            `timeout ${timeout}ms \u001b[32mplan(${plan})\u001b[39m !== \u001b[31masserts(${asserts})\u001b[39m`
           )
         )
         resolve(errors)
-      }, 100)
+      }, timeout)
     } catch (err) {
       resolve([err])
     }
