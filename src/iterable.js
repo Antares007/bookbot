@@ -1,35 +1,14 @@
 //@flow
 export function awaitPromises<a>(
   o: (?a | Error) => void,
-  it: Iterable<Promise<a>>,
-  n: number = 4
-): void {
+  it: Iterable<Promise<a>>
+): Promise<void> {
   let i = 0
-  let p = Promise.resolve()
-  let endAttached = false
-  const req = (n: number) => {
-    const taken = [
-      ...map(
-        p =>
-          p.then(a => {
-            i--
-            req(Math.max(n - i, 0))
-            o(a)
-          }),
-        take(n, it)
-      )
-    ]
-    if (taken.length === 0) {
-      if (!endAttached) {
-        endAttached = true
-        p = p.then(() => o(), err => o(err))
-      }
-    } else {
-      i = i + taken.length
-      p = p.then(() => Promise.all(taken))
-    }
-  }
-  req(n)
+  return reduce(
+    (pv, pa) => pv.then(() => pa.then(o)),
+    Promise.resolve(),
+    it
+  ).then(() => o(null), err => o(err))
 }
 
 export function* filter<a>(f: a => boolean, xs: Iterable<a>): Iterable<a> {
@@ -47,4 +26,9 @@ export function* take<a>(n: number, xs: Iterable<a>): Iterable<a> {
     yield x
     if (++i === n) return
   }
+}
+
+export function reduce<a, b>(f: (b, a) => b, b_: b, as: Iterable<a>): b {
+  for (let a of as) b_ = f(b_, a)
+  return b_
 }
