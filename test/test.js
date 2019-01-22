@@ -2,12 +2,12 @@
 import type { A, Test } from "../src/atest.js"
 import { awaitPromises } from "../src/iterable.js"
 import { run } from "../src/atest.js"
+import * as path from "path"
 
 const fail = "\u001b[31mfail\u001b[39m"
 const pass = "\u001b[32mpass\u001b[39m"
 
 const rez = [0, 0]
-
 awaitPromises(
   v => {
     if (v == null) {
@@ -21,7 +21,19 @@ awaitPromises(
         console.log()
         console.group(`${v.name}(${v.time})`, fail)
         v.errors.forEach(e => {
-          console.log(e)
+          console.log(e.message)
+          console.log(
+            e.stack
+              .split(/\n/gi)
+              .filter(l => l.includes(path.join(__dirname, "..")))
+              .map(l =>
+                l
+                  .trim()
+                  .split(path.join(__dirname, "..") + "/")
+                  .join("./")
+              )
+              .join("\n")
+          )
         })
         console.groupEnd()
         console.log()
@@ -34,7 +46,7 @@ awaitPromises(
   run(__dirname, {
     ...require("fs"),
     ...require("assert"),
-    ...require("path"),
+    ...path,
     require: (require: any)
   })
 )

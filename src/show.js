@@ -1,4 +1,4 @@
-//@flow
+//flow
 import { mkScheduler } from "./scheduler.js"
 import * as tl from "./timeline.js"
 import * as io from "./io.js"

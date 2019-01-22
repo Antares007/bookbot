@@ -1,4 +1,4 @@
-//@flow
+//flow
 import type { IO } from "./io.js"
 import type { Disposable } from "./disposable.js"
 import type { Timeline } from "./timeline.js"

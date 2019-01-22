@@ -1,4 +1,4 @@
-//@flow
+//flow
 import type { IO } from "./io"
 import type { O } from "./scheduler"
 import { Delay, Origin } from "./scheduler"
