@@ -48,21 +48,22 @@ export function a_mappend_rl(a: A & Test) {
 }
 
 export function a_mappend_abc(assert: A & Test) {
-  const a = [[0, "a"]]
-  const b = [[1, "b"]]
-  const c = [[2, "c"]]
-  const l = { l: a, r: b }
-  const r = c
-  const e = { l, r: c }
+  const l = { l: [[0, "a"]], r: [[1, "b"]] }
+  const r = [[2, "c"]]
+  const e = { l, r }
   assert.deepStrictEqual(tl.mappend((a, b) => a, l, r), e)
 }
 
 export function a_mappend_abc2(assert: A & Test) {
-  const a = [[0, "a"]]
-  const b = [[1, "b"]]
-  const c = [[1, "c"]]
-  const l = { l: a, r: b }
-  const r = c
-  const e = { l: a, r: [[1, "bc"]] }
+  const l = { l: [[0, "a"]], r: [[1, "b"]] }
+  const r = [[1, "c"], [2, "d"]]
+  const e = { l: l.l, r: [[1, "bc"], [2, "d"]] }
+  assert.deepStrictEqual(tl.mappend((a, b) => a + b, l, r), e)
+}
+
+export function a_mappend_abc3(assert: A & Test) {
+  const l = { l: [[0, "a"]], r: [[1, "b"]] }
+  const r = { l: [[1, "c"]], r: [[2, "d"]] }
+  const e = { l: { l: l.l, r: [[1, "bc"]] }, r: r.r }
   assert.deepStrictEqual(tl.mappend((a, b) => a + b, l, r), e)
 }

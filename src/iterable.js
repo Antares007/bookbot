@@ -28,7 +28,8 @@ export function* take<a>(n: number, xs: Iterable<a>): Iterable<a> {
   }
 }
 
-export function reduce<a, b>(f: (b, a) => b, b_: b, as: Iterable<a>): b {
+export function reduce<a, b>(f: (b, a) => b, s: b, as: Iterable<a>): b {
+  let b_ = s
   for (let a of as) b_ = f(b_, a)
   return b_
 }

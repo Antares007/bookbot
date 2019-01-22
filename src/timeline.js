@@ -73,62 +73,84 @@ export function mappend<T>(
 
   if (Array.isArray(l)) {
     if (Array.isArray(r)) {
-      const a = l
-      const b = r
       return (fromPith(mappenda, o => {
-        for (let i = 0, len = a.length; i < len; i++) o(a[i])
-        for (let i = 0, len = b.length; i < len; i++) o(b[i])
+        for (let i = 0, len = l.length; i < len; i++) o(l[i])
+        for (let i = 0, len = r.length; i < len; i++) o(r[i])
       }): any)
     } else {
       if (lb[1] < getBounds(r.r)[0]) {
-        const a = l
-        const b = r.l
         return {
           l: (fromPith(mappenda, o => {
-            for (let i = 0, len = a.length; i < len; i++) o(a[i])
-            toPith(b)(o)
+            for (let i = 0, len = l.length; i < len; i++) o(l[i])
+            toPith(r.l)(o)
           }): any),
           r: r.r
         }
       }
-      const a = l
-      const b = r
       return (fromPith(mappenda, o => {
-        for (let i = 0, len = a.length; i < len; i++) o(a[i])
-        toPith(b)(o)
+        for (let i = 0, len = l.length; i < len; i++) o(l[i])
+        toPith(r)(o)
       }): any)
     }
   } else {
     if (Array.isArray(r)) {
       if (getBounds(l.l)[1] < rb[0]) {
-        const a = l.r
-        const b = r
         return {
           l: l.l,
           r: (fromPith(mappenda, o => {
-            toPith(a)(o)
-            for (let i = 0, len = b.length; i < len; i++) o(b[i])
+            toPith(l.r)(o)
+            for (let i = 0, len = r.length; i < len; i++) o(r[i])
           }): any)
         }
       }
-      const a = l
-      const b = r
       return (fromPith(mappenda, o => {
-        toPith(a)(o)
-        for (let i = 0, len = b.length; i < len; i++) o(b[i])
+        toPith(l)(o)
+        for (let i = 0, len = r.length; i < len; i++) o(r[i])
       }): any)
     } else {
-      const a = l
-      const b = r
+      if (getBounds(l.l)[1] < getBounds(r.r)[0])
+        return {
+          l: {
+            l: l.l,
+            r: (fromPith(mappenda, o => {
+              toPith(l.r)(o)
+              toPith(r.l)(o)
+            }): any)
+          },
+          r: r.r
+        }
       return (fromPith(mappenda, o => {
-        toPith(a)(o)
-        toPith(b)(o)
+        toPith(l)(o)
+        toPith(r)(o)
       }): any)
     }
   }
 }
 
-//
+function runTo<T>(
+  mappendt: (T, T) => T,
+  n: number,
+  tl: Timeline<T>
+): (([number, T]) => void) => ?Timeline<T> {
+  return o => {
+    if (Array.isArray(tl)) {
+      const ap = findAppendPosition(n, tl)
+      if (ap === -1) return tl
+      for (var i = 0; i <= ap; i++) {
+        o(tl[i])
+      }
+      if (ap === tl.length - 1) return null
+      return tl.slice(ap + 1)
+    } else {
+      let l = runTo(mappendt, n, tl.l)(o)
+      let r = runTo(mappendt, n, tl.r)(o)
+      if (l != null && r != null) return mappend(mappendt, l, r)
+      if (l != null) return l
+      return r
+    }
+  }
+}
+
 // export function show<T>(tl: Timeline<T>) {
 //   const go = tl => {
 //     if (tl.tag === "Line") {
@@ -165,29 +187,6 @@ export function mappend<T>(
 //   return { tag: "Line", line }
 // }
 //
-// function runTo<T>(
-//   mappendt: (T, T) => T,
-//   n: number,
-//   tl: Timeline<T>
-// ): IO<void, [number, T], ?Timeline<T>> {
-//   return o => () => {
-//     if (tl.tag === "Line") {
-//       const ap = findAppendPosition(n, tl.line)
-//       if (ap === -1) return tl
-//       for (var i = 0; i <= ap; i++) {
-//         o(tl.line[i])
-//       }
-//       if (ap === tl.line.length - 1) return null
-//       return { tag: "Line", line: tl.line.slice(ap + 1) }
-//     } else {
-//       let l = runTo(mappendt, n, tl.left)(o)()
-//       let r = runTo(mappendt, n, tl.right)(o)()
-//       if (l != null && r != null) return mappend(mappendt, l, r)
-//       if (l != null) return l
-//       if (r != null) return r
-//     }
-//   }
-// }
 //
 // function toIO<T>(tl: Timeline<T>): IO<void, [number, T], void> {
 //   return o => () => {
