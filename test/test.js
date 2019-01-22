@@ -27,7 +27,7 @@ awaitPromises(
         console.log()
       } else {
         rez[0]++
-        console.log(`${v.name}(${v.time})`, pass)
+        process.stdout.write(".")
       }
     }
   },
