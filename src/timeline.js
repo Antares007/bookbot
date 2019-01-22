@@ -128,26 +128,25 @@ export function mappend<T>(
 }
 
 function runTo<T>(
+  o: ([number, T]) => void,
   mappendt: (T, T) => T,
   n: number,
   tl: Timeline<T>
-): (([number, T]) => void) => ?Timeline<T> {
-  return o => {
-    if (Array.isArray(tl)) {
-      const ap = findAppendPosition(n, tl)
-      if (ap === -1) return tl
-      for (var i = 0; i <= ap; i++) {
-        o(tl[i])
-      }
-      if (ap === tl.length - 1) return null
-      return tl.slice(ap + 1)
-    } else {
-      let l = runTo(mappendt, n, tl.l)(o)
-      let r = runTo(mappendt, n, tl.r)(o)
-      if (l != null && r != null) return mappend(mappendt, l, r)
-      if (l != null) return l
-      return r
+): ?Timeline<T> {
+  if (Array.isArray(tl)) {
+    const ap = findAppendPosition(n, tl)
+    if (ap === -1) return tl
+    for (var i = 0; i <= ap; i++) {
+      o(tl[i])
     }
+    if (ap === tl.length - 1) return null
+    return tl.slice(ap + 1)
+  } else {
+    let l = runTo(o, mappendt, n, tl.l)
+    let r = runTo(o, mappendt, n, tl.r)
+    if (l != null && r != null) return mappend(mappendt, l, r)
+    if (l != null) return l
+    return r
   }
 }
 
