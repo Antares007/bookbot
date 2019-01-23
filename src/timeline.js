@@ -42,14 +42,12 @@ export function fromPith<a>(
   return line
 }
 
-export function toPith<T>(tl: Timeline<T>): (([number, T]) => void) => void {
-  return o => {
-    if (Array.isArray(tl)) {
-      for (var i = 0, l = tl.length; i < l; i++) o(tl[i])
-    } else {
-      toPith(tl.l)(o)
-      toPith(tl.r)(o)
-    }
+export function run<T>(o: ([number, T]) => void, tl: Timeline<T>): void {
+  if (Array.isArray(tl)) {
+    for (var i = 0, l = tl.length; i < l; i++) o(tl[i])
+  } else {
+    run(o, tl.l)
+    run(o, tl.r)
   }
 }
 
@@ -82,14 +80,14 @@ export function mappend<T>(
         return {
           l: (fromPith(mappenda, o => {
             for (let i = 0, len = l.length; i < len; i++) o(l[i])
-            toPith(r.l)(o)
+            run(o, r.l)
           }): any),
           r: r.r
         }
       }
       return (fromPith(mappenda, o => {
         for (let i = 0, len = l.length; i < len; i++) o(l[i])
-        toPith(r)(o)
+        run(o, r)
       }): any)
     }
   } else {
@@ -98,13 +96,13 @@ export function mappend<T>(
         return {
           l: l.l,
           r: (fromPith(mappenda, o => {
-            toPith(l.r)(o)
+            run(o, l.r)
             for (let i = 0, len = r.length; i < len; i++) o(r[i])
           }): any)
         }
       }
       return (fromPith(mappenda, o => {
-        toPith(l)(o)
+        run(o, l)
         for (let i = 0, len = r.length; i < len; i++) o(r[i])
       }): any)
     } else {
@@ -113,15 +111,15 @@ export function mappend<T>(
           l: {
             l: l.l,
             r: (fromPith(mappenda, o => {
-              toPith(l.r)(o)
-              toPith(r.l)(o)
+              run(o, l.r)
+              run(o, r.l)
             }): any)
           },
           r: r.r
         }
       return (fromPith(mappenda, o => {
-        toPith(l)(o)
-        toPith(r)(o)
+        run(o, l)
+        run(o, r)
       }): any)
     }
   }

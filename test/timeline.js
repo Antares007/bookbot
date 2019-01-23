@@ -27,8 +27,8 @@ export function a_fromPith_when_pith_is_empty(a: A & Test) {
   a.deepStrictEqual(tl.fromPith((a, b) => a + ":)" + b, o => {}), null)
 }
 
-export function a_toPith_returns_line(a: A & Test) {
-  a.deepStrictEqual(tl.fromPith((a, b) => a, tl.toPith([[-1, "a"]])), [
+export function a_run_returns_line(a: A & Test) {
+  a.deepStrictEqual(tl.fromPith((a, b) => a, o => tl.run(o, [[-1, "a"]])), [
     [-1, "a"]
   ])
 }
