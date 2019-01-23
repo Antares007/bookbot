@@ -31,7 +31,10 @@ export function* run(
     try {
       const exports = platform.require(path)
       for (let name in exports) {
-        if (!name.startsWith("a_") || typeof exports[name] !== "function")
+        if (
+          typeof exports[name] !== "function" ||
+          !exports[name].toString().includes(`(assert)`)
+        )
           continue
         let t0 = Date.now()
         yield runATest(platform, exports[name], timeout).then(errors => {
