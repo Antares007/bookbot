@@ -74,13 +74,13 @@ export function mappend_l_l_end_equal_r_start(assert: A & Test) {
   const e = L(-1, 0, 1, 2)
   assert.deepStrictEqual(tl.mappend(() => "", l, r), e)
 }
-export function a_mappend_l_l_end_less_then_r_l_start(assert: A & Test) {
+export function mappend_l_l_end_less_then_r_l_start(assert: A & Test) {
   const l = LR(L(0, 1), L(2, 4))
   const r = LR(L(3, 5), L(6))
   const e = LR(LR(l.l, L(2, 3, 4, 5)), r.r)
   assert.deepStrictEqual(tl.mappend(throws, l, r), e)
 }
-export function a_mappend_l_l_end_not_less_then_r_l_start(assert: A & Test) {
+export function mappend_l_l_end_not_less_then_r_l_start(assert: A & Test) {
   const l = LR(L(0, 1), L(2, 4))
   const r = LR(L(1, 5), L(6))
   const e = L(0, 1, 2, 4, 5, 6)
