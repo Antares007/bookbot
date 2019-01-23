@@ -106,7 +106,7 @@ export function mappend<T>(
         for (let i = 0, len = r.length; i < len; i++) o(r[i])
       }): any)
     } else {
-      if (getBounds(l.l)[1] < getBounds(r.r)[0])
+      if (getBounds(l.l)[1] < getBounds(r.l)[0])
         return {
           l: {
             l: l.l,

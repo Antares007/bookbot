@@ -2,10 +2,13 @@
 import type { A, Test } from "../src/atest.js"
 
 const tl: any = require("../src/timeline.js")
-const add = (a: string, b: string) => a + b
 
-export function a_fromPith_returns_line(a: A & Test) {
-  a.deepStrictEqual(
+const throws = () => {
+  throw new Error("never")
+}
+
+export function fromPith_returns_line(assert: A & Test) {
+  assert.deepStrictEqual(
     tl.fromPith(
       (a, b) => a + ":)" + b,
       o => {
@@ -22,48 +25,71 @@ export function a_fromPith_returns_line(a: A & Test) {
     [[-1, "T"], [0, "i:)I"], [1, "m"], [2, "e:)!"], [3, "!:)!"]]
   )
 }
-
-export function a_fromPith_when_pith_is_empty(a: A & Test) {
-  a.deepStrictEqual(tl.fromPith((a, b) => a + ":)" + b, o => {}), null)
+export function fromPith_when_pith_is_empty_returns_null(assert: A & Test) {
+  assert.deepStrictEqual(tl.fromPith(throws, o => {}), null)
 }
 
-export function a_run_returns_line(a: A & Test) {
-  a.deepStrictEqual(tl.fromPith((a, b) => a, o => tl.run(o, [[-1, "a"]])), [
-    [-1, "a"]
-  ])
+export function run(assert: A & Test) {
+  assert.deepStrictEqual(
+    tl.fromPith(throws, o => {
+      tl.run(o, LR(L(-1), L(0, 1)))
+    }),
+    L(-1, 0, 1)
+  )
 }
 
-export function a_mappend_lr(a: A & Test) {
-  const l = [[0, "l"]]
-  const r = [[1, "r"]]
-  const e = { l, r }
-  a.deepStrictEqual(tl.mappend((a, b) => a, l, r), e)
+export function mappend_l_end_less_then_r_start(assert: A & Test) {
+  const l = L(0, 2)
+  const r = L(3, 4)
+  const e = LR(l, r)
+  assert.deepStrictEqual(tl.mappend(throws, l, r), e)
+}
+export function mappend_l_start_greater_then_r_end(assert: A & Test) {
+  const l = L(3, 4)
+  const r = L(0, 2)
+  const e = LR(r, l)
+  assert.deepStrictEqual(tl.mappend(throws, l, r), e)
+}
+export function mappend_l_overlap_r(assert: A & Test) {
+  const l = L(0, 2)
+  const r = L(1, 3)
+  const e = L(0, 1, 2, 3)
+  assert.deepStrictEqual(tl.mappend(throws, l, r), e)
+}
+export function mappend_llr_end_less_then_r_start(assert: A & Test) {
+  const l = LR(L(0), L(1))
+  const r = L(2)
+  const e = LR(l, r)
+  assert.deepStrictEqual(tl.mappend(throws, l, r), e)
+}
+export function mappend_l_l_end_less_then_r_start(assert: A & Test) {
+  const l = LR(L(0), L(1, 3))
+  const r = L(2, 4)
+  const e = { l: l.l, r: L(1, 2, 3, 4) }
+  assert.deepStrictEqual(tl.mappend(throws, l, r), e)
+}
+export function mappend_l_l_end_equal_r_start(assert: A & Test) {
+  const l = LR(L(-1, 0), L(1))
+  const r = L(0, 2)
+  const e = L(-1, 0, 1, 2)
+  assert.deepStrictEqual(tl.mappend(() => "", l, r), e)
+}
+export function a_mappend_l_l_end_less_then_r_l_start(assert: A & Test) {
+  const l = LR(L(0, 1), L(2, 4))
+  const r = LR(L(3, 5), L(6))
+  const e = LR(LR(l.l, L(2, 3, 4, 5)), r.r)
+  assert.deepStrictEqual(tl.mappend(throws, l, r), e)
+}
+export function a_mappend_l_l_end_not_less_then_r_l_start(assert: A & Test) {
+  const l = LR(L(0, 1), L(2, 4))
+  const r = LR(L(1, 5), L(6))
+  const e = L(0, 1, 2, 4, 5, 6)
+  assert.deepStrictEqual(tl.mappend((a, b) => "", l, r), e)
 }
 
-export function a_mappend_rl(a: A & Test) {
-  const l = [[1, "r"]]
-  const r = [[0, "l"]]
-  const e = { l: r, r: l }
-  a.deepStrictEqual(tl.mappend((a, b) => a, l, r), e)
+function L(...args) {
+  return args.map(a => [a, ""])
 }
-
-export function a_mappend_abc(assert: A & Test) {
-  const l = { l: [[0, "a"]], r: [[1, "b"]] }
-  const r = [[2, "c"]]
-  const e = { l, r }
-  assert.deepStrictEqual(tl.mappend((a, b) => a, l, r), e)
-}
-
-export function a_mappend_abc2(assert: A & Test) {
-  const l = { l: [[0, "a"]], r: [[1, "b"]] }
-  const r = [[1, "c"], [2, "d"]]
-  const e = { l: l.l, r: [[1, "bc"], [2, "d"]] }
-  assert.deepStrictEqual(tl.mappend((a, b) => a + b, l, r), e)
-}
-
-export function a_mappend_abc3(assert: A & Test) {
-  const l = { l: [[0, "a"]], r: [[1, "b"]] }
-  const r = { l: [[1, "c"]], r: [[2, "d"]] }
-  const e = { l: { l: l.l, r: [[1, "bc"]] }, r: r.r }
-  assert.deepStrictEqual(tl.mappend((a, b) => a + b, l, r), e)
+function LR(l, r) {
+  return { l, r }
 }
