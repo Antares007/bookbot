@@ -50,17 +50,3 @@ awaitPromises(
     require: (require: any)
   })
 )
-
-export function a_sheamocme(a: A) {
-  a.deepStrictEqual({ a: 43 }, { a: 43 })
-}
-
-export function a_simple_async_test2(a: A & Test) {
-  setTimeout(
-    a(() => {
-      a.ok(true)
-    }),
-    10
-  )
-  a.ok(true)
-}
