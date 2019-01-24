@@ -1,5 +1,8 @@
 //@flow
-type Schedule = ((Schedule | number, ?Schedule) => void, t: number) => void
+export type Schedule = (
+  (Schedule | number, ?Schedule) => void,
+  t: number
+) => void
 
 import * as tl from "../src/timeline.js"
 
