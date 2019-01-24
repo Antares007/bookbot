@@ -26,7 +26,7 @@ export function fromPith_returns_line(assert: A & Test) {
   )
 }
 export function fromPith_when_pith_is_empty_returns_null(assert: A & Test) {
-  assert.deepStrictEqual(tl.fromPith(throws, o => {}), null)
+  assert.ok(tl.fromPith(throws, o => {}) == null)
 }
 
 export function run(assert: A & Test) {

@@ -26,19 +26,20 @@ function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
 }
 
 export function fromPith<a>(
-  mappend: (a, a) => a,
-  pith: (([number, a]) => void) => void
+  mappenda: (a, a) => a,
+  pith: (([number, a]) => void) => ?Timeline<a>
 ): ?Timeline<a> {
   const line = []
-  pith(na => {
+  const tl = pith(na => {
     const i = findAppendPosition(na[0], line)
     if (i > -1 && line[i][0] === na[0]) {
-      line[i][1] = mappend(line[i][1], na[1])
+      line[i][1] = mappenda(line[i][1], na[1])
     } else {
       line.splice(i + 1, 0, na)
     }
   })
-  if (line.length === 0) return null
+  if (line.length === 0) return tl
+  if (tl) return mappend(mappenda, line, tl)
   return line
 }
 
@@ -125,7 +126,7 @@ export function mappend<T>(
   }
 }
 
-function runTo<T>(
+export function runTo<T>(
   o: ([number, T]) => void,
   mappendt: (T, T) => T,
   n: number,
