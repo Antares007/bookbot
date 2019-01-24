@@ -39,7 +39,7 @@ export function fromPith<a>(
     }
   })
   if (line.length === 0) return tl
-  if (tl) return mappend(mappenda, line, tl)
+  if (tl) return mappend(mappenda, tl, line)
   return line
 }
 
