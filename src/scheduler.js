@@ -5,11 +5,12 @@ export type Schedule = (
 ) => void
 
 export function run(
-  now: number,
-  nextFrame: (f: (now: number) => void) => void,
-  pith: Schedule
-): void {
+  tf: () => number,
+  nextFrame: (f: () => void) => void
+): (pith: Schedule) => void {
   let line: Array<[number, Schedule]> = []
+  let now = -1
+  let active = false
   const append = (t, s) => {
     const i = findAppendPosition(t, line)
     if (i > -1 && line[i][0] === t) {
@@ -18,7 +19,8 @@ export function run(
       line.splice(i + 1, 0, [t, s])
     }
   }
-  const onNextFrame = now => {
+  const onNextFrame = () => {
+    now = tf()
     while (true) {
       const ap = findAppendPosition(now, line)
       if (ap === -1) break
@@ -28,8 +30,14 @@ export function run(
     }
     if (line.length > 0) nextFrame(onNextFrame)
   }
-  runNow(append, now, pith)
-  if (line.length > 0) nextFrame(onNextFrame)
+  return pith => {
+    if (!active) {
+      active = true
+      now = tf()
+      nextFrame(onNextFrame)
+    }
+    runNow(append, now, pith)
+  }
 }
 
 function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
