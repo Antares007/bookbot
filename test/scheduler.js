@@ -3,32 +3,29 @@ import type { A, Test } from "../src/atest.js"
 import * as s from "../src/scheduler.js"
 
 export function t(assert: A & Test): void {
-  let t = [30, 60, 90]
+  const actual = { t: [30, 60, 90, 99], l: [], i: 0 }
   const scheduler = s.mkScheduler(
-    () => t.shift(),
-    f => (Promise.resolve().then(f), void 0)
+    () => actual.t.shift(),
+    f => (Promise.resolve().then(() => (actual.i++, f())), void 0)
   )
-  const line: Array<[number, number]> = []
-
+  const expected = {
+    i: 2,
+    t: [99],
+    l: [[0, 30, 0], [1, 30, 0], [3, 60, 1], [2, 90, 2], [4, 90, 2]]
+  }
   scheduler((o, t) => {
-    line.push([0, t])
+    actual.l.push([0, t, actual.i])
     o((o, t) => {
-      line.push([1, t])
+      actual.l.push([1, t, actual.i])
       o(60, (o, t) => {
-        line.push([2, t])
+        actual.l.push([2, t, actual.i])
       })
     })
     o(30, (o, t) => {
-      line.push([3, t])
+      actual.l.push([3, t, actual.i])
       o(30, (o, t) => {
-        line.push([4, t])
-        assert.deepStrictEqual(line, [
-          [0, 30],
-          [1, 30],
-          [3, 60],
-          [2, 90],
-          [4, 90]
-        ])
+        actual.l.push([4, t, actual.i])
+        assert.deepStrictEqual(actual, expected)
       })
     })
   })
