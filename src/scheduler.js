@@ -6,10 +6,8 @@ export function mkRun<H>(
   tf: () => number,
   setRunat: (f: () => void, runAt: number) => H
 ): O {
-  let currentTime = -1
+  let currentTime: number = -1
   let line: Array<[number, Schedule]> = []
-  let nextRun = -1
-  let handle: ?H = null
   const append = (t, s) => {
     const i = findAppendPosition(t, line)
     if (i > -1 && line[i][0] === t) {
@@ -24,10 +22,9 @@ export function mkRun<H>(
   }
   const atNextRun = () => {
     if (line.length === 0) {
-      handle = null
+      currentTime = -1
       return
     }
-    currentTime = nextRun
     const ap = findAppendPosition(currentTime, line)
     if (ap > -1) {
       const line_ = line
@@ -36,14 +33,13 @@ export function mkRun<H>(
         line_[i][1](line_[i][0])
       }
     }
-    nextRun = line.length > 0 ? line[0][0] : currentTime
-    handle = setRunat(atNextRun, nextRun)
+    currentTime = line.length > 0 ? line[0][0] : currentTime
+    setRunat(atNextRun, currentTime)
   }
   return (a, b) => {
-    if (handle == null) {
+    if (currentTime === -1) {
       currentTime = tf()
-      nextRun = currentTime
-      handle = setRunat(atNextRun, currentTime)
+      setRunat(atNextRun, currentTime)
     }
     if (typeof a === "number" && typeof b === "function") {
       append(currentTime + a, b)
