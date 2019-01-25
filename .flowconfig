@@ -7,8 +7,6 @@
 [lints]
 
 [options]
-module.use_strict=true
-experimental.const_params=true
 
 [strict]
 nonstrict-import

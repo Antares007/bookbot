@@ -1,4 +1,4 @@
-//@flow
+//@flow strict
 export function awaitPromises<a>(
   o: (?a | Error) => void,
   it: Iterable<Promise<a>>

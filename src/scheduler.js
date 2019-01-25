@@ -1,4 +1,4 @@
-//@flow
+//@flow strict
 export type Schedule = (
   o: (Schedule | number, ?Schedule) => void,
   t: number

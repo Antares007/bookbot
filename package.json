@@ -11,7 +11,7 @@
     "@babel/register": "^7.0.0",
     "babel-loader": "^8.0.5",
     "electron": "^4.0.1",
-    "flow-bin": "^0.90.0",
+    "flow-bin": "^0.91.0",
     "prettier": "^1.15.3",
     "webpack": "^4.28.4",
     "webpack-cli": "^3.2.1"
