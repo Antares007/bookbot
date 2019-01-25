@@ -1,13 +1,11 @@
 //@flow strict
-export type Schedule = (
-  o: (Schedule | number, ?Schedule) => void,
-  t: number
-) => void
+export type O = (Schedule | number, ?Schedule) => void
+export type Schedule = (o: O, t: number) => void
 
 export function mkRun<H>(
   tf: () => number,
   setRunat: (f: () => void, runAt: number) => H
-): (pith: Schedule) => void {
+): O {
   let currentTime = -1
   let line: Array<[number, Schedule]> = []
   let nextRun = -1
@@ -35,7 +33,15 @@ export function mkRun<H>(
     nextRun = line.length > 0 ? line[0][0] : currentTime
     handle = setRunat(atNextRun, nextRun)
   }
-  return pith => {
+  return (a, b) => {
+    const pith =
+      typeof a === "function"
+        ? typeof b === "function"
+          ? (o, t) => o(a, b)
+          : a
+        : typeof b === "function"
+        ? (o, t) => o(a + t, b)
+        : () => {}
     if (handle == null) {
       currentTime = tf()
       nextRun = currentTime
