@@ -4,13 +4,14 @@ export type Schedule = (
   t: number
 ) => void
 
-export function run(
+export function run<H>(
   tf: () => number,
-  nextFrame: (f: () => void) => void
+  setRunat: (f: () => void, runAt: number) => H
 ): (pith: Schedule) => void {
+  let currentTime = -1
   let line: Array<[number, Schedule]> = []
-  let now = -1
-  let active = false
+  let nextRun = -1
+  let handle: ?H = null
   const append = (t, s) => {
     const i = findAppendPosition(t, line)
     if (i > -1 && line[i][0] === t) {
@@ -19,24 +20,28 @@ export function run(
       line.splice(i + 1, 0, [t, s])
     }
   }
-  const onNextFrame = () => {
-    now = tf()
-    while (true) {
-      const ap = findAppendPosition(now, line)
-      if (ap === -1) break
+  const atNextRun = () => {
+    if (line.length === 0) {
+      handle = null
+      return
+    }
+    currentTime = nextRun
+    const ap = findAppendPosition(currentTime, line)
+    if (ap > -1) {
       const line_ = line
       line = ap === line.length - 1 ? [] : line.slice(ap + 1)
       for (let i = 0; i <= ap; i++) runNow(append, line_[i][0], line_[i][1])
     }
-    if (line.length > 0) nextFrame(onNextFrame)
+    nextRun = line.length > 0 ? line[0][0] : currentTime
+    handle = setRunat(atNextRun, nextRun)
   }
   return pith => {
-    if (!active) {
-      active = true
-      now = tf()
-      nextFrame(onNextFrame)
+    if (handle == null) {
+      currentTime = tf()
+      nextRun = currentTime
+      handle = setRunat(atNextRun, currentTime)
     }
-    runNow(append, now, pith)
+    runNow(append, currentTime, pith)
   }
 }
 

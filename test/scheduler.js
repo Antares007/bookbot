@@ -3,29 +3,33 @@ import type { A, Test } from "../src/atest.js"
 import * as s from "../src/scheduler.js"
 
 export function t(assert: A & Test): void {
-  const actual = { t: [30, 60, 90, 99], l: [], i: 0 }
+  const actual = { t: [], l: [], frame: 0 }
   const expected = {
-    i: 2,
-    t: [99],
-    l: [[0, 30, 0], [1, 30, 0], [3, 60, 1], [2, 90, 2], [4, 90, 2]]
+    frame: 3,
+    t: [30, 60, 90],
+    l: [["A", 30, 0], ["B", 30, 0], ["C", 60, 2], ["D", 90, 3], ["E", 90, 3]]
   }
   s.run(
-    () => actual.t.shift(),
-    f => {
-      Promise.resolve().then(() => (actual.i++, f()))
+    () => 30,
+    (f, at) => {
+      actual.t.push(at)
+      Promise.resolve().then(() => {
+        actual.frame++
+        f()
+      })
     }
   )((o, t) => {
-    actual.l.push([0, t, actual.i])
+    actual.l.push(["A", t, actual.frame])
     o((o, t) => {
-      actual.l.push([1, t, actual.i])
+      actual.l.push(["B", t, actual.frame])
       o(60, (o, t) => {
-        actual.l.push([2, t, actual.i])
+        actual.l.push(["D", t, actual.frame])
       })
     })
     o(30, (o, t) => {
-      actual.l.push([3, t, actual.i])
+      actual.l.push(["C", t, actual.frame])
       o(30, (o, t) => {
-        actual.l.push([4, t, actual.i])
+        actual.l.push(["E", t, actual.frame])
         assert.deepStrictEqual(actual, expected)
       })
     })
