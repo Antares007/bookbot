@@ -9,26 +9,27 @@ export function t(assert: A & Test): void {
     t: [30, 60, 90],
     l: [["A", 30, 0], ["B", 30, 0], ["C", 60, 2], ["D", 90, 3], ["E", 90, 3]]
   }
-  s.mkRun(
+  const so = s.mkRun(
     () => 30,
     (f, at) => {
       actual.t.push(at)
-      Promise.resolve().then(() => {
+      return Promise.resolve().then(() => {
         actual.frame++
         f()
       })
     }
-  )((o, t) => {
+  )
+  so(t => {
     actual.l.push(["A", t, actual.frame])
-    o((o, t) => {
+    so(t => {
       actual.l.push(["B", t, actual.frame])
-      o(60, (o, t) => {
+      so(60, t => {
         actual.l.push(["D", t, actual.frame])
       })
     })
-    o(30, (o, t) => {
+    so(30, t => {
       actual.l.push(["C", t, actual.frame])
-      o(30, (o, t) => {
+      so(30, t => {
         actual.l.push(["E", t, actual.frame])
         assert.deepStrictEqual(actual, expected)
       })

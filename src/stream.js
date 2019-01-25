@@ -1,4 +1,4 @@
-//flow strict
+//@flow strict
 import type { Schedule, O as So } from "./scheduler.js"
 
 export type O<A> = (a: ?A | Error, t: number) => void
@@ -7,15 +7,29 @@ export type S<A> = (O<A>, So) => D
 type D = { +dispose: () => void }
 type CRef = { canceled: boolean }
 
-export function create<A>(
+export function createAt<A>(
+  delay: number,
   f: (o: O<A>, oS: So, t: number, cref: CRef) => ?D
 ): S<A> {
   const cref = { canceled: false }
   return (o, oS) => {
     let d: ?D = null
-    oS(0, (oS, t) => {
+    oS(delay, t => {
+      const offset = delay - t
       if (cref.canceled) return
-      d = f(o, oS, 0, cref)
+      d = f(
+        o,
+        (a, b) => {
+          if (typeof a === "number" && typeof b === "function") {
+            oS(a, t => b(t + offset))
+          } else {
+            if (typeof a === "function") oS(t => a(t + offset))
+            if (typeof b === "function") oS(t => b(t + offset))
+          }
+        },
+        delay,
+        cref
+      )
     })
     return {
       dispose() {
@@ -26,107 +40,52 @@ export function create<A>(
   }
 }
 
+export function at<A>(a: A, delay: number): S<A> {
+  return createAt(delay, (o, oS, t, cref) => {
+    try {
+      o(a, t)
+      if (cref.canceled) return
+      o(null, t)
+    } catch (err) {
+      if (err instanceof Error) return o(err, t)
+      throw err
+    }
+  })
+}
+
 export function map<A, B>(f: A => B, s: S<A>): S<B> {
-  return (o, run) =>
+  return (o, oS) =>
     s((v, t) => {
       if (v == null || v instanceof Error) return o(v, t)
       o(f(v), t)
-    }, run)
-}
-
-const e = create((o, oS, t, cref) => {
-  try {
-    o(1, t)
-    if (cref.canceled) return
-    o(null, t)
-  } catch (err) {
-    if (err instanceof Error) return o(err, t)
-    throw err
-  }
-})
-
-export const empty: S<empty> = (o, scheduler) => {
-  let canceled = false
-  scheduler((os, t0) =>
-    os(0, (_, t) => {
-      if (canceled) return
-      const now = t - t0
-      try {
-        o(null, now)
-      } catch (err) {
-        if (err instanceof Error) return o(err, now)
-        throw err
-      }
-    })
-  )
-  return {
-    dispose() {
-      canceled = true
-    }
-  }
-}
-export function at<A>(a: A, delay: number): S<A> {
-  return (o, scheduler) => {
-    let canceled = false
-    scheduler((os, t0) =>
-      os(delay, (_, t) => {
-        if (canceled) return
-        const now = t - t0
-        try {
-          o(a, now)
-          if (canceled) return
-          o(null, now)
-        } catch (err) {
-          if (err instanceof Error) return o(err, now)
-          throw err
-        }
-      })
-    )
-    return {
-      dispose() {
-        canceled = true
-      }
-    }
-  }
+    }, oS)
 }
 
 export function fromArray<A>(as: Array<A>): S<A> {
-  return (o, scheduler) => {
-    let canceled = false
-    scheduler((os, t0) =>
-      os(0, (_, t) => {
-        if (canceled) return
-        const now = t - t0
-        try {
-          for (let a of as) {
-            o(a, now)
-            if (canceled) return
-          }
-          o(null, now)
-        } catch (err) {
-          if (err instanceof Error) return o(err, now)
-          o(new Error(err + ""), now)
-        }
-      })
-    )
-    return {
-      dispose() {
-        canceled = true
+  return createAt(0, (o, oS, t, cref) => {
+    try {
+      for (let i = 0, l = as.length; i < l; i++) {
+        o(as[i], t)
+        if (cref.canceled) return
       }
+      o(null, t)
+    } catch (err) {
+      if (err instanceof Error) return o(err, t)
+      o(new Error(err + ""), t)
     }
-  }
+  })
 }
 
-export function reduce<A, B>(f: (B, A) => B, b: B, s: S<A>): S<B> {
-  let _b = b
-  return (o, schedule) =>
-    s((v, t) => {
-      if (v == null) return o(_b, t), o(null, t)
-      if (v instanceof Error) return o(v, t)
-      _b = f(_b, v)
-    }, schedule)
-}
-
+// export function reduce<A, B>(f: (B, A) => B, b: B, s: S<A>): S<B> {
+//   let _b = b
+//   return (o, schedule) =>
+//     s((v, t) => {
+//       if (v == null) return o(_b, t), o(null, t)
+//       if (v instanceof Error) return o(v, t)
+//       _b = f(_b, v)
+//     }, schedule)
+// }
+//
 export function join<A>(xs: S<S<A>>): S<A> {
   return (o, run) => {
     var i = 0
@@ -165,7 +124,40 @@ export function join<A>(xs: S<S<A>>): S<A> {
 }
 
 export function chain<A, B>(f: A => S<B>, s: S<A>): S<B> {
-  return join(map(f, s))
+  return (o, run) => {
+    var i = 0
+    var size = 0
+    const dmap: { [number | string]: { +dispose: () => void } } = {}
+    const d = {
+      dispose() {
+        for (var key in dmap) dmap[key].dispose()
+      }
+    }
+    const index = i++
+    size++
+    dmap[index] = s((v, t0) => {
+      if (v == null) {
+        delete dmap[index]
+        if (--size === 0) o(null, t0)
+      } else if (v instanceof Error) {
+        d.dispose()
+        o(v, t0)
+      } else {
+        const index = i++
+        size++
+        dmap[index] = f(v)((v, t1) => {
+          if (v == null) {
+            delete dmap[index]
+            if (--size === 0) o(null, t0 + t1)
+          } else {
+            if (v instanceof Error) d.dispose()
+            o(v, t0 + t1)
+          }
+        }, run)
+      }
+    }, run)
+    return d
+  }
 }
 
 // import type { IO } from "./io"
