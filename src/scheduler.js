@@ -7,15 +7,19 @@ export function mkRun<H>(
   setRunat: (f: () => void, runAt: number) => H
 ): O {
   let currentTime = -1
-  let line: Array<[number, Array<Schedule>]> = []
+  let line: Array<[number, Schedule]> = []
   let nextRun = -1
   let handle: ?H = null
   const append = (t, s) => {
     const i = findAppendPosition(t, line)
     if (i > -1 && line[i][0] === t) {
-      line[i][1].push(s)
+      const sl = line[i][1]
+      line[i][1] = t => {
+        sl(t)
+        s(t)
+      }
     } else {
-      line.splice(i + 1, 0, [t, [s]])
+      line.splice(i + 1, 0, [t, s])
     }
   }
   const atNextRun = () => {
@@ -29,8 +33,7 @@ export function mkRun<H>(
       const line_ = line
       line = ap === line.length - 1 ? [] : line.slice(ap + 1)
       for (let i = 0; i <= ap; i++) {
-        let [t, ss] = line_[i]
-        for (let j = 0, l = ss.length; j < l; j++) ss[j](t)
+        line_[i][1](line_[i][0])
       }
     }
     nextRun = line.length > 0 ? line[0][0] : currentTime
