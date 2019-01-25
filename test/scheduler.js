@@ -9,7 +9,7 @@ export function t(assert: A & Test): void {
     t: [30, 60, 90],
     l: [["A", 30, 0], ["B", 30, 0], ["C", 60, 2], ["D", 90, 3], ["E", 90, 3]]
   }
-  s.run(
+  s.mkRun(
     () => 30,
     (f, at) => {
       actual.t.push(at)

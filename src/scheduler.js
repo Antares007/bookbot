@@ -4,7 +4,7 @@ export type Schedule = (
   t: number
 ) => void
 
-export function run<H>(
+export function mkRun<H>(
   tf: () => number,
   setRunat: (f: () => void, runAt: number) => H
 ): (pith: Schedule) => void {
