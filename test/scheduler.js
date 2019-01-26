@@ -33,18 +33,13 @@ export function t(assert: A & Test): void {
       if (typeof b === "function") oS(pushTime(b))
     }
   }
-
+  const aa = assert(t => assert.deepStrictEqual(actual, expected))
   o(t => {
     o(t => {
       o(60, t => {})
     })
     o(30, t => {
-      o(
-        30,
-        assert(t => {
-          assert.deepStrictEqual(actual, expected)
-        })
-      )
+      o(30, aa)
     })
   })
   assert.deepStrictEqual(actual, {
