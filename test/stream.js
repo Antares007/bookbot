@@ -14,13 +14,17 @@ export function at(assert: A & Test) {
   )
   const vs = []
   s.at("a", 99)(
-    assert((v, t) => {
-      if (v == null) {
-        assert.deepStrictEqual(vs, [["a", 99]])
-      } else {
+    {
+      event(v, t) {
         vs.push([v, t])
+      },
+      end() {
+        assert.deepStrictEqual(vs, [["a", 99]])
+      },
+      error() {
+        vs.push("error")
       }
-    }),
+    },
     scheduler
   )
   assert.ok(vs.length === 0)

@@ -1,7 +1,11 @@
 //@flow strict
 import type { Schedule, O as So } from "./scheduler.js"
 
-export type O<A> = (a: ?A | Error, t: number) => void
+export type O<A> = {
+  +event: (a: A, t: number) => void,
+  +end: (x: null, t: number) => void,
+  +error: (err: Error, t: number) => void
+}
 export type S<A> = (O<A>, So) => D
 
 type D = { +dispose: () => void }
@@ -43,11 +47,11 @@ export function createAt<A>(
 export function at<A>(a: A, delay: number): S<A> {
   return createAt(delay, (o, oS, t, cref) => {
     try {
-      o(a, t)
+      o.event(a, t)
       if (cref.canceled) return
-      o(null, t)
+      o.end(null, t)
     } catch (err) {
-      if (err instanceof Error) return o(err, t)
+      if (err instanceof Error) return o.error(err, t)
       throw err
     }
   })
@@ -55,37 +59,32 @@ export function at<A>(a: A, delay: number): S<A> {
 
 export function map<A, B>(f: A => B, s: S<A>): S<B> {
   return (o, oS) =>
-    s((v, t) => {
-      if (v == null || v instanceof Error) return o(v, t)
-      o(f(v), t)
-    }, oS)
+    s(
+      {
+        event(v, t) {
+          o.event(f(v), t)
+        },
+        end: o.end,
+        error: o.error
+      },
+      oS
+    )
 }
 
 export function fromArray<A>(as: Array<A>): S<A> {
   return createAt(0, (o, oS, t, cref) => {
     try {
       for (let i = 0, l = as.length; i < l; i++) {
-        o(as[i], t)
+        o.event(as[i], t)
         if (cref.canceled) return
       }
-      o(null, t)
+      o.end(null, t)
     } catch (err) {
-      if (err instanceof Error) return o(err, t)
-      o(new Error(err + ""), t)
+      o.error(err instanceof Error ? err : new Error(err + ""), t)
     }
   })
 }
 
-// export function reduce<A, B>(f: (B, A) => B, b: B, s: S<A>): S<B> {
-//   let _b = b
-//   return (o, schedule) =>
-//     s((v, t) => {
-//       if (v == null) return o(_b, t), o(null, t)
-//       if (v instanceof Error) return o(v, t)
-//       _b = f(_b, v)
-//     }, schedule)
-// }
-//
 export function join<A>(xs: S<S<A>>): S<A> {
   return (o, run) => {
     var i = 0
@@ -98,32 +97,44 @@ export function join<A>(xs: S<S<A>>): S<A> {
     }
     const index = i++
     size++
-    dmap[index] = xs((v, t0) => {
-      if (v == null) {
-        delete dmap[index]
-        if (--size === 0) o(null, t0)
-      } else if (v instanceof Error) {
-        d.dispose()
-        o(v, t0)
-      } else {
-        const index = i++
-        size++
-        dmap[index] = v((v, t1) => {
-          if (v == null) {
-            delete dmap[index]
-            if (--size === 0) o(null, t0 + t1)
-          } else {
-            if (v instanceof Error) d.dispose()
-            o(v, t0 + t1)
-          }
-        }, run)
-      }
-    }, run)
+    dmap[index] = xs(
+      {
+        event(v, t0) {
+          const index = i++
+          size++
+          dmap[index] = v(
+            {
+              event(v, t1) {
+                o.event(v, t1 + t0)
+              },
+              end(_, t1) {
+                delete dmap[index]
+                if (--size === 0) o.end(null, t1 + t0)
+              },
+              error(err, t1) {
+                d.dispose()
+                o.error(err, t1 + t0)
+              }
+            },
+            run
+          )
+        },
+        end(_, t0) {
+          delete dmap[index]
+          if (--size === 0) o.end(null, t0)
+        },
+        error(err, t0) {
+          d.dispose()
+          o.error(err, t0)
+        }
+      },
+      run
+    )
     return d
   }
 }
 
-export function chain<A, B>(f: A => S<B>, s: S<A>): S<B> {
+export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
   return (o, run) => {
     var i = 0
     var size = 0
@@ -135,27 +146,39 @@ export function chain<A, B>(f: A => S<B>, s: S<A>): S<B> {
     }
     const index = i++
     size++
-    dmap[index] = s((v, t0) => {
-      if (v == null) {
-        delete dmap[index]
-        if (--size === 0) o(null, t0)
-      } else if (v instanceof Error) {
-        d.dispose()
-        o(v, t0)
-      } else {
-        const index = i++
-        size++
-        dmap[index] = f(v)((v, t1) => {
-          if (v == null) {
-            delete dmap[index]
-            if (--size === 0) o(null, t0 + t1)
-          } else {
-            if (v instanceof Error) d.dispose()
-            o(v, t0 + t1)
-          }
-        }, run)
-      }
-    }, run)
+    dmap[index] = xs(
+      {
+        event(v, t0) {
+          const index = i++
+          size++
+          dmap[index] = f(v)(
+            {
+              event(v, t1) {
+                o.event(v, t1 + t0)
+              },
+              end(_, t1) {
+                delete dmap[index]
+                if (--size === 0) o.end(null, t1 + t0)
+              },
+              error(err, t1) {
+                d.dispose()
+                o.error(err, t1 + t0)
+              }
+            },
+            run
+          )
+        },
+        end(_, t0) {
+          delete dmap[index]
+          if (--size === 0) o.end(null, t0)
+        },
+        error(err, t0) {
+          d.dispose()
+          o.error(err, t0)
+        }
+      },
+      run
+    )
     return d
   }
 }
