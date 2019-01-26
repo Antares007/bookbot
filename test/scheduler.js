@@ -47,7 +47,11 @@ export function t(assert: A & Test): void {
       )
     })
   })
-  assert.ok(true)
+  assert.deepStrictEqual(actual, {
+    frame: 0,
+    t: [30],
+    l: [[30, 0], [30, 0]]
+  })
 }
 
 export function t2(assert: A & Test): void {
