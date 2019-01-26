@@ -19,5 +19,10 @@
   "scripts": {
     "build": "babel src -d lib/ --delete-dir-on-start",
     "prepublish": "npm run build"
+  },
+  "dependencies": {
+    "@reactivex/rxjs": "^6.3.3",
+    "rxjs": "^6.3.3",
+    "rxjs-compat": "^6.3.3"
   }
 }

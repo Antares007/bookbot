@@ -21,19 +21,23 @@ export function createAt<A>(
     oS(delay, t => {
       const offset = delay - t
       if (cref.canceled) return
-      d = f(
-        o,
-        (a, b) => {
-          if (typeof a === "number" && typeof b === "function") {
-            oS(a, t => b(t + offset))
-          } else {
-            if (typeof a === "function") oS(t => a(t + offset))
-            if (typeof b === "function") oS(t => b(t + offset))
-          }
-        },
-        delay,
-        cref
-      )
+      try {
+        d = f(
+          o,
+          (a, b) => {
+            if (typeof a === "number" && typeof b === "function") {
+              oS(a, t => b(t + offset))
+            } else {
+              if (typeof a === "function") oS(t => a(t + offset))
+              if (typeof b === "function") oS(t => b(t + offset))
+            }
+          },
+          delay,
+          cref
+        )
+      } catch (err) {
+        o.error(err instanceof Error ? err : new Error(err + ""), delay)
+      }
     })
     return {
       dispose() {
@@ -46,14 +50,9 @@ export function createAt<A>(
 
 export function at<A>(a: A, delay: number): S<A> {
   return createAt(delay, (o, oS, t, cref) => {
-    try {
-      o.event(a, t)
-      if (cref.canceled) return
-      o.end(null, t)
-    } catch (err) {
-      if (err instanceof Error) return o.error(err, t)
-      throw err
-    }
+    o.event(a, t)
+    if (cref.canceled) return
+    o.end(null, t)
   })
 }
 
@@ -61,9 +60,7 @@ export function map<A, B>(f: A => B, s: S<A>): S<B> {
   return (o, oS) =>
     s(
       {
-        event(v, t) {
-          o.event(f(v), t)
-        },
+        event: (v, t) => o.event(f(v), t),
         end: o.end,
         error: o.error
       },
@@ -73,15 +70,11 @@ export function map<A, B>(f: A => B, s: S<A>): S<B> {
 
 export function fromArray<A>(as: Array<A>): S<A> {
   return createAt(0, (o, oS, t, cref) => {
-    try {
-      for (let i = 0, l = as.length; i < l; i++) {
-        o.event(as[i], t)
-        if (cref.canceled) return
-      }
-      o.end(null, t)
-    } catch (err) {
-      o.error(err instanceof Error ? err : new Error(err + ""), t)
+    for (let i = 0, l = as.length; i < l; i++) {
+      o.event(as[i], t)
+      if (cref.canceled) return
     }
+    o.end(null, t)
   })
 }
 
