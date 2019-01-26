@@ -1,10 +1,13 @@
 //@flow
 import type { S } from "./stream.js"
-import { mkRun } from "./scheduler.js"
+import { mkScheduler } from "./scheduler.js"
 import { fromArray, chain } from "./stream.js"
 import * as rxjs from "@reactivex/rxjs"
 
-const scheduler = mkRun(() => Date.now(), (f, delay) => setTimeout(f, delay))
+const scheduler = mkScheduler(
+  () => Date.now(),
+  (f, delay) => setTimeout(f, delay)
+)
 const a = build(1000, 1000)
 
 Promise.resolve()

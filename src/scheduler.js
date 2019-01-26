@@ -2,7 +2,7 @@
 export type O = (a: Schedule | number, b: ?Schedule) => void
 export type Schedule = (time: number) => void
 
-export function mkRun<H>(
+export function mkScheduler<H>(
   tf: () => number,
   setTimeout: (f: () => void, delay: number) => H
 ): O {

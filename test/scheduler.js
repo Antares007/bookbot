@@ -10,7 +10,7 @@ export function t(assert: A & Test): void {
     l: [[30, 0], [30, 0], [60, 2], [90, 3], [90, 3]]
   }
   let ctime = 30
-  const oS = s.mkRun(
+  const oS = s.mkScheduler(
     () => ctime,
     (f, delay) => {
       ctime += delay
@@ -63,7 +63,7 @@ export function t2(assert: A & Test): void {
   }
 
   let ctime = 30
-  const oS = s.mkRun(
+  const oS = s.mkScheduler(
     () => ctime,
     (f, at) => {
       ctime += at

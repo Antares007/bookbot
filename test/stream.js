@@ -1,11 +1,11 @@
 //@flow
 import type { A, Test } from "../src/atest.js"
 import * as s from "../src/stream.js"
-import { mkRun } from "../src/scheduler.js"
+import { mkScheduler } from "../src/scheduler.js"
 
 export function at(assert: A & Test) {
   let now = 100
-  const scheduler = mkRun(
+  const scheduler = mkScheduler(
     () => now,
     (f, at) => {
       now = at
