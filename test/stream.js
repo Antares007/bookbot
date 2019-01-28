@@ -1,30 +1,36 @@
 //@flow strict
 import type { A } from "../src/atest.js"
+import type { O as So } from "../src/stream.js"
 import * as s from "../src/stream.js"
-import { mkScheduler } from "../src/scheduler.js"
+import { makeTestScheduler } from "./testscheduler.js"
 
 export function at(assert: Array<A>) {
-  let now = 100
-  const scheduler = mkScheduler(
-    () => now,
-    (f, delay) => {
-      now += delay
-      Promise.resolve().then(f)
-    }
-  )
-  const vs = []
-  s.at("a", 99)(
-    {
-      event(t, v) {
-        vs.push([t, v])
-      },
-      end() {
-        assert[0].deepStrictEqual(vs, [[99, "a"]])
-      },
-      error(t, err) {
-        vs.push(err)
-      }
-    },
+  const scheduler = makeTestScheduler(30)
+
+  s.at("a", 60)(
+    collectEvents(es => {
+      scheduler(t => {
+        assert[0].ok(t === 90)
+        assert[1].deepStrictEqual(es, [[60, "a"], [60, "|"]])
+      })
+    }),
     scheduler
   )
+}
+
+function collectEvents(done: (Array<[number, string]>) => void): So<string> {
+  const vs = []
+  return {
+    event(t, v) {
+      vs.push([t, v])
+    },
+    end(t) {
+      vs.push([t, "|"])
+      done(vs)
+    },
+    error(t, err) {
+      vs.push([t, "X"])
+      done(vs)
+    }
+  }
 }
