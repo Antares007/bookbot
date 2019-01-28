@@ -27,6 +27,7 @@ export function* run(
   f: string => boolean = name => name.endsWith(".js"),
   timeout: number = 1000
 ): Iterable<Promise<{ name: string, time: number, error: ?Error }>> {
+  const resolveFns = []
   for (let path of [...filter(f, ls(prefix, platform))]) {
     try {
       const exports = platform.require(path)
@@ -39,8 +40,10 @@ export function* run(
         if (rez == null) continue
         const plan = rez[1] === "" ? 1 : parseInt(rez[1], 10)
         let t0 = Date.now()
-        console.log(plan)
-        yield runATest(platform, plan, export_, timeout).then(error => {
+        const pair = runATest(platform, plan, export_)
+        resolveFns.push(pair[0])
+        yield pair[1].then(error => {
+          resolveFns.splice(resolveFns.indexOf(pair[0]), 1)
           return {
             name: platform.join(path, name).slice(prefix.length + 1),
             time: Date.now() - t0,
@@ -56,49 +59,55 @@ export function* run(
       })
     }
   }
+  setTimeout(() => resolveFns.forEach(f => f()), 1000)
 }
 
 function runATest(
   assert: A,
   plan: number,
-  aTest: (f: A) => void,
-  timeout: number
-): Promise<?Error> {
-  return new Promise((resolve, reject) => {
-    let asserts: number = 0
-    const timeoutId = setTimeout(() => {
-      resolve(
-        new Error(
-          `timeout ${timeout}ms \u001b[32mplan(${plan})\u001b[39m !== \u001b[31masserts(${asserts})\u001b[39m`
+  aTest: (f: A) => void
+): [() => void, Promise<?Error>] {
+  let resolve_ = null
+  return [
+    () => {
+      if (resolve_) resolve_()
+    },
+    new Promise((resolve, reject) => {
+      let asserts: number = 0
+      resolve_ = () => {
+        resolve(
+          new Error(
+            `timeout! \u001b[32mplan(${plan})\u001b[39m !== \u001b[31masserts(${asserts})\u001b[39m`
+          )
         )
-      )
-    }, timeout)
-    const mkAssertFn = (name): any => (...args) => {
-      try {
-        asserts++
-        assert[name].apply(this, args)
-        if (asserts === plan) {
-          clearTimeout(timeoutId)
-          resolve()
+      }
+      const mkAssertFn = (name): any => (...args) => {
+        try {
+          asserts++
+          assert[name].apply(this, args)
+          if (asserts === plan) {
+            resolve_ = null
+            resolve()
+          }
+        } catch (err) {
+          resolve_ = null
+          resolve(err)
         }
+      }
+      try {
+        aTest({
+          ok: mkAssertFn("ok"),
+          strictEqual: mkAssertFn("strictEqual"),
+          deepStrictEqual: mkAssertFn("deepStrictEqual"),
+          notStrictEqual: mkAssertFn("notStrictEqual"),
+          notDeepStrictEqual: mkAssertFn("notDeepStrictEqual")
+        })
       } catch (err) {
-        clearTimeout(timeoutId)
+        resolve_ = null
         resolve(err)
       }
-    }
-    try {
-      aTest({
-        ok: mkAssertFn("ok"),
-        strictEqual: mkAssertFn("strictEqual"),
-        deepStrictEqual: mkAssertFn("deepStrictEqual"),
-        notStrictEqual: mkAssertFn("notStrictEqual"),
-        notDeepStrictEqual: mkAssertFn("notDeepStrictEqual")
-      })
-    } catch (err) {
-      clearTimeout(timeoutId)
-      resolve(err)
-    }
-  })
+    })
+  ]
 }
 
 function* ls(path: string, fs: FS): Iterable<string> {
