@@ -36,9 +36,12 @@ export function* run(
         const export_ = exports[name]
         if (typeof export_ !== "function") continue
         const src = export_.toString()
-        const rez = r.exec(src)
-        if (rez == null) continue
-        const plan = rez[1] === "" ? 1 : parseInt(rez[1], 10)
+        const plan = src
+          .split(/assert\[/)
+          .map(line => /^([0-9]+)]\./.exec(line))
+          .filter(Boolean)
+          .reduce((a, rez) => Math.max(parseInt(rez[1], 10), a), -1)
+        if (plan === -1) continue
         let t0 = Date.now()
         const pair = runATest(platform, plan, export_)
         resolveFns.push(pair[0])
@@ -65,7 +68,7 @@ export function* run(
 function runATest(
   assert: A,
   plan: number,
-  aTest: (f: A) => void
+  aTest: (f: Array<A>) => void
 ): [() => void, Promise<?Error>] {
   let resolve_ = null
   return [
@@ -73,19 +76,19 @@ function runATest(
       if (resolve_) resolve_()
     },
     new Promise((resolve, reject) => {
-      let asserts: number = 0
+      let i: number = 0
       resolve_ = () => {
         resolve(
           new Error(
-            `timeout! \u001b[32mplan(${plan})\u001b[39m !== \u001b[31masserts(${asserts})\u001b[39m`
+            `timeout! \u001b[32mplan(${plan})\u001b[39m !== \u001b[31masserts(${i})\u001b[39m`
           )
         )
       }
-      const mkAssertFn = (name): any => (...args) => {
+      const mkAssertFn = (name: string, index: number): any => (...args) => {
         try {
-          asserts++
+          assert.strictEqual(i, index, `assert i:${i} != index:${index}`)
           assert[name].apply(this, args)
-          if (asserts === plan) {
+          if (i++ === plan) {
             resolve_ = null
             resolve()
           }
@@ -94,14 +97,17 @@ function runATest(
           resolve(err)
         }
       }
+      const asserts = new Array(plan)
+      for (let i = 0; i <= plan; i++)
+        asserts[i] = {
+          ok: mkAssertFn("ok", i),
+          strictEqual: mkAssertFn("strictEqual", i),
+          deepStrictEqual: mkAssertFn("deepStrictEqual", i),
+          notStrictEqual: mkAssertFn("notStrictEqual", i),
+          notDeepStrictEqual: mkAssertFn("notDeepStrictEqual", i)
+        }
       try {
-        aTest({
-          ok: mkAssertFn("ok"),
-          strictEqual: mkAssertFn("strictEqual"),
-          deepStrictEqual: mkAssertFn("deepStrictEqual"),
-          notStrictEqual: mkAssertFn("notStrictEqual"),
-          notDeepStrictEqual: mkAssertFn("notDeepStrictEqual")
-        })
+        aTest(asserts)
       } catch (err) {
         resolve_ = null
         resolve(err)
