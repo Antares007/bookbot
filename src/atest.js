@@ -1,15 +1,13 @@
-//@flow
+//@flow strict
 import { map, take, filter } from "./iterable.js"
 
 export type A = {
-  +ok: (value: any, message?: string) => void,
-  +strictEqual: (actual: any, expected: any, message?: string) => void,
-  +deepStrictEqual: (actual: any, expected: any, message?: string) => void,
-  +notStrictEqual: (actual: any, expected: any, message?: string) => void,
-  +notDeepStrictEqual: (actual: any, expected: any, message?: string) => void
+  +ok: <A>(value: A, message?: string) => void,
+  +strictEqual: <A, B>(actual: A, expected: B, message?: string) => void,
+  +deepStrictEqual: <A, B>(actual: A, expected: B, message?: string) => void,
+  +notStrictEqual: <A, B>(actual: A, expected: B, message?: string) => void,
+  +notDeepStrictEqual: <A, B>(actual: A, expected: B, message?: string) => void
 }
-
-export type Test = <a, b, c, d>((a, b, c, d) => void) => (a, b, c, d) => void
 
 type FS = {
   +readdirSync: string => Array<string>,
@@ -18,7 +16,7 @@ type FS = {
 }
 
 type Require = {
-  +require: string => any
+  +require: string => { [string]: ?(Array<A>) => void }
 }
 
 export function* run(
@@ -35,7 +33,7 @@ export function* run(
         const r = /^function .+\(assert([0-9]*)\)/
         const export_ = exports[name]
         if (typeof export_ !== "function") continue
-        const src = export_.toString()
+        const src: string = export_.toString()
         const plan = src
           .split(/assert\[/)
           .map(line => /^([0-9]+)]\./.exec(line))
@@ -84,7 +82,7 @@ function runATest(
           )
         )
       }
-      const mkAssertFn = (name: string, index: number): any => (...args) => {
+      const mkAssertFn = (name: string, index: number) => (...args) => {
         try {
           assert.strictEqual(i, index, `assert i:${i} != index:${index}`)
           assert[name].apply(this, args)

@@ -1,5 +1,5 @@
-//@flow
-import type { A, Test } from "../src/atest.js"
+//@flow strict
+import type { A } from "../src/atest.js"
 import * as s from "../src/stream.js"
 import { mkScheduler } from "../src/scheduler.js"
 

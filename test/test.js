@@ -1,5 +1,5 @@
-//@flow
-import type { A, Test } from "../src/atest.js"
+//@flow strict
+import type { A } from "../src/atest.js"
 import { awaitPromises } from "../src/iterable.js"
 import { run } from "../src/atest.js"
 import * as path from "path"
@@ -46,6 +46,6 @@ awaitPromises(
     ...require("fs"),
     ...require("assert"),
     ...path,
-    require: (require: any)
+    require: s => require.call(module, s)
   })
 )

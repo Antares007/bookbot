@@ -1,4 +1,4 @@
-//@flow
+//@flow strict
 import type { A } from "../src/atest.js"
 import { mkScheduler } from "../src/scheduler.js"
 
