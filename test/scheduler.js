@@ -1,16 +1,9 @@
 //@flow strict
 import type { A } from "../src/atest.js"
-import { mkScheduler } from "../src/scheduler.js"
+import { mkScheduler, local } from "../src/scheduler.js"
 
 export function can_execute_in_expected_order(assert: Array<A>): void {
-  let t = 30
-  const s = mkScheduler(
-    () => t,
-    (f, delay) => {
-      t += delay
-      Promise.resolve().then(f)
-    }
-  )
+  const s = makeTestScheduler(30)
   s(0, t => {
     assert[1].ok(t === 30)
     s(0, t => {
@@ -33,4 +26,30 @@ export function can_execute_in_expected_order(assert: Array<A>): void {
     })
   })
   assert[0].ok(true)
+}
+
+export function local_shceduler(assert: Array<A>): void {
+  const s = local(1, makeTestScheduler(30))
+  s(
+    t => {
+      assert[0].ok(t === 1)
+    },
+    t => {
+      assert[1].ok(t === 1)
+      s(99, t => {
+        assert[1].ok(t === 100)
+      })
+    }
+  )
+}
+
+function makeTestScheduler(startTime: number) {
+  let t = startTime
+  return mkScheduler(
+    () => t,
+    (f, delay) => {
+      t += delay
+      Promise.resolve().then(f)
+    }
+  )
 }

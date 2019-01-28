@@ -2,6 +2,19 @@
 export type O = (a: Schedule | number, b: ?Schedule) => void
 export type Schedule = (time: number) => void
 
+export function local(lt: number, schedule: O): O {
+  return (a, b) =>
+    schedule(t => {
+      const offset = lt - t
+      if (typeof a === "number" && typeof b === "function") {
+        schedule(a, t => b(t + offset))
+      } else {
+        if (typeof a === "function") schedule(t => a(t + offset))
+        if (typeof b === "function") schedule(t => b(t + offset))
+      }
+    })
+}
+
 export function mkScheduler<H>(
   tf: () => number,
   setTimeout: (f: () => void, delay: number) => H
