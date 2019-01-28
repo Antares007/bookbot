@@ -8,16 +8,14 @@ export function mkScheduler<H>(
 ): O {
   let currentTime: number = -1
   let line: Array<[number, Schedule]> = []
-  const append = (t, s) => {
+  const append = (t, sr) => {
     const i = findAppendPosition(t, line)
-    if (i > -1 && line[i][0] === t) {
-      const sl = line[i][1]
-      line[i][1] = t => {
-        sl(t)
-        s(t)
-      }
+    const li = line[i]
+    if (i > -1 && li[0] === t) {
+      const sl = li[1]
+      li[1] = t => (sl(t), sr(t))
     } else {
-      line.splice(i + 1, 0, [t, s])
+      line.splice(i + 1, 0, [t, sr])
     }
   }
   const onTimeout = () => {
