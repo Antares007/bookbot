@@ -1,5 +1,6 @@
 //@flow strict
 import type { Schedule, O as So } from "./scheduler.js"
+import { local } from "./scheduler.js"
 
 export type O<A> = {
   +event: (t: number, a: A) => void,
@@ -19,22 +20,9 @@ export function createAt<A>(
   return (o, oS) => {
     let d: ?D = null
     oS(delay, t => {
-      const offset = delay - t
       if (cref.canceled) return
       try {
-        d = f(
-          o,
-          (a, b) => {
-            if (typeof a === "number" && typeof b === "function") {
-              oS(a, t => b(t + offset))
-            } else {
-              if (typeof a === "function") oS(t => a(t + offset))
-              if (typeof b === "function") oS(t => b(t + offset))
-            }
-          },
-          delay,
-          cref
-        )
+        d = f(o, local(delay, oS), delay, cref)
       } catch (err) {
         o.error(delay, err instanceof Error ? err : new Error(err + ""))
       }
