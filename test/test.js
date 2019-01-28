@@ -16,25 +16,24 @@ awaitPromises(
     } else if (v instanceof Error) {
       throw v
     } else {
-      if (v.errors.length > 0) {
+      const e = v.error
+      if (e != null) {
         rez[1]++
         console.log()
         console.group(`${v.name}(${v.time})`, fail)
-        v.errors.forEach(e => {
-          console.log(e.message)
-          console.log(
-            e.stack
-              .split(/\n/gi)
-              .filter(l => l.includes(path.join(__dirname, "..")))
-              .map(l =>
-                l
-                  .trim()
-                  .split(path.join(__dirname, "..") + "/")
-                  .join("./")
-              )
-              .join("\n")
-          )
-        })
+        console.log(e.message)
+        console.log(
+          e.stack
+            .split(/\n/gi)
+            .filter(l => l.includes(path.join(__dirname, "..")))
+            .map(l =>
+              l
+                .trim()
+                .split(path.join(__dirname, "..") + "/")
+                .join("./")
+            )
+            .join("\n")
+        )
         console.groupEnd()
         console.log()
       } else {

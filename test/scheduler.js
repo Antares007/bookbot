@@ -2,7 +2,7 @@
 import type { A, Test } from "../src/atest.js"
 import * as s from "../src/scheduler.js"
 
-export function t(assert: A & Test): void {
+export function t(assert2: A): void {
   const actual = { t: [], l: [], frame: 0 }
   const expected = {
     frame: 3,
@@ -33,23 +33,22 @@ export function t(assert: A & Test): void {
       if (typeof b === "function") oS(pushTime(b))
     }
   }
-  const aa = assert(t => assert.deepStrictEqual(actual, expected))
   o(t => {
     o(t => {
       o(60, t => {})
     })
     o(30, t => {
-      o(30, aa)
+      o(30, t => assert2.deepStrictEqual(actual, expected))
     })
   })
-  assert.deepStrictEqual(actual, {
+  assert2.deepStrictEqual(actual, {
     frame: 0,
     t: [30],
     l: [[30, 0], [30, 0]]
   })
 }
 
-export function t2(assert: A & Test): void {
+export function t2(assert2: A): void {
   const actual = { t: [], l: [], frame: 0 }
   const expected = {
     frame: 1,
@@ -82,15 +81,14 @@ export function t2(assert: A & Test): void {
     }
   }
 
-  const plan = assert(t => {
-    assert.deepStrictEqual(actual, expected)
-  })
   o(t => {
     o(0, t => {
-      o(0, plan)
+      o(0, t => {
+        assert2.deepStrictEqual(actual, expected)
+      })
     })
   })
-  assert.deepStrictEqual(actual, {
+  assert2.deepStrictEqual(actual, {
     frame: 0,
     t: [0],
     l: [[30, 0]]

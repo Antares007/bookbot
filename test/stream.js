@@ -3,7 +3,7 @@ import type { A, Test } from "../src/atest.js"
 import * as s from "../src/stream.js"
 import { mkScheduler } from "../src/scheduler.js"
 
-export function at(assert: A & Test) {
+export function at(assert1: A) {
   let now = 100
   const scheduler = mkScheduler(
     () => now,
@@ -19,7 +19,7 @@ export function at(assert: A & Test) {
         vs.push([t, v])
       },
       end() {
-        assert.deepStrictEqual(vs, [[99, "a"]])
+        assert1.deepStrictEqual(vs, [[99, "a"]])
       },
       error(t, err) {
         vs.push(err)
