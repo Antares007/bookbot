@@ -14,7 +14,7 @@ type CRef = { canceled: boolean }
 
 export function createAt<A>(
   delay: number,
-  f: (sink: Sink<A>, scheduler: Scheduler, t: number, cref: CRef) => ?D
+  f: (sink: Sink<A>, scheduler: Scheduler, cref: CRef) => ?D
 ): S<A> {
   const cref = { canceled: false }
   return (sink, scheduler) => {
@@ -22,7 +22,7 @@ export function createAt<A>(
     scheduler(delay, t => {
       if (cref.canceled) return
       try {
-        d = f(sink, local(delay, scheduler), delay, cref)
+        d = f(sink, local(delay, scheduler), cref)
       } catch (err) {
         sink.error(delay, err instanceof Error ? err : new Error(err + ""))
       }
@@ -37,10 +37,10 @@ export function createAt<A>(
 }
 
 export function at<A>(a: A, delay: number): S<A> {
-  return createAt(delay, (sink, scheduler, t, cref) => {
-    sink.event(t, a)
+  return createAt(delay, (sink, scheduler, cref) => {
+    sink.event(delay, a)
     if (cref.canceled) return
-    sink.end(t)
+    sink.end(delay)
   })
 }
 
@@ -57,12 +57,12 @@ export function map<A, B>(f: A => B, s: S<A>): S<B> {
 }
 
 export function fromArray<A>(as: Array<A>): S<A> {
-  return createAt(0, (sink, scheduler, t, cref) => {
+  return createAt(0, (sink, scheduler, cref) => {
     for (let i = 0, l = as.length; i < l; i++) {
-      sink.event(t, as[i])
+      sink.event(0, as[i])
       if (cref.canceled) return
     }
-    sink.end(t)
+    sink.end(0)
   })
 }
 
