@@ -18,6 +18,40 @@ export function at(assert: Array<A>) {
   )
 }
 
+export function fromArray(assert: Array<A>) {
+  const scheduler = makeTestScheduler(30)
+  s.fromArray(["a", "b", "c"])(
+    collectEvents(es =>
+      scheduler(t => {
+        assert[0].ok(t === 30)
+        assert[1].deepStrictEqual(es, [[0, "a"], [0, "b"], [0, "c"], [0, "|"]])
+      })
+    ),
+    scheduler
+  )
+}
+
+export function join(assert: Array<A>) {
+  const scheduler = makeTestScheduler(30)
+  s.join(
+    s.fromArray([s.at("a", 10), s.at("b", 20), s.at("c", 30), s.at("d", 10)])
+  )(
+    collectEvents(es =>
+      scheduler(t => {
+        assert[0].ok(t === 60)
+        assert[1].deepStrictEqual(es, [
+          [10, "a"],
+          [10, "d"],
+          [20, "b"],
+          [30, "c"],
+          [30, "|"]
+        ])
+      })
+    ),
+    scheduler
+  )
+}
+
 function collectEvents(done: (Array<[number, string]>) => void): Sink<string> {
   const vs = []
   return {
