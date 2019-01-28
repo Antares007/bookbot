@@ -1,8 +1,8 @@
 //@flow strict
-export type O = (a: Schedule | number, b: ?Schedule) => void
-export type Schedule = (time: number) => void
+export type Scheduler = (a: ScheduleAction | number, b: ?ScheduleAction) => void
+export type ScheduleAction = (time: number) => void
 
-export function local(lt: number, schedule: O): O {
+export function local(lt: number, schedule: Scheduler): Scheduler {
   return (a, b) =>
     schedule(t => {
       const offset = lt - t
@@ -18,9 +18,9 @@ export function local(lt: number, schedule: O): O {
 export function mkScheduler<H>(
   tf: () => number,
   setTimeout: (f: () => void, delay: number) => H
-): O {
+): Scheduler {
   let currentTime: number = -1
-  let line: Array<[number, Schedule]> = []
+  let line: Array<[number, ScheduleAction]> = []
   const append = (t, sr) => {
     const i = findAppendPosition(t, line)
     const li = line[i]

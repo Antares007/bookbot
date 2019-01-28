@@ -1,30 +1,30 @@
 //@flow strict
-import type { Schedule, O as So } from "./scheduler.js"
+import type { Scheduler } from "./scheduler.js"
 import { local } from "./scheduler.js"
 
-export type O<A> = {
+export type Sink<A> = {
   +event: (t: number, a: A) => void,
   +end: (t: number) => void,
   +error: (t: number, err: Error) => void
 }
-export type S<A> = (O<A>, So) => D
+export type S<A> = (Sink<A>, Scheduler) => D
 
 type D = { +dispose: () => void }
 type CRef = { canceled: boolean }
 
 export function createAt<A>(
   delay: number,
-  f: (o: O<A>, oS: So, t: number, cref: CRef) => ?D
+  f: (sink: Sink<A>, scheduler: Scheduler, t: number, cref: CRef) => ?D
 ): S<A> {
   const cref = { canceled: false }
-  return (o, oS) => {
+  return (sink, scheduler) => {
     let d: ?D = null
-    oS(delay, t => {
+    scheduler(delay, t => {
       if (cref.canceled) return
       try {
-        d = f(o, local(delay, oS), delay, cref)
+        d = f(sink, local(delay, scheduler), delay, cref)
       } catch (err) {
-        o.error(delay, err instanceof Error ? err : new Error(err + ""))
+        sink.error(delay, err instanceof Error ? err : new Error(err + ""))
       }
     })
     return {
@@ -37,37 +37,37 @@ export function createAt<A>(
 }
 
 export function at<A>(a: A, delay: number): S<A> {
-  return createAt(delay, (o, oS, t, cref) => {
-    o.event(t, a)
+  return createAt(delay, (sink, scheduler, t, cref) => {
+    sink.event(t, a)
     if (cref.canceled) return
-    o.end(t)
+    sink.end(t)
   })
 }
 
 export function map<A, B>(f: A => B, s: S<A>): S<B> {
-  return (o, oS) =>
+  return (sink, scheduler) =>
     s(
       {
-        event: (t, v) => o.event(t, f(v)),
-        end: o.end,
-        error: o.error
+        event: (t, v) => sink.event(t, f(v)),
+        end: sink.end,
+        error: sink.error
       },
-      oS
+      scheduler
     )
 }
 
 export function fromArray<A>(as: Array<A>): S<A> {
-  return createAt(0, (o, oS, t, cref) => {
+  return createAt(0, (sink, scheduler, t, cref) => {
     for (let i = 0, l = as.length; i < l; i++) {
-      o.event(t, as[i])
+      sink.event(t, as[i])
       if (cref.canceled) return
     }
-    o.end(t)
+    sink.end(t)
   })
 }
 
-export function join<A>(oS: S<S<A>>): S<A> {
-  return (o, run) => {
+export function join<A>(scheduler: S<S<A>>): S<A> {
+  return (sink, run) => {
     var i = 0
     var size = 0
     const dmap: { [number | string]: { +dispose: () => void } } = {}
@@ -78,7 +78,7 @@ export function join<A>(oS: S<S<A>>): S<A> {
     }
     const index = i++
     size++
-    dmap[index] = oS(
+    dmap[index] = scheduler(
       {
         event(t0, iS) {
           const index = i++
@@ -86,15 +86,15 @@ export function join<A>(oS: S<S<A>>): S<A> {
           dmap[index] = iS(
             {
               event(t1, v) {
-                o.event(t1 + t0, v)
+                sink.event(t1 + t0, v)
               },
               end(t1) {
                 delete dmap[index]
-                if (--size === 0) o.end(t1 + t0)
+                if (--size === 0) sink.end(t1 + t0)
               },
               error(t1, err) {
                 d.dispose()
-                o.error(t1 + t0, err)
+                sink.error(t1 + t0, err)
               }
             },
             run
@@ -102,11 +102,11 @@ export function join<A>(oS: S<S<A>>): S<A> {
         },
         end(t0) {
           delete dmap[index]
-          if (--size === 0) o.end(t0)
+          if (--size === 0) sink.end(t0)
         },
         error(t0, err) {
           d.dispose()
-          o.error(t0, err)
+          sink.error(t0, err)
         }
       },
       run
@@ -116,7 +116,7 @@ export function join<A>(oS: S<S<A>>): S<A> {
 }
 
 export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
-  return (o, run) => {
+  return (sink, run) => {
     var i = 0
     var size = 0
     const dmap: { [number | string]: { +dispose: () => void } } = {}
@@ -135,15 +135,15 @@ export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
           dmap[index] = f(v)(
             {
               event(t1, v) {
-                o.event(t1 + t0, v)
+                sink.event(t1 + t0, v)
               },
               end(t1) {
                 delete dmap[index]
-                if (--size === 0) o.end(t1 + t0)
+                if (--size === 0) sink.end(t1 + t0)
               },
               error(t1, err) {
                 d.dispose()
-                o.error(t1 + t0, err)
+                sink.error(t1 + t0, err)
               }
             },
             run
@@ -151,11 +151,11 @@ export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
         },
         end(t0) {
           delete dmap[index]
-          if (--size === 0) o.end(t0)
+          if (--size === 0) sink.end(t0)
         },
         error(t0, err) {
           d.dispose()
-          o.error(t0, err)
+          sink.error(t0, err)
         }
       },
       run
@@ -165,50 +165,50 @@ export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
 }
 
 // import type { IO } from "./io"
-// import type { O } from "./scheduler"
+// import type { Sink } from "./scheduler"
 // import { Delay, Origin } from "./scheduler"
 // import type { D } from "./disposable"
 // import * as disposable from "./disposable"
 //
 // export opaque type S<A> = (
 //   (?A | Error, number) => void
-// ) => ((O) => D) => D
+// ) => ((Sink) => D) => D
 //
 // export function run<A>(
-//   o: (?A | Error, number) => void,
-//   run: O => D,
+//   sink: (?A | Error, number) => void,
+//   run: Sink => D,
 //   s: S<A>
 // ) {
-//   return s(o)(run)
+//   return s(sink)(run)
 // }
 //
 // export function empty<A>(): S<A> {
-//   return o => run => disposable.empty
+//   return sink => run => disposable.empty
 // }
 //
 // export function at<A>(t: number, a: A): S<A> {
-//   return o => run =>
+//   return sink => run =>
 //     run(
 //       Delay(t)(_ => t => {
 //         try {
-//           o(a, t)
-//           o(null, t)
+//           sink(a, t)
+//           sink(null, t)
 //         } catch (exn) {
-//           exn instanceof Error ? o(exn, t) : o(new Error(), t)
+//           exn instanceof Error ? sink(exn, t) : sink(new Error(), t)
 //         }
 //       })
 //     )
 // }
 //
 // export function fromArray<A>(xs: Array<A>): S<A> {
-//   return o => run =>
+//   return sink => run =>
 //     run(
 //       Delay(0)(_ => t => {
 //         try {
-//           for (var i = 0, l = xs.length; i < l; i++) o(xs[i], t)
-//           o(null, t)
+//           for (var i = 0, l = xs.length; i < l; i++) sink(xs[i], t)
+//           sink(null, t)
 //         } catch (exn) {
-//           exn instanceof Error ? o(exn, t) : o(new Error(), t)
+//           exn instanceof Error ? sink(exn, t) : sink(new Error(), t)
 //         }
 //       })
 //     )
@@ -219,11 +219,11 @@ export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
 // }
 //
 // export function on(event: string, et: EventTarget): S<Event> {
-//   return o => run => {
+//   return sink => run => {
 //     var d0 = disposable.empty
 //     const d1 = run(
 //       Origin(_ => t0 => {
-//         const listener = (e: Event) => run(Origin(_ => t1 => o(e, t1 - t0)))
+//         const listener = (e: Event) => run(Origin(_ => t1 => sink(e, t1 - t0)))
 //         et.addEventListener(event, listener)
 //         d0 = disposable.rtrn(() => et.removeEventListener(event, listener))
 //       })
@@ -233,14 +233,14 @@ export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
 // }
 //
 // export function periodic(period: number): S<number> {
-//   return o => run => {
+//   return sink => run => {
 //     var i = 0
 //     const p = so => t => {
 //       try {
-//         o(i++, t)
+//         sink(i++, t)
 //         so(Delay(period)(p))
 //       } catch (exn) {
-//         exn instanceof Error ? o(exn, t) : o(new Error(), t)
+//         exn instanceof Error ? sink(exn, t) : sink(new Error(), t)
 //       }
 //     }
 //     return run(Delay(0)(p))
@@ -248,38 +248,38 @@ export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
 // }
 //
 // export function map<A, B>(f: A => B, s: S<A>): S<B> {
-//   return o => run =>
+//   return sink => run =>
 //     s((v, t) => {
-//       if (v == null || v instanceof Error) o(v, t)
-//       else o(f(v), t)
+//       if (v == null || v instanceof Error) sink(v, t)
+//       else sink(f(v), t)
 //     })(run)
 // }
 //
 // export function tap<A>(f: A => void, s: S<A>): S<A> {
-//   return o => run =>
+//   return sink => run =>
 //     s((v, t) => {
-//       if (v == null || v instanceof Error) o(v, t)
-//       else o((f(v), v), t)
+//       if (v == null || v instanceof Error) sink(v, t)
+//       else sink((f(v), v), t)
 //     })(run)
 // }
 //
 // export function filter<A>(f: A => boolean, s: S<A>): S<A> {
-//   return o => run =>
+//   return sink => run =>
 //     s((v, t) => {
-//       if (v == null || v instanceof Error) o(v, t)
-//       else if (f(v)) o(v, t)
+//       if (v == null || v instanceof Error) sink(v, t)
+//       else if (f(v)) sink(v, t)
 //     })(run)
 // }
 //
 // export function take<A>(n: number, s: S<A>): S<A> {
-//   return o => run => {
+//   return sink => run => {
 //     var i = 0
 //     const d = s((v, t) => {
 //       i++
-//       if (i <= n) o(v, t)
+//       if (i <= n) sink(v, t)
 //       if (i >= n) {
 //         d.dispose()
-//         o(null, t)
+//         sink(null, t)
 //       }
 //     })(run)
 //     return d
@@ -287,7 +287,7 @@ export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
 // }
 //
 // export function mergeArray<A>(xs: Array<S<A>>): S<A> {
-//   return o => run => {
+//   return sink => run => {
 //     var size = xs.length
 //     const dmap: { [number | string]: D } = {}
 //     const d = disposable.rtrn(() => {
@@ -297,10 +297,10 @@ export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
 //       if (v == null) {
 //         delete dmap[key]
 //         size--
-//         if (size === 0) o(null, t)
+//         if (size === 0) sink(null, t)
 //       } else {
 //         if (v instanceof Error) d.dispose()
-//         o(v, t)
+//         sink(v, t)
 //       }
 //     }
 //     for (var i = 0, l = xs.length; i < l; i++) dmap[i] = xs[i](oo(i))(run)

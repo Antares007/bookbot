@@ -1,6 +1,6 @@
 //@flow strict
 import type { A } from "../src/atest.js"
-import type { O as So } from "../src/stream.js"
+import type { Sink } from "../src/stream.js"
 import * as s from "../src/stream.js"
 import { makeTestScheduler } from "./testscheduler.js"
 
@@ -18,7 +18,7 @@ export function at(assert: Array<A>) {
   )
 }
 
-function collectEvents(done: (Array<[number, string]>) => void): So<string> {
+function collectEvents(done: (Array<[number, string]>) => void): Sink<string> {
   const vs = []
   return {
     event(t, v) {
