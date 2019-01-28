@@ -8,12 +8,12 @@ export function at(assert: Array<A>) {
   const scheduler = makeTestScheduler(30)
 
   s.at("a", 60)(
-    collectEvents(es => {
+    collectEvents(es =>
       scheduler(t => {
         assert[0].ok(t === 90)
         assert[1].deepStrictEqual(es, [[60, "a"], [60, "|"]])
       })
-    }),
+    ),
     scheduler
   )
 }
