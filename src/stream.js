@@ -2,9 +2,9 @@
 import type { Schedule, O as So } from "./scheduler.js"
 
 export type O<A> = {
-  +event: (a: A, t: number) => void,
-  +end: (x: null, t: number) => void,
-  +error: (err: Error, t: number) => void
+  +event: (t: number, a: A) => void,
+  +end: (t: number) => void,
+  +error: (t: number, err: Error) => void
 }
 export type S<A> = (O<A>, So) => D
 
@@ -36,7 +36,7 @@ export function createAt<A>(
           cref
         )
       } catch (err) {
-        o.error(err instanceof Error ? err : new Error(err + ""), delay)
+        o.error(delay, err instanceof Error ? err : new Error(err + ""))
       }
     })
     return {
@@ -50,9 +50,9 @@ export function createAt<A>(
 
 export function at<A>(a: A, delay: number): S<A> {
   return createAt(delay, (o, oS, t, cref) => {
-    o.event(a, t)
+    o.event(t, a)
     if (cref.canceled) return
-    o.end(null, t)
+    o.end(t)
   })
 }
 
@@ -60,7 +60,7 @@ export function map<A, B>(f: A => B, s: S<A>): S<B> {
   return (o, oS) =>
     s(
       {
-        event: (v, t) => o.event(f(v), t),
+        event: (t, v) => o.event(t, f(v)),
         end: o.end,
         error: o.error
       },
@@ -71,14 +71,14 @@ export function map<A, B>(f: A => B, s: S<A>): S<B> {
 export function fromArray<A>(as: Array<A>): S<A> {
   return createAt(0, (o, oS, t, cref) => {
     for (let i = 0, l = as.length; i < l; i++) {
-      o.event(as[i], t)
+      o.event(t, as[i])
       if (cref.canceled) return
     }
-    o.end(null, t)
+    o.end(t)
   })
 }
 
-export function join<A>(xs: S<S<A>>): S<A> {
+export function join<A>(oS: S<S<A>>): S<A> {
   return (o, run) => {
     var i = 0
     var size = 0
@@ -90,35 +90,35 @@ export function join<A>(xs: S<S<A>>): S<A> {
     }
     const index = i++
     size++
-    dmap[index] = xs(
+    dmap[index] = oS(
       {
-        event(v, t0) {
+        event(t0, iS) {
           const index = i++
           size++
-          dmap[index] = v(
+          dmap[index] = iS(
             {
-              event(v, t1) {
-                o.event(v, t1 + t0)
+              event(t1, v) {
+                o.event(t1 + t0, v)
               },
-              end(_, t1) {
+              end(t1) {
                 delete dmap[index]
-                if (--size === 0) o.end(null, t1 + t0)
+                if (--size === 0) o.end(t1 + t0)
               },
-              error(err, t1) {
+              error(t1, err) {
                 d.dispose()
-                o.error(err, t1 + t0)
+                o.error(t1 + t0, err)
               }
             },
             run
           )
         },
-        end(_, t0) {
+        end(t0) {
           delete dmap[index]
-          if (--size === 0) o.end(null, t0)
+          if (--size === 0) o.end(t0)
         },
-        error(err, t0) {
+        error(t0, err) {
           d.dispose()
-          o.error(err, t0)
+          o.error(t0, err)
         }
       },
       run
@@ -141,33 +141,33 @@ export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
     size++
     dmap[index] = xs(
       {
-        event(v, t0) {
+        event(t0, v) {
           const index = i++
           size++
           dmap[index] = f(v)(
             {
-              event(v, t1) {
-                o.event(v, t1 + t0)
+              event(t1, v) {
+                o.event(t1 + t0, v)
               },
-              end(_, t1) {
+              end(t1) {
                 delete dmap[index]
-                if (--size === 0) o.end(null, t1 + t0)
+                if (--size === 0) o.end(t1 + t0)
               },
-              error(err, t1) {
+              error(t1, err) {
                 d.dispose()
-                o.error(err, t1 + t0)
+                o.error(t1 + t0, err)
               }
             },
             run
           )
         },
-        end(_, t0) {
+        end(t0) {
           delete dmap[index]
-          if (--size === 0) o.end(null, t0)
+          if (--size === 0) o.end(t0)
         },
-        error(err, t0) {
+        error(t0, err) {
           d.dispose()
-          o.error(err, t0)
+          o.error(t0, err)
         }
       },
       run

@@ -7,25 +7,25 @@ export function at(assert: A & Test) {
   let now = 100
   const scheduler = mkScheduler(
     () => now,
-    (f, at) => {
-      now = at
+    (f, delay) => {
+      now += delay
       Promise.resolve().then(f)
     }
   )
   const vs = []
   s.at("a", 99)(
     {
-      event(v, t) {
-        vs.push([v, t])
+      event(t, v) {
+        vs.push([t, v])
       },
       end() {
-        assert.deepStrictEqual(vs, [["a", 99]])
+        assert.deepStrictEqual(vs, [[99, "a"]])
       },
-      error() {
-        vs.push("error")
+      error(t, err) {
+        vs.push(err)
       }
     },
     scheduler
   )
-  assert.ok(vs.length === 0)
+  //  assert.ok(vs.length === 0)
 }

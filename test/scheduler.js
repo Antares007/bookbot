@@ -82,14 +82,12 @@ export function t2(assert: A & Test): void {
     }
   }
 
+  const plan = assert(t => {
+    assert.deepStrictEqual(actual, expected)
+  })
   o(t => {
     o(0, t => {
-      o(
-        0,
-        assert(t => {
-          assert.deepStrictEqual(actual, expected)
-        })
-      )
+      o(0, plan)
     })
   })
   assert.deepStrictEqual(actual, {

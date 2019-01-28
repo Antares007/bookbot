@@ -59,7 +59,7 @@ function reduce<A, B>(f: (B, A) => B, initial: B, s: S<A>): Promise<B> {
     let result = initial
     s(
       {
-        event(v, t) {
+        event(t, v) {
           result = f(result, v)
         },
         end(v) {
