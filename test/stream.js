@@ -56,7 +56,7 @@ export async function flatMap_ends_when_last_one_ends(assert: Array<A>) {
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 
-export async function flatMap_ends_with_no_end(assert: Array<A>) {
+export async function flatMap_dont_ends_with_no_end(assert: Array<A>) {
   const s01 = "a|"
   const s02 = ""
   const exp = "a"

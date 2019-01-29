@@ -11,34 +11,37 @@ const scheduler = mkScheduler(
 const a = build(1000, 1000)
 const b = build(1000, 1000)
 
-Promise.resolve()
-  .then(() => {
-    console.time("a")
-    return reduce((a, b) => a + b, 0, flatMap(fromArray, fromArray(a))).then(
-      rez => {
-        console.timeEnd("a")
-        console.log(rez)
-      }
-    )
-  })
-  .then(() => {
-    console.time("b")
-    return new Promise((resolve, reject) =>
-      rxjs.Observable.from(b)
-        .flatMap(function(x) {
-          return rxjs.Observable.from(x)
-        })
-        .reduce((a, b) => a + b, 0)
-        .subscribe({
-          next: resolve,
-          complete: () => {},
-          error: reject
-        })
-    ).then(rez => {
-      console.timeEnd("b")
-      console.log(rez)
+const rec = n =>
+  Promise.resolve()
+    .then(() => {
+      console.time("a")
+      return reduce((a, b) => a + b, 0, flatMap(fromArray, fromArray(a))).then(
+        rez => {
+          console.timeEnd("a")
+          console.log(rez)
+        }
+      )
     })
-  })
+    .then(() => {
+      console.time("b")
+      return new Promise((resolve, reject) =>
+        rxjs.Observable.from(b)
+          .flatMap(function(x) {
+            return rxjs.Observable.from(x)
+          })
+          .reduce((a, b) => a + b, 0)
+          .subscribe({
+            next: resolve,
+            complete: () => {},
+            error: reject
+          })
+      ).then(rez => {
+        console.timeEnd("b")
+        console.log(rez)
+      })
+    })
+    .then(() => (n > 0 ? rec(n - 1) : void 0))
+rec(10)
 
 function build(m, n) {
   const a = new Array(n)

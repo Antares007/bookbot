@@ -69,13 +69,23 @@ export function map<A, B>(f: A => B, s: S<A>): S<B> {
 }
 
 export function fromArray<A>(as: Array<A>): S<A> {
-  return createAt(0, (sink, scheduler, cref) => {
-    for (let i = 0, l = as.length; i < l; i++) {
-      sink.event(0, as[i])
-      if (cref.canceled) return
+  const cref = { canceled: false }
+  return (sink, scheduler) => {
+    scheduler(0, t => {
+      try {
+        for (let i = 0, l = as.length; i < l && !cref.canceled; i++)
+          sink.event(0, as[i])
+        if (!cref.canceled) sink.end(0)
+      } catch (err) {
+        sink.error(0, err instanceof Error ? err : new Error(err + ""))
+      }
+    })
+    return {
+      dispose() {
+        cref.canceled = true
+      }
     }
-    sink.end(0)
-  })
+  }
 }
 
 export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
