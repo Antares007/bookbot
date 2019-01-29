@@ -9,6 +9,7 @@ const scheduler = mkScheduler(
   (f, delay) => setTimeout(f, delay)
 )
 const a = build(1000, 1000)
+const b = build(1000, 1000)
 
 Promise.resolve()
   .then(() => {
@@ -22,20 +23,21 @@ Promise.resolve()
   })
   .then(() => {
     console.time("b")
-    rxjs.Observable.from(a)
-      .flatMap(function(x) {
-        return rxjs.Observable.from(x)
-      })
-      .reduce((a, b) => a + b, 0)
-      .subscribe({
-        next: rez => {
-          console.log(rez)
-        },
-        complete: function() {
-          console.timeEnd("b")
-        },
-        error: e => {}
-      })
+    return new Promise((resolve, reject) =>
+      rxjs.Observable.from(b)
+        .flatMap(function(x) {
+          return rxjs.Observable.from(x)
+        })
+        .reduce((a, b) => a + b, 0)
+        .subscribe({
+          next: resolve,
+          complete: () => {},
+          error: reject
+        })
+    ).then(rez => {
+      console.timeEnd("b")
+      console.log(rez)
+    })
   })
 
 function build(m, n) {
