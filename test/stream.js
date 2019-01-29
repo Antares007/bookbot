@@ -27,6 +27,13 @@ export async function fromArray(assert: Array<A>) {
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 
+export async function map(assert: Array<A>) {
+  const s01 = "a-b-c-|"
+  const exp = "A-B-C-|"
+  const act = s.map(chr => chr.toUpperCase(), h.sOf(s01))
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+
 export async function join(assert: Array<A>) {
   const s01 = "-a-b-|"
   const s02 = "c-d-e-----(f )---|"
