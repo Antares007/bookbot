@@ -20,19 +20,19 @@ const rec = n =>
         console.log("a", process.hrtime.bigint() - start)
       )
     })
-    .then(() => {
-      const start = process.hrtime.bigint()
-      return new Promise((resolve, reject) =>
-        rxjs.Observable.from(b)
-          .flatMap(a => rxjs.Observable.from(a))
-          .reduce(sum, 0)
-          .subscribe({
-            next: resolve,
-            complete: () => {},
-            error: reject
-          })
-      ).then(rez => console.log("b", process.hrtime.bigint() - start))
-    })
+    // .then(() => {
+    //   const start = process.hrtime.bigint()
+    //   return new Promise((resolve, reject) =>
+    //     rxjs.Observable.from(b)
+    //       .flatMap(a => rxjs.Observable.from(a))
+    //       .reduce(sum, 0)
+    //       .subscribe({
+    //         next: resolve,
+    //         complete: () => {},
+    //         error: reject
+    //       })
+    //   ).then(rez => console.log("b", process.hrtime.bigint() - start))
+    // })
     .then(() => (n > 0 ? rec(n - 1) : void 0))
 rec(10)
 
