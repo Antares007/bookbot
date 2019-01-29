@@ -1,6 +1,5 @@
 //@flow strict
 import type { Scheduler } from "./scheduler.js"
-import { local } from "./scheduler.js"
 
 export type Sink<A> = {
   +event: (t: number, a: A) => void,
