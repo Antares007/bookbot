@@ -78,7 +78,7 @@ export function fromArray<A>(as: Array<A>): S<A> {
   })
 }
 
-export function join<A>(hos: S<S<A>>): S<A> {
+export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
   return (sink, scheduler) => {
     let active = true
     let i = 0
@@ -105,20 +105,20 @@ export function join<A>(hos: S<S<A>>): S<A> {
     }
     const index = i++
     size++
-    dmap[index] = hos(
+    dmap[index] = s(
       {
-        event(t0, iS) {
+        event(t0, a) {
           if (!active) return
           const index = i++
           size++
-          dmap[index] = iS(
+          dmap[index] = f(a)(
             {
-              event(t1, v) {
+              event(t, v) {
                 if (!active) return
-                sink.event(t0 + t1, v)
+                sink.event(t + t0, v)
               },
-              end: t1 => _end(t0 + t1, index),
-              error: (t1, err) => _error(t0 + t1, err)
+              end: t => _end(t + t0, index),
+              error: (t, err) => _error(t + t0, err)
             },
             scheduler
           )
@@ -131,153 +131,3 @@ export function join<A>(hos: S<S<A>>): S<A> {
     return d
   }
 }
-
-export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
-  return join(map(f, xs))
-}
-
-// import type { IO } from "./io"
-// import type { Sink } from "./scheduler"
-// import { Delay, Origin } from "./scheduler"
-// import type { D } from "./disposable"
-// import * as disposable from "./disposable"
-//
-// export opaque type S<A> = (
-//   (?A | Error, number) => void
-// ) => ((Sink) => D) => D
-//
-// export function run<A>(
-//   sink: (?A | Error, number) => void,
-//   run: Sink => D,
-//   s: S<A>
-// ) {
-//   return s(sink)(run)
-// }
-//
-// export function empty<A>(): S<A> {
-//   return sink => run => disposable.empty
-// }
-//
-// export function at<A>(t: number, a: A): S<A> {
-//   return sink => run =>
-//     run(
-//       Delay(t)(_ => t => {
-//         try {
-//           sink(a, t)
-//           sink(null, t)
-//         } catch (exn) {
-//           exn instanceof Error ? sink(exn, t) : sink(new Error(), t)
-//         }
-//       })
-//     )
-// }
-//
-// export function fromArray<A>(xs: Array<A>): S<A> {
-//   return sink => run =>
-//     run(
-//       Delay(0)(_ => t => {
-//         try {
-//           for (var i = 0, l = xs.length; i < l; i++) sink(xs[i], t)
-//           sink(null, t)
-//         } catch (exn) {
-//           exn instanceof Error ? sink(exn, t) : sink(new Error(), t)
-//         }
-//       })
-//     )
-// }
-//
-// export function now<A>(a: A): S<A> {
-//   return at<A>(0, a)
-// }
-//
-// export function on(event: string, et: EventTarget): S<Event> {
-//   return sink => run => {
-//     var d0 = disposable.empty
-//     const d1 = run(
-//       Origin(_ => t0 => {
-//         const listener = (e: Event) => run(Origin(_ => t1 => sink(e, t1 - t0)))
-//         et.addEventListener(event, listener)
-//         d0 = disposable.rtrn(() => et.removeEventListener(event, listener))
-//       })
-//     )
-//     return disposable.rtrn(() => (d0.dispose(), d1.dispose()))
-//   }
-// }
-//
-// export function periodic(period: number): S<number> {
-//   return sink => run => {
-//     var i = 0
-//     const p = so => t => {
-//       try {
-//         sink(i++, t)
-//         so(Delay(period)(p))
-//       } catch (exn) {
-//         exn instanceof Error ? sink(exn, t) : sink(new Error(), t)
-//       }
-//     }
-//     return run(Delay(0)(p))
-//   }
-// }
-//
-// export function map<A, B>(f: A => B, s: S<A>): S<B> {
-//   return sink => run =>
-//     s((v, t) => {
-//       if (v == null || v instanceof Error) sink(v, t)
-//       else sink(f(v), t)
-//     })(run)
-// }
-//
-// export function tap<A>(f: A => void, s: S<A>): S<A> {
-//   return sink => run =>
-//     s((v, t) => {
-//       if (v == null || v instanceof Error) sink(v, t)
-//       else sink((f(v), v), t)
-//     })(run)
-// }
-//
-// export function filter<A>(f: A => boolean, s: S<A>): S<A> {
-//   return sink => run =>
-//     s((v, t) => {
-//       if (v == null || v instanceof Error) sink(v, t)
-//       else if (f(v)) sink(v, t)
-//     })(run)
-// }
-//
-// export function take<A>(n: number, s: S<A>): S<A> {
-//   return sink => run => {
-//     var i = 0
-//     const d = s((v, t) => {
-//       i++
-//       if (i <= n) sink(v, t)
-//       if (i >= n) {
-//         d.dispose()
-//         sink(null, t)
-//       }
-//     })(run)
-//     return d
-//   }
-// }
-//
-// export function mergeArray<A>(xs: Array<S<A>>): S<A> {
-//   return sink => run => {
-//     var size = xs.length
-//     const dmap: { [number | string]: D } = {}
-//     const d = disposable.rtrn(() => {
-//       for (var key in dmap) dmap[key].dispose()
-//     })
-//     const oo = (key: number) => (v, t) => {
-//       if (v == null) {
-//         delete dmap[key]
-//         size--
-//         if (size === 0) sink(null, t)
-//       } else {
-//         if (v instanceof Error) d.dispose()
-//         sink(v, t)
-//       }
-//     }
-//     for (var i = 0, l = xs.length; i < l; i++) dmap[i] = xs[i](oo(i))(run)
-//     return d
-//   }
-// }
-//
-//

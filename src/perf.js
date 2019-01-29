@@ -1,7 +1,7 @@
 //@flow
 import type { S } from "./stream.js"
 import { mkScheduler } from "./scheduler.js"
-import { fromArray, chain } from "./stream.js"
+import { fromArray, flatMap } from "./stream.js"
 import * as rxjs from "@reactivex/rxjs"
 
 const scheduler = mkScheduler(
@@ -13,7 +13,7 @@ const a = build(1000, 1000)
 Promise.resolve()
   .then(() => {
     console.time("a")
-    return reduce((a, b) => a + b, 0, chain(fromArray, fromArray(a))).then(
+    return reduce((a, b) => a + b, 0, flatMap(fromArray, fromArray(a))).then(
       rez => {
         console.timeEnd("a")
         console.log(rez)
