@@ -12,6 +12,8 @@ export type S<A> = (Sink<A>, Scheduler) => D
 type D = { +dispose: () => void }
 type CRef = { canceled: boolean }
 
+const emptyDisposable: D = { dispose: () => {} }
+
 export function createAt<A>(
   delay: number,
   f: (sink: Sink<A>, scheduler: Scheduler, cref: CRef) => ?D
@@ -37,7 +39,7 @@ export function createAt<A>(
 }
 
 export function empty<A>(): S<A> {
-  return () => ({ dispose: () => {} })
+  return () => emptyDisposable
 }
 
 export function at<A>(a: A, delay: number): S<A> {
@@ -76,102 +78,62 @@ export function fromArray<A>(as: Array<A>): S<A> {
   })
 }
 
-export function join<A>(scheduler: S<S<A>>): S<A> {
-  return (sink, run) => {
-    var i = 0
-    var size = 0
+export function join<A>(hos: S<S<A>>): S<A> {
+  return (sink, scheduler) => {
+    let active = true
+    let i = 0
+    let size = 0
     const dmap: { [number | string]: { +dispose: () => void } } = {}
     const d = {
       dispose() {
+        active = false
         for (var key in dmap) dmap[key].dispose()
+      }
+    }
+    const _end = (t, index) => {
+      delete dmap[index]
+      if (--size === 0) {
+        active = false
+        sink.end(t)
+      }
+    }
+    const _error = (t, err) => {
+      if (active) {
+        d.dispose()
+        sink.error(t, err)
       }
     }
     const index = i++
     size++
-    dmap[index] = scheduler(
+    dmap[index] = hos(
       {
         event(t0, iS) {
+          if (!active) return
           const index = i++
           size++
           dmap[index] = iS(
             {
               event(t1, v) {
-                sink.event(t1 + t0, v)
+                if (!active) return
+                sink.event(t0 + t1, v)
               },
-              end(t1) {
-                delete dmap[index]
-                if (--size === 0) sink.end(t1 + t0)
-              },
-              error(t1, err) {
-                d.dispose()
-                sink.error(t1 + t0, err)
-              }
+              end: t1 => _end(t0 + t1, index),
+              error: (t1, err) => _error(t0 + t1, err)
             },
-            run
+            scheduler
           )
         },
-        end(t0) {
-          delete dmap[index]
-          if (--size === 0) sink.end(t0)
-        },
-        error(t0, err) {
-          d.dispose()
-          sink.error(t0, err)
-        }
+        end: t0 => _end(t0, index),
+        error: (t0, err) => _error(t0, err)
       },
-      run
+      scheduler
     )
     return d
   }
 }
 
 export function chain<A, B>(f: A => S<B>, xs: S<A>): S<B> {
-  return (sink, run) => {
-    var i = 0
-    var size = 0
-    const dmap: { [number | string]: { +dispose: () => void } } = {}
-    const d = {
-      dispose() {
-        for (var key in dmap) dmap[key].dispose()
-      }
-    }
-    const index = i++
-    size++
-    dmap[index] = xs(
-      {
-        event(t0, v) {
-          const index = i++
-          size++
-          dmap[index] = f(v)(
-            {
-              event(t1, v) {
-                sink.event(t1 + t0, v)
-              },
-              end(t1) {
-                delete dmap[index]
-                if (--size === 0) sink.end(t1 + t0)
-              },
-              error(t1, err) {
-                d.dispose()
-                sink.error(t1 + t0, err)
-              }
-            },
-            run
-          )
-        },
-        end(t0) {
-          delete dmap[index]
-          if (--size === 0) sink.end(t0)
-        },
-        error(t0, err) {
-          d.dispose()
-          sink.error(t0, err)
-        }
-      },
-      run
-    )
-    return d
-  }
+  return join(map(f, xs))
 }
 
 // import type { IO } from "./io"

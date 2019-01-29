@@ -44,3 +44,31 @@ export async function join(assert: Array<A>) {
 
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
+
+export async function join_ends_when_last_one_ends(assert: Array<A>) {
+  const s01 = "--|"
+  const s02 = "|"
+  const exp = "--|"
+
+  const act = s.join(s.fromArray([s01, s02].map(h.sOf)))
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+
+export async function join_ends_with_no_end(assert: Array<A>) {
+  const s01 = "a|"
+  const s02 = ""
+  const exp = "a"
+
+  const act = s.join(s.fromArray([s01, s02].map(h.sOf)))
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+
+export async function join_throws_when_first_one_throws(assert: Array<A>) {
+  const s01 = "-a|"
+  const s02 = "X"
+  const exp = "X"
+
+  const act = s.join(s.fromArray([s01, s02].map(h.sOf)))
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
