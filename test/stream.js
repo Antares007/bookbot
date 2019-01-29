@@ -15,6 +15,12 @@ export async function empty(assert: Array<A>) {
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 
+export async function throwError(assert: Array<A>) {
+  const act = s.throwError(new Error("X"))
+  const exp = "X"
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+
 export async function fromArray(assert: Array<A>) {
   const act = s.fromArray(["a", "b", "c"])
   const exp = "(abc|)"

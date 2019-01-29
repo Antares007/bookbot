@@ -2,14 +2,14 @@
 import type { Sink, S } from "../../src/stream.js"
 import { makeTestScheduler } from "./testscheduler.js"
 
-export function toTl(s: S<string>): Promise<Array<[number, string]>> {
+export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
   return new Promise((resolve, reject) => {
     const scheduler = makeTestScheduler(99)
     const vs = []
     const d = s(
       {
         event(t, v) {
-          vs.push([t, v])
+          vs.push([t, String(v)])
         },
         end(t) {
           vs.push([t, "|"])

@@ -48,6 +48,12 @@ export function at<A>(a: A, delay: number): S<A> {
   })
 }
 
+export function throwError(err: Error): S<Error> {
+  return createAt(0, (sink, scheduler, cref) => {
+    sink.error(0, err)
+  })
+}
+
 export function map<A, B>(f: A => B, s: S<A>): S<B> {
   return (sink, scheduler) =>
     s(
