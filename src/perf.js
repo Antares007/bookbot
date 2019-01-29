@@ -6,39 +6,32 @@ import * as rxjs from "@reactivex/rxjs"
 
 const scheduler = mkScheduler(
   () => Date.now(),
-  (f, delay) => setTimeout(f, delay)
+  (f, delay) => (delay === 0 ? Promise.resolve().then(f) : setTimeout(f, delay))
 )
 const a = build(1000, 1000)
 const b = build(1000, 1000)
-
+const sum = (a, b) => a + b
 const rec = n =>
   Promise.resolve()
     .then(() => {
-      console.time("a")
-      return reduce((a, b) => a + b, 0, flatMap(fromArray, fromArray(a))).then(
-        rez => {
-          console.timeEnd("a")
-          console.log(rez)
-        }
+      console.log()
+      const start = process.hrtime.bigint()
+      return reduce(sum, 0, flatMap(fromArray, fromArray(a))).then(rez =>
+        console.log("a", process.hrtime.bigint() - start)
       )
     })
     .then(() => {
-      console.time("b")
+      const start = process.hrtime.bigint()
       return new Promise((resolve, reject) =>
         rxjs.Observable.from(b)
-          .flatMap(function(x) {
-            return rxjs.Observable.from(x)
-          })
-          .reduce((a, b) => a + b, 0)
+          .flatMap(a => rxjs.Observable.from(a))
+          .reduce(sum, 0)
           .subscribe({
             next: resolve,
             complete: () => {},
             error: reject
           })
-      ).then(rez => {
-        console.timeEnd("b")
-        console.log(rez)
-      })
+      ).then(rez => console.log("b", process.hrtime.bigint() - start))
     })
     .then(() => (n > 0 ? rec(n - 1) : void 0))
 rec(10)
@@ -62,16 +55,16 @@ function buildArray(base, n) {
 function reduce<A, B>(f: (B, A) => B, initial: B, s: S<A>): Promise<B> {
   return new Promise((resolve, reject) => {
     let result = initial
-    s(
+    return s(
       {
-        event(t, v) {
-          result = f(result, v)
+        event(t, a) {
+          result = f(result, a)
         },
-        end(v) {
+        end(t) {
           resolve(result)
         },
-        error(v) {
-          reject(v)
+        error(t, err) {
+          reject(err)
         }
       },
       scheduler
