@@ -13,18 +13,16 @@ export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
         },
         end(t) {
           vs.push([t, "|"])
-          resolve(vs)
         },
         error(t, err) {
           vs.push([t, err.message])
-          resolve(vs)
         }
       },
       scheduler
     )
     scheduler(99, t => {
       d.dispose()
-      resolve(vs)
+      resolve(vs.slice(0))
     })
   })
 }
@@ -59,16 +57,11 @@ export function tlOf(str: string): Array<[number, string]> {
   let t = 0
   for (let i = 0, l = str.length; i < l; i++) {
     let chr = str[i]
-    if (chr === "X" || chr === "|") {
-      line.push([t, chr])
-      t += ival
-      return line
-    }
+    if (chr === " ") continue
     if (chr === "-") {
       t += ival
       continue
     }
-    if (chr === " ") continue
     if (chr === "(") {
       ival = 0
       continue
