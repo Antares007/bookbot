@@ -1,5 +1,5 @@
 //@flow strict
-import { mkScheduler } from "../src/scheduler.js"
+import { mkScheduler } from "../../src/scheduler.js"
 
 export function makeTestScheduler(startTime: number) {
   let t = startTime
