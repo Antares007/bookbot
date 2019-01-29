@@ -8,52 +8,65 @@ export type Sink<A> = {
   +error: (t: number, err: Error) => void
 }
 export type S<A> = (Sink<A>, Scheduler) => D
-
-type D = { +dispose: () => void }
-type CRef = { canceled: boolean }
+export type D = { +dispose: () => void }
 
 const emptyDisposable: D = { dispose: () => {} }
-
-export function createAt<A>(
-  delay: number,
-  f: (sink: Sink<A>, scheduler: Scheduler, cref: CRef) => ?D
-): S<A> {
-  const cref = { canceled: false }
-  return (sink, scheduler) => {
-    let d: ?D = null
-    scheduler(delay, t => {
-      if (cref.canceled) return
-      try {
-        d = f(sink, local(delay, scheduler), cref)
-      } catch (err) {
-        sink.error(delay, err instanceof Error ? err : new Error(err + ""))
-      }
-    })
-    return {
-      dispose() {
-        cref.canceled = true
-        if (d != null) d.dispose()
-      }
-    }
-  }
-}
 
 export function empty<A>(): S<A> {
   return () => emptyDisposable
 }
 
 export function at<A>(a: A, delay: number): S<A> {
-  return createAt(delay, (sink, scheduler, cref) => {
-    sink.event(delay, a)
-    if (cref.canceled) return
-    sink.end(delay)
-  })
+  let canceled = false
+  return (sink, scheduler) => {
+    scheduler(delay, _ => {
+      try {
+        if (!canceled) sink.event(delay, a)
+        if (!canceled) sink.end(delay)
+      } catch (err) {
+        sink.error(delay, err)
+      }
+    })
+    return {
+      dispose() {
+        canceled = true
+      }
+    }
+  }
 }
 
 export function throwError(err: Error): S<Error> {
-  return createAt(0, (sink, scheduler, cref) => {
-    sink.error(0, err)
-  })
+  let canceled = false
+  return (sink, scheduler) => {
+    scheduler(0, _ => {
+      if (!canceled) sink.error(0, err)
+    })
+    return {
+      dispose() {
+        canceled = true
+      }
+    }
+  }
+}
+
+export function fromArray<A>(as: Array<A>): S<A> {
+  let canceled = false
+  return (sink, scheduler) => {
+    scheduler(0, _ => {
+      try {
+        for (let i = 0, l = as.length; i < l && !canceled; i++)
+          sink.event(0, as[i])
+        if (!canceled) sink.end(0)
+      } catch (err) {
+        sink.error(0, err instanceof Error ? err : new Error(err + ""))
+      }
+    })
+    return {
+      dispose() {
+        canceled = true
+      }
+    }
+  }
 }
 
 export function map<A, B>(f: A => B, s: S<A>): S<B> {
@@ -66,26 +79,6 @@ export function map<A, B>(f: A => B, s: S<A>): S<B> {
       },
       scheduler
     )
-}
-
-export function fromArray<A>(as: Array<A>): S<A> {
-  const cref = { canceled: false }
-  return (sink, scheduler) => {
-    scheduler(0, t => {
-      try {
-        for (let i = 0, l = as.length; i < l && !cref.canceled; i++)
-          sink.event(0, as[i])
-        if (!cref.canceled) sink.end(0)
-      } catch (err) {
-        sink.error(0, err instanceof Error ? err : new Error(err + ""))
-      }
-    })
-    return {
-      dispose() {
-        cref.canceled = true
-      }
-    }
-  }
 }
 
 export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
