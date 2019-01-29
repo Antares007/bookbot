@@ -13,18 +13,18 @@ export function toTl(s: S<string>): Promise<Array<[number, string]>> {
         },
         end(t) {
           vs.push([t, "|"])
-          resolve(vs.slice(0))
+          resolve(vs)
         },
         error(t, err) {
           vs.push([t, err.message])
-          resolve(vs.slice(0))
+          resolve(vs)
         }
       },
       scheduler
     )
-    scheduler(999, t => {
+    scheduler(99, t => {
       d.dispose()
-      resolve(vs.slice(0))
+      resolve(vs)
     })
   })
 }

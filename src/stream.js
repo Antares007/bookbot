@@ -36,6 +36,10 @@ export function createAt<A>(
   }
 }
 
+export function empty<A>(): S<A> {
+  return () => ({ dispose: () => {} })
+}
+
 export function at<A>(a: A, delay: number): S<A> {
   return createAt(delay, (sink, scheduler, cref) => {
     sink.event(delay, a)
