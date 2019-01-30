@@ -29,11 +29,11 @@ export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
 
 export function sOf(str: string): S<string> {
   const line = tlOf(str)
-  let canceled = false
+  let active = true
   return (sink, sch) => {
     sch(0, t0 => {
       for (let p of line) {
-        if (canceled) return
+        if (!active) return
         sch(p[0], t =>
           p[1] === "|"
             ? sink.end(t - t0)
@@ -45,7 +45,7 @@ export function sOf(str: string): S<string> {
     })
     return {
       dispose: () => {
-        canceled = true
+        active = false
       }
     }
   }

@@ -16,53 +16,53 @@ export function empty<A>(): S<A> {
 }
 
 export function at<A>(a: A, delay: number): S<A> {
-  let canceled = false
+  let active = true
   return (sink, scheduler) => {
     scheduler(delay, _ => {
       try {
-        if (!canceled) sink.event(delay, a)
-        if (!canceled) sink.end(delay)
+        if (active) sink.event(delay, a)
+        if (active) sink.end(delay)
       } catch (err) {
         sink.error(delay, err)
       }
     })
     return {
       dispose() {
-        canceled = true
+        active = false
       }
     }
   }
 }
 
 export function throwError(err: Error): S<Error> {
-  let canceled = false
+  let active = true
   return (sink, scheduler) => {
     scheduler(0, _ => {
-      if (!canceled) sink.error(0, err)
+      if (active) sink.error(0, err)
     })
     return {
       dispose() {
-        canceled = true
+        active = false
       }
     }
   }
 }
 
 export function fromArray<A>(as: Array<A>): S<A> {
-  let canceled = false
+  let active = true
   return (sink, scheduler) => {
     scheduler(0, _ => {
       try {
-        for (let i = 0, l = as.length; i < l && !canceled; i++)
+        for (let i = 0, l = as.length; i < l && active; i++)
           sink.event(0, as[i])
-        if (!canceled) sink.end(0)
+        if (active) sink.end(0)
       } catch (err) {
         sink.error(0, err instanceof Error ? err : new Error(err + ""))
       }
     })
     return {
       dispose() {
-        canceled = true
+        active = false
       }
     }
   }
