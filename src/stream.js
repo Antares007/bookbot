@@ -72,23 +72,53 @@ export function merge<A>(...lr: Array<S<A>>): S<A> {
   }
 }
 
+export function combine<A>(...lr: Array<S<A>>): S<Array<A>> {
+  return (sink_, schedule) => {
+    const m: Map<number, D> = new Map()
+    const ref = aRef()
+    const sink = aSink(ref, sink_)
+    const as: Array<?A> = lr.map(() => null)
+    for (var i = 0, l = lr.length; i < l; i++) {
+      m.set(
+        i,
+        lr[i](
+          indexSink(i, m, (v, i) => {
+            if (v.type === "event") {
+              as[i] = v.v
+              const clone = []
+              for (let a of as) {
+                if (a == null) return
+                clone.push(a)
+              }
+              sink(event(v.t, clone))
+            } else {
+              sink(v)
+            }
+          }),
+          schedule
+        )
+      )
+    }
+    return aDisposable(ref, () => m.forEach(d => d.dispose()))
+  }
+}
+
 export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
   return (sink_, schedule) => {
     const m: Map<number, D> = new Map()
     const ref = aRef()
     const sink = aSink(ref, sink_)
     let i = 0
-    const index = i++
     m.set(
-      index,
+      i,
       s(
-        indexSink(index, m, vo => {
-          const index = i++
+        indexSink(i, m, vo => {
           if (vo.type === "event") {
+            i++
             m.set(
-              index,
+              i,
               f(vo.v)(
-                indexSink(index, m, vi => {
+                indexSink(i, m, vi => {
                   if (vi.type === "event") sink(event(vi.t - vo.t, vi.v))
                   else if (vi.type === "end") sink(end(vi.t - vo.t))
                   else sink(error(vi.t - vo.t, vi.v))
@@ -110,18 +140,18 @@ export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
 function indexSink<A>(
   index: number,
   dmap: Map<number, D>,
-  o: (O<A>) => void
+  o: (O<A>, number) => void
 ): (O<A>) => void {
   return v => {
     if (v.type === "event") {
-      o(v)
+      o(v, index)
     } else if (v.type === "end") {
       dmap.delete(index)
       if (dmap.size !== 0) return
-      o(v)
+      o(v, index)
     } else {
       dmap.forEach(d => d.dispose)
-      o(v)
+      o(v, index)
     }
   }
 }
