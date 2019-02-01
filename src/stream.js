@@ -78,27 +78,21 @@ export function combine<A>(...lr: Array<S<A>>): S<Array<A>> {
     const ref = aRef()
     const sink = aSink(ref, sink_)
     const as: Array<?A> = lr.map(() => null)
-    for (var i = 0, l = lr.length; i < l; i++) {
-      m.set(
-        i,
-        lr[i](
-          indexSink(i, m, (v, i) => {
-            if (v.type === "event") {
-              as[i] = v.v
-              const clone = []
-              for (let a of as) {
-                if (a == null) return
-                clone.push(a)
-              }
-              sink(event(v.t, clone))
-            } else {
-              sink(v)
-            }
-          }),
-          schedule
-        )
-      )
+    const iSink = (v, i) => {
+      if (v.type === "event") {
+        as[i] = v.v
+        const clone = []
+        for (let a of as) {
+          if (a == null) return
+          clone.push(a)
+        }
+        sink(event(v.t, clone))
+      } else {
+        sink(v)
+      }
     }
+    for (var i = 0, l = lr.length; i < l; i++)
+      m.set(i, lr[i](indexSink(i, m, iSink), schedule))
     return aDisposable(ref, () => m.forEach(d => d.dispose()))
   }
 }

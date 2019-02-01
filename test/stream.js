@@ -129,6 +129,19 @@ export async function combine1(assert: Array<A>) {
 }
 
 export async function combine2(assert: Array<A>) {
+  const s01 = "(10|)"
+  const s02 = "(23|)"
+  const exp = "(00|)"
+
+  const act = s.map(
+    ([a, b]) => "" + parseInt(a, 10) * parseInt(b, 10),
+    s.combine(...[s01, s02].map(h.sOf))
+  )
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+
+export async function combine3(assert: Array<A>) {
   const s01 = "|"
   const s02 = "---|"
   const exp = "---|"
@@ -138,7 +151,7 @@ export async function combine2(assert: Array<A>) {
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 
-export async function combine3(assert: Array<A>) {
+export async function combine4(assert: Array<A>) {
   const s01 = "1|"
   const s02 = "-X"
   const exp = "-X"
