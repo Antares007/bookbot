@@ -1,234 +1,161 @@
 //@flow strict
 import type { Scheduler } from "./scheduler.js"
 
-export type Sink<A> = {
-  +event: (t: number, a: A) => void,
-  +end: (t: number) => void,
-  +error: (t: number, err: Error) => void
+export type O<A> =
+  | { type: "event", t: number, v: A }
+  | { type: "end", t: number }
+  | { type: "error", t: number, v: Error }
+
+export function event<A>(t: number, v: A): O<A> {
+  return { type: "event", t, v }
 }
-export type S<A> = (Sink<A>, Scheduler) => D
+export function end<A>(t: number): O<A> {
+  return { type: "end", t }
+}
+export function error<A>(t: number, v: Error): O<A> {
+  return { type: "error", t, v }
+}
+
+export type S<A> = ((O<A>) => void, Scheduler) => D
+
 export type D = { +dispose: () => void }
 
 const emptyDisposable: D = { dispose: () => {} }
 
-export function empty<A>(): S<A> {
-  return () => emptyDisposable
-}
+export const empty = () => emptyDisposable
 
 export function at<A>(a: A, delay: number): S<A> {
-  let active = true
-  return (sink, scheduler) => {
-    scheduler(delay, _ => {
-      try {
-        if (active) sink.event(delay, a)
-        if (active) sink.end(delay)
-      } catch (err) {
-        sink.error(delay, err)
-      }
-    })
-    return {
-      dispose() {
-        active = false
-      }
-    }
+  return (sink_, scheduler) => {
+    const ref = aRef()
+    const sink = trySink(aSink(ref, sink_))
+    scheduler(delay, _ => (sink(event(delay, a)), sink(end(delay))))
+    return aDisposable(ref)
   }
 }
 
-export function throwError(err: Error): S<Error> {
-  let active = true
-  return (sink, scheduler) => {
-    scheduler(0, _ => {
-      if (active) sink.error(0, err)
-    })
-    return {
-      dispose() {
-        active = false
-      }
-    }
+export function throwError<A>(err: Error): S<A> {
+  return (sink_, scheduler) => {
+    const ref = aRef()
+    const sink = aSink(ref, sink_)
+    scheduler(0, _ => sink(error(0, err)))
+    return aDisposable(ref)
   }
 }
 
 export function fromArray<A>(as: Array<A>): S<A> {
-  let active = true
-  return (sink, scheduler) => {
+  return (sink_, scheduler) => {
+    const ref = aRef()
+    const sink = trySink(aSink(ref, sink_))
     scheduler(0, _ => {
-      try {
-        for (let i = 0, l = as.length; i < l && active; i++)
-          sink.event(0, as[i])
-        if (active) sink.end(0)
-      } catch (err) {
-        sink.error(0, err instanceof Error ? err : new Error(err + ""))
-      }
+      for (var i = 0, l = as.length; i < l && ref.active; i++)
+        sink(event(0, as[i]))
+      sink(end(0))
     })
-    return {
-      dispose() {
-        active = false
-      }
-    }
+    return aDisposable(ref)
   }
 }
 
 export function map<A, B>(f: A => B, s: S<A>): S<B> {
   return (sink, scheduler) =>
-    s(
-      {
-        event: (t, v) => sink.event(t, f(v)),
-        end: sink.end,
-        error: sink.error
-      },
-      scheduler
-    )
-}
-
-export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
-  return (sink, scheduler) => {
-    let active = true
-    let i = 0
-    let size = 0
-    const dmap: { [number | string]: { +dispose: () => void } } = {}
-    const d = {
-      dispose() {
-        active = false
-        for (var key in dmap) dmap[key].dispose()
-      }
-    }
-    const _end = (t, index) => {
-      delete dmap[index]
-      if (--size === 0) {
-        active = false
-        sink.end(t)
-      }
-    }
-    const _error = (t, err) => {
-      if (active) {
-        d.dispose()
-        sink.error(t, err)
-      }
-    }
-    const index = i++
-    size++
-    dmap[index] = s(
-      {
-        event(t0, a) {
-          if (!active) return
-          const index = i++
-          size++
-          dmap[index] = f(a)(
-            {
-              event(t, v) {
-                if (!active) return
-                sink.event(t + t0, v)
-              },
-              end: t => _end(t + t0, index),
-              error: (t, err) => _error(t + t0, err)
-            },
-            scheduler
-          )
-        },
-        end: t0 => _end(t0, index),
-        error: (t0, err) => _error(t0, err)
-      },
-      scheduler
-    )
-    return d
-  }
+    s(v => (v.type === "event" ? sink(event(v.t, f(v.v))) : sink(v)), scheduler)
 }
 
 export function merge<A>(...lr: Array<S<A>>): S<A> {
-  return (sink, scheduler) => {
-    const ref = { active: true }
-    const ds: Array<?D> = []
-    const d = safeDispose(ref, ds)
-    const { event } = sink
-    for (let i = 0, l = lr.length; i < l; i++)
-      ds.push(
-        lr[i](
-          {
-            event: function mergeEvent(...args) {
-              if (!ref.active) return
-              event.apply(this, args)
-            },
-            end: safeLastEnd(i, ref, ds, sink.end),
-            error: safeError(ref, d, sink.error)
-          },
-          scheduler
-        )
-      )
-    return d
+  return (sink_, schedule) => {
+    const m: Map<number, D> = new Map()
+    const ref = aRef()
+    const sink = aSink(ref, sink_)
+    for (var i = 0, l = lr.length; i < l; i++) {
+      m.set(i, lr[i](indexSink(i, m, sink), schedule))
+    }
+    return aDisposable(ref, () => m.forEach(d => d.dispose()))
   }
 }
 
-export function combine<A>(...lr: Array<S<A>>): S<Array<A>> {
-  return (sink, scheduler) => {
-    const ref = { active: true }
-    const as: Array<?A> = lr.map(() => null)
-    const ds: Array<?D> = []
-    const d = safeDispose(ref, ds)
-    const { event } = sink
-    for (let i = 0, l = lr.length; i < l; i++)
-      ds.push(
-        lr[i](
-          {
-            event: function mergeEvent(t, a) {
-              if (!ref.active) return
-              as[i] = a
-              const clone: Array<A> = []
-              for (let a of as) {
-                if (a == null) break
-                clone.push(a)
-              }
-              if (clone.length === as.length) event(this, clone)
-            },
-            end: safeLastEnd(i, ref, ds, sink.end),
-            error: safeError(ref, d, sink.error)
-          },
-          scheduler
-        )
+export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
+  return (sink_, schedule) => {
+    const m: Map<number, D> = new Map()
+    const ref = aRef()
+    const sink = aSink(ref, sink_)
+    let i = 0
+    const index = i++
+    m.set(
+      index,
+      s(
+        indexSink(index, m, vo => {
+          const index = i++
+          if (vo.type === "event") {
+            m.set(
+              index,
+              f(vo.v)(
+                indexSink(index, m, vi => {
+                  if (vi.type === "event") sink(event(vi.t - vo.t, vi.v))
+                  else if (vi.type === "end") sink(end(vi.t - vo.t))
+                  else sink(error(vi.t - vo.t, vi.v))
+                }),
+                schedule
+              )
+            )
+          } else {
+            sink(vo)
+          }
+        }),
+        schedule
       )
-    return d
+    )
+    return aDisposable(ref, () => m.forEach(d => d.dispose()))
   }
 }
 
-function safeDispose(ref: { active: boolean }, ds: Array<?D>): D {
+function indexSink<A>(
+  index: number,
+  dmap: Map<number, D>,
+  o: (O<A>) => void
+): (O<A>) => void {
+  return v => {
+    if (v.type === "event") {
+      o(v)
+    } else if (v.type === "end") {
+      dmap.delete(index)
+      if (dmap.size !== 0) return
+      o(v)
+    } else {
+      dmap.forEach(d => d.dispose)
+      o(v)
+    }
+  }
+}
+
+function aSink<A>(ref: { active: boolean }, o: (O<A>) => void): (O<A>) => void {
+  return v => {
+    if (!ref.active) return
+    if (v.type === "event") return o(v)
+    ref.active = false
+    o(v)
+  }
+}
+
+function trySink<A>(o: (O<A>) => void): (O<A>) => void {
+  return v => {
+    if (v.type === "error") return o(v)
+    try {
+      o(v)
+    } catch (err) {
+      o(error(v.t, err))
+    }
+  }
+}
+
+function aRef() {
+  return { active: true }
+}
+
+function aDisposable(ref: { active: boolean }, f?: () => void): D {
   return {
     dispose() {
       if (!ref.active) return
       ref.active = false
-      for (let d of ds) if (d) d.dispose()
+      if (f != null) f()
     }
-  }
-}
-
-function safeError(
-  ref: { active: boolean },
-  d: D,
-  error: (number, Error) => void
-): (number, Error) => void {
-  return function safeError(...args) {
-    if (!ref.active) return
-    ref.active = false
-    d.dispose()
-    error.apply(this, args)
-  }
-}
-
-function safeLastEnd(
-  i: number,
-  ref: { active: boolean },
-  ds: Array<?D>,
-  end: number => void
-): number => void {
-  return function safeLastEnd(...args) {
-    if (!ref.active) return
-    ds[i] = null
-    let isLast = true
-    for (let d of ds)
-      if (d != null) {
-        isLast = false
-        break
-      }
-    if (!isLast) return
-    ref.active = false
-    end.apply(this, args)
   }
 }

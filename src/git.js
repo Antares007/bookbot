@@ -1,6 +1,6 @@
 //@flow strictlocal
 import type { S } from "./stream"
-import { flatMap, empty } from "./stream"
+import * as s from "./stream"
 
 type Sha1 = string
 opaque type Blob: Buffer = Buffer
@@ -33,66 +33,11 @@ opaque type O =
 
 function run(jsgit: any, v: O): S<Sha1> {
   if (v.type === "blob") {
-    return flatMap(
-      buffer => (o, schedule) => {
-        let active = true
-        const d = {
-          dispose: () => {
-            active = false
-          }
-        }
-        schedule(t0 => {
-          jsgit.saveAs(
-            v.type === "commit" || v.type === "tree" ? v.type : "blob",
-            buffer,
-            (err, hash) =>
-              schedule(t => {
-                if (err && active) return o.error(t - t0, err)
-                try {
-                  if (active) o.event(t - t0, hash)
-                  if (active) o.end(t - t0)
-                } catch (err) {
-                  o.error(t - t0, err)
-                }
-              })
-          )
-        })
-        return d
-      },
-      v.s
-    )
+    return s.flatMap(buffer => s.empty, v.s)
   } else if (v.type === "tree") {
-    return flatMap(
-      buffer => (o, schedule) => {
-        let active = true
-        const d = {
-          dispose: () => {
-            active = false
-          }
-        }
-        schedule(t0 => {
-          jsgit.saveAs(
-            v.type === "commit" || v.type === "tree" ? v.type : "blob",
-            buffer,
-            (err, hash) =>
-              schedule(t => {
-                if (err && active) return o.error(t - t0, err)
-                try {
-                  if (active) o.event(t - t0, hash)
-                  if (active) o.end(t - t0)
-                } catch (err) {
-                  o.error(t - t0, err)
-                }
-              })
-          )
-        })
-        return d
-      },
-      v.s
-    )
+    return s.flatMap(buffer => s.empty, v.s)
   }
-
-  return empty()
+  return s.empty
 }
 
 //+blob: (name: string, S<Buffer>) => void,

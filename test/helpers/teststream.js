@@ -1,25 +1,18 @@
 //@flow strict
-import type { Sink, S } from "../../src/stream.js"
+import type { S } from "../../src/stream.js"
+import * as s from "../../src/stream.js"
 import { makeTestScheduler } from "./testscheduler.js"
 
 export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
   return new Promise((resolve, reject) => {
     const scheduler = makeTestScheduler(99)
     const vs = []
-    const d = s(
-      {
-        event(t, v) {
-          vs.push([t, String(v)])
-        },
-        end(t) {
-          vs.push([t, "|"])
-        },
-        error(t, err) {
-          vs.push([t, err.message])
-        }
-      },
-      scheduler
-    )
+    const d = s(v => {
+      vs.push([
+        v.t,
+        v.type === "event" ? String(v.v) : v.type === "end" ? "|" : v.v.message
+      ])
+    }, scheduler)
     scheduler(99, t => {
       d.dispose()
       resolve(vs.slice(0))
@@ -36,10 +29,10 @@ export function sOf(str: string): S<string> {
         if (!active) return
         sch(p[0], t =>
           p[1] === "|"
-            ? sink.end(t - t0)
+            ? sink(s.end(t - t0))
             : p[1] === "X"
-            ? sink.error(t - t0, new Error("X"))
-            : sink.event(t - t0, p[1])
+            ? sink(s.error(t - t0, new Error("X")))
+            : sink(s.event(t - t0, p[1]))
         )
       }
     })
