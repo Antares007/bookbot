@@ -136,43 +136,20 @@ export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
 
 export function merge<A>(...lr: Array<S<A>>): S<A> {
   return (sink, scheduler) => {
-    let active = true
+    const ref = { active: true }
     const ds: Array<?D> = []
-    const d = {
-      dispose() {
-        if (!active) return
-        active = false
-        for (let d of ds) if (d) d.dispose()
-      }
-    }
-    const { event, end, error } = sink
+    const d = safeDispose(ref, ds)
+    const { event } = sink
     for (let i = 0, l = lr.length; i < l; i++)
       ds.push(
         lr[i](
           {
             event: function mergeEvent(...args) {
-              if (!active) return
+              if (!ref.active) return
               event.apply(this, args)
             },
-            end: function mergeEnd(...args) {
-              if (!active) return
-              ds[i] = null
-              let isLast = true
-              for (let d of ds)
-                if (d != null) {
-                  isLast = false
-                  break
-                }
-              if (!isLast) return
-              active = false
-              end.apply(this, args)
-            },
-            error: function mergeError(...args) {
-              if (!active) return
-              active = false
-              d.dispose()
-              error.apply(this, args)
-            }
+            end: safeLastEnd(i, ref, ds, sink.end),
+            error: safeError(ref, d, sink.error)
           },
           scheduler
         )
@@ -181,19 +158,77 @@ export function merge<A>(...lr: Array<S<A>>): S<A> {
   }
 }
 
-export function pair<A, B>(l: S<A>, r: S<B>): S<[A, B]> {
+export function combine<A>(...lr: Array<S<A>>): S<Array<A>> {
   return (sink, scheduler) => {
-    let active = true
-    const dl = l({ event() {}, end() {}, error() {} }, scheduler)
-    const dr = r({ event() {}, end() {}, error() {} }, scheduler)
-    const d = {
-      dispose() {
-        if (!active) return
-        active = false
-        dl.dispose()
-        dr.dispose()
-      }
-    }
+    const ref = { active: true }
+    const as: Array<?A> = lr.map(() => null)
+    const ds: Array<?D> = []
+    const d = safeDispose(ref, ds)
+    const { event } = sink
+    for (let i = 0, l = lr.length; i < l; i++)
+      ds.push(
+        lr[i](
+          {
+            event: function mergeEvent(t, a) {
+              if (!ref.active) return
+              as[i] = a
+              const clone: Array<A> = []
+              for (let a of as) {
+                if (a == null) break
+                clone.push(a)
+              }
+              if (clone.length === as.length) event(this, clone)
+            },
+            end: safeLastEnd(i, ref, ds, sink.end),
+            error: safeError(ref, d, sink.error)
+          },
+          scheduler
+        )
+      )
     return d
+  }
+}
+
+function safeDispose(ref: { active: boolean }, ds: Array<?D>): D {
+  return {
+    dispose() {
+      if (!ref.active) return
+      ref.active = false
+      for (let d of ds) if (d) d.dispose()
+    }
+  }
+}
+
+function safeError(
+  ref: { active: boolean },
+  d: D,
+  error: (number, Error) => void
+): (number, Error) => void {
+  return function safeError(...args) {
+    if (!ref.active) return
+    ref.active = false
+    d.dispose()
+    error.apply(this, args)
+  }
+}
+
+function safeLastEnd(
+  i: number,
+  ref: { active: boolean },
+  ds: Array<?D>,
+  end: number => void
+): number => void {
+  return function safeLastEnd(...args) {
+    if (!ref.active) return
+    ds[i] = null
+    let isLast = true
+    for (let d of ds)
+      if (d != null) {
+        isLast = false
+        break
+      }
+    if (!isLast) return
+    ref.active = false
+    end.apply(this, args)
   }
 }
