@@ -84,3 +84,33 @@ export async function flatMap_throws_when_first_one_throws(assert: Array<A>) {
 
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
+
+export async function merge1(assert: Array<A>) {
+  const s01 = "-a--(c )|"
+  const s02 = "b---(d )-----|"
+  const exp = "ba--(cd)-----|"
+
+  const act = s.merge(...[s01, s02].map(h.sOf))
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+
+export async function merge2(assert: Array<A>) {
+  const s01 = "a---|"
+  const s02 = "X"
+  const exp = "(aX)"
+
+  const act = s.merge(...[s01, s02].map(h.sOf))
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+
+export async function merge3(assert: Array<A>) {
+  const s01 = "a---|"
+  const s02 = ""
+  const exp = "a"
+
+  const act = s.merge(...[s01, s02].map(h.sOf))
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}

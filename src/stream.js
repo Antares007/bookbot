@@ -163,7 +163,7 @@ export function merge<A>(...lr: Array<S<A>>): S<A> {
                   isLast = false
                   break
                 }
-              if (!end) return
+              if (!isLast) return
               active = false
               end.apply(this, args)
             },
