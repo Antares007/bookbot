@@ -1,5 +1,6 @@
 //@flow strict
 import type { S } from "../../src/stream2.js"
+import * as s from "../../src/stream2.js"
 import { makeTestScheduler } from "./testscheduler.js"
 
 export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
@@ -28,10 +29,10 @@ export function sOf(str: string): S<string> {
         if (!active) return
         sch(p[0], t =>
           p[1] === "|"
-            ? sink.end(t - t0)
+            ? sink(s.end(t - t0))
             : p[1] === "X"
-            ? sink.error(t - t0, new Error("X"))
-            : sink.event(t - t0, p[1])
+            ? sink(s.error(t - t0, new Error("X")))
+            : sink(s.event(t - t0, p[1]))
         )
       }
     })
