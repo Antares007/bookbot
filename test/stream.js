@@ -47,6 +47,16 @@ export async function flatMap(assert: Array<A>) {
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 
+export async function flatMap2(assert: Array<A>) {
+  const s01 = "(abc|)"
+  const s02 = "X"
+  const exp = "(abcX)"
+
+  const act = s.flatMap(id, s.fromArray([s01, s02].map(h.sOf)))
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+
 export async function flatMap_ends_when_last_one_ends(assert: Array<A>) {
   const s01 = "--|"
   const s02 = "|"

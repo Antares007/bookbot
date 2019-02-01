@@ -133,3 +133,88 @@ export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
     return d
   }
 }
+
+function safeEvent<A>(
+  ref: { active: boolean },
+  o: (number, A) => void
+): (number, A) => void {
+  return function safeEvent(...args) {
+    if (ref.active) o.apply(this, args)
+  }
+}
+
+function safeLastEnd(
+  i,
+  ref: { active: boolean },
+  ds: Array<?D>,
+  o: number => void
+) {
+  return function safeLastEnd(...args) {
+    ds[i] = null
+    if (!ref.active) return
+    let end = true
+    for (let d of ds)
+      if (d == null) {
+        end = false
+        break
+      }
+    if (end) {
+      ref.active = false
+      o.apply(this, args)
+    }
+  }
+}
+
+function safeError(
+  ref: { active: boolean },
+  d: D,
+  o: (number, Error) => void
+): (number, Error) => void {
+  return function safeError(...args) {
+    if (!ref.active) return
+    ref.active = false
+    d.dispose()
+    o.apply(this, args)
+  }
+}
+
+export function mergeArray<A>(...lr: Array<S<A>>): S<A> {
+  return (sink, scheduler) => {
+    const ref = { active: true }
+    const ds: Array<?D> = []
+    const d = {
+      dispose() {
+        for (let d of ds) if (d) d.dispose()
+      }
+    }
+    for (let i = 0, l = lr.length; i < l; i++)
+      ds.push(
+        lr[i](
+          {
+            event: safeEvent(ref, sink.event),
+            end: safeLastEnd(i, ref, ds, sink.end),
+            error: safeError(ref, d, sink.error)
+          },
+          scheduler
+        )
+      )
+    return d
+  }
+}
+
+export function pair<A, B>(l: S<A>, r: S<B>): S<[A, B]> {
+  return (sink, scheduler) => {
+    let active = true
+    const dl = l({ event() {}, end() {}, error() {} }, scheduler)
+    const dr = r({ event() {}, end() {}, error() {} }, scheduler)
+    const d = {
+      dispose() {
+        if (!active) return
+        active = false
+        dl.dispose()
+        dr.dispose()
+      }
+    }
+    return d
+  }
+}
