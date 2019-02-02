@@ -24,6 +24,28 @@ const emptyDisposable: D = { dispose: () => {} }
 
 export const empty = () => emptyDisposable
 
+export function Of<A>(f: ((O<A>) => void, Scheduler) => D): S<A> {
+  return (o, schedule) => {
+    let active = true
+    let d: D = emptyDisposable
+    schedule(0, _ => {
+      if (!active) return
+      d = f(e => {
+        if (e.type === 'event') return o(e)
+        active = false
+        o(e)
+      }, schedule)
+    })
+    return {
+      dispose() {
+        if (!active) return
+        active = false
+        d.dispose()
+      }
+    }
+  }
+}
+
 export function at<A>(a: A, delay: number): S<A> {
   return (sink_, schedule) => {
     const ref = aRef()

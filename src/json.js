@@ -15,6 +15,13 @@ export function run(v: O): S<number> {
 
 declare var o: O => void
 
+o({
+  type: 'string',
+  s: (o, schedule) => {
+    s.emptyDisposable
+  }
+})
+
 const v = {
   name: '',
   age: 1,
