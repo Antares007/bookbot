@@ -7,10 +7,10 @@ export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
   return new Promise((resolve, reject) => {
     const scheduler = makeTestScheduler(99)
     const vs = []
-    const d = s(v => {
+    const d = s(e => {
       vs.push([
-        v.t,
-        v.type === "event" ? String(v.v) : v.type === "end" ? "|" : v.v.message
+        e.t,
+        e.type === "event" ? String(e.v) : e.type === "end" ? "|" : e.v.message
       ])
     }, scheduler)
     scheduler(99, t => {
@@ -23,11 +23,11 @@ export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
 export function sOf(str: string): S<string> {
   const line = tlOf(str)
   let active = true
-  return (sink, sch) => {
-    sch(0, t0 => {
+  return (sink, schedule) => {
+    schedule(0, t0 => {
       for (let p of line) {
         if (!active) return
-        sch(p[0], t =>
+        schedule(p[0], t =>
           p[1] === "|"
             ? sink(s.end(t - t0))
             : p[1] === "X"

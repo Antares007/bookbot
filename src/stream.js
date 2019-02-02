@@ -25,10 +25,10 @@ const emptyDisposable: D = { dispose: () => {} }
 export const empty = () => emptyDisposable
 
 export function at<A>(a: A, delay: number): S<A> {
-  return (sink_, scheduler) => {
+  return (sink_, schedule) => {
     const ref = aRef()
     const sink = trySink(aSink(ref, sink_))
-    scheduler(delay, _ => (sink(event(delay, a)), sink(end(delay))))
+    schedule(delay, _ => (sink(event(delay, a)), sink(end(delay))))
     return aDisposable(ref)
   }
 }
@@ -57,7 +57,7 @@ export function fromArray<A>(as: Array<A>): S<A> {
 
 export function map<A, B>(f: A => B, s: S<A>): S<B> {
   return (sink, scheduler) =>
-    s(v => (v.type === "event" ? sink(event(v.t, f(v.v))) : sink(v)), scheduler)
+    s(e => (e.type === "event" ? sink(event(e.t, f(e.v))) : sink(e)), scheduler)
 }
 
 export function merge<A>(...lr: Array<S<A>>): S<A> {
@@ -78,17 +78,17 @@ export function combine<A>(...lr: Array<S<A>>): S<Array<A>> {
     const ref = aRef()
     const sink = aSink(ref, sink_)
     const as: Array<?A> = lr.map(() => null)
-    const iSink = (v, i) => {
-      if (v.type === "event") {
-        as[i] = v.v
+    const iSink = (e, i) => {
+      if (e.type === "event") {
+        as[i] = e.v
         const clone = []
         for (let a of as) {
           if (a == null) return
           clone.push(a)
         }
-        sink(event(v.t, clone))
+        sink(event(e.t, clone))
       } else {
-        sink(v)
+        sink(e)
       }
     }
     for (var i = 0, l = lr.length; i < l; i++)
@@ -106,22 +106,22 @@ export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
     m.set(
       i,
       s(
-        indexSink(i, m, vo => {
-          if (vo.type === "event") {
+        indexSink(i, m, eo => {
+          if (eo.type === "event") {
             i++
             m.set(
               i,
-              f(vo.v)(
-                indexSink(i, m, vi => {
-                  if (vi.type === "event") sink(event(vi.t - vo.t, vi.v))
-                  else if (vi.type === "end") sink(end(vi.t - vo.t))
-                  else sink(error(vi.t - vo.t, vi.v))
+              f(eo.v)(
+                indexSink(i, m, ei => {
+                  if (ei.type === "event") sink(event(ei.t - eo.t, ei.v))
+                  else if (ei.type === "end") sink(end(ei.t - eo.t))
+                  else sink(error(ei.t - eo.t, ei.v))
                 }),
                 schedule
               )
             )
           } else {
-            sink(vo)
+            sink(eo)
           }
         }),
         schedule
@@ -136,36 +136,36 @@ function indexSink<A>(
   dmap: Map<number, D>,
   o: (O<A>, number) => void
 ): (O<A>) => void {
-  return v => {
-    if (v.type === "event") {
-      o(v, index)
-    } else if (v.type === "end") {
+  return e => {
+    if (e.type === "event") {
+      o(e, index)
+    } else if (e.type === "end") {
       dmap.delete(index)
       if (dmap.size !== 0) return
-      o(v, index)
+      o(e, index)
     } else {
       dmap.forEach(d => d.dispose)
-      o(v, index)
+      o(e, index)
     }
   }
 }
 
 function aSink<A>(ref: { active: boolean }, o: (O<A>) => void): (O<A>) => void {
-  return v => {
+  return e => {
     if (!ref.active) return
-    if (v.type === "event") return o(v)
+    if (e.type === "event") return o(e)
     ref.active = false
-    o(v)
+    o(e)
   }
 }
 
 function trySink<A>(o: (O<A>) => void): (O<A>) => void {
-  return v => {
-    if (v.type === "error") return o(v)
+  return e => {
+    if (e.type === "error") return o(e)
     try {
-      o(v)
+      o(e)
     } catch (err) {
-      o(error(v.t, err))
+      o(error(e.t, err))
     }
   }
 }
