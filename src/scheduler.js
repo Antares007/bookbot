@@ -1,72 +1,56 @@
 //@flow strict
-export type Scheduler = (a: ScheduleAction | number, b: ?ScheduleAction) => void
-export type ScheduleAction = (time: number) => void
+export type Scheduler = (number | ScheduleAction, ?ScheduleAction) => void
+export type ScheduleAction = number => void
 
-export function local(lt: number, schedule: Scheduler): Scheduler {
-  return (a, b) =>
-    schedule(t => {
-      const offset = lt - t
-      if (typeof a === "number" && typeof b === "function") {
-        schedule(a, t => b(t + offset))
-      } else {
-        if (typeof a === "function") schedule(t => a(t + offset))
-        if (typeof b === "function") schedule(t => b(t + offset))
-      }
-    })
-}
-
-export function mkScheduler<H>(
+export function mkScheduler(
   tf: () => number,
-  setTimeout: (f: () => void, delay: number) => H
+  setTimeout: (f: () => void, delay: number) => void
 ): Scheduler {
-  let currentTime: number = -1
-  let line: Array<[number, Array<ScheduleAction>]> = []
+  let p = Promise.resolve()
+  const currentTime: () => number = (() => {
+    let t = -1
+    const reset = () => (t = -1)
+    return () => {
+      if (t !== -1) return t
+      t = tf()
+      p = p.then(reset)
+      return t
+    }
+  })()
+
+  let line: Array<[number, ScheduleAction]> = []
+
   return schedule
+
   function schedule(a, b) {
-    if (currentTime === -1) {
-      currentTime = tf()
-      setTimeout(onTimeout, 0)
-    }
-    if (typeof a === "number" && typeof b === "function") {
-      const t = currentTime + a
-      const i = findAppendPosition(t, line)
-      const li = line[i]
-      if (i > -1 && li[0] === t) li[1].push(b)
-      else line.splice(i + 1, 0, [t, [b]])
+    if (typeof a === 'number' && typeof b === 'function') {
+      const t = currentTime() + Math.max(0, a)
+      if (line.length === 0) p = p.then(onTimeout)
+      const ap = findAppendPosition(t, line)
+      const li = line[ap]
+      if (ap > -1 && li[0] === t)
+        li[1] = (l => t => {
+          l(t)
+          b(t)
+        })(li[1])
+      else line.splice(ap + 1, 0, [t, b])
     } else {
-      if (typeof a === "function") a(currentTime)
-      if (typeof b === "function") b(currentTime)
+      if (typeof a === 'function') a(currentTime())
+      if (typeof b === 'function') b(currentTime())
     }
   }
+
   function onTimeout() {
-    if (line.length === 0) {
-      currentTime = -1
-      return
-    }
-    currentTime = tf()
-    runUntil()
-    setTimeout(onTimeout, line.length > 0 ? Math.max(0, line[0][0] - tf()) : 0)
-  }
-  function runUntil() {
+    const t = currentTime()
     while (true) {
-      const ap = findAppendPosition(currentTime, line)
+      const ap = findAppendPosition(t, line)
       if (ap === -1) break
       const line_ = line
       line = ap === line.length - 1 ? [] : line.slice(ap + 1)
-      for (let i = 0; i <= ap; i++) {
-        let [t, acts] = line_[i]
-        for (let act of acts) act(t)
-      }
+      for (let i = 0; i <= ap; i++) line_[i][1](line_[i][0])
     }
-  }
-  function append(t, sr) {
-    const i = findAppendPosition(t, line)
-    const li = line[i]
-    if (i > -1 && li[0] === t) {
-      li[1].push(sr)
-    } else {
-      line.splice(i + 1, 0, [t, [sr]])
-    }
+    if (line.length === 0) return
+    setTimeout(onTimeout, Math.max(0, line[0][0] - tf()))
   }
 }
 
@@ -87,5 +71,5 @@ function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
       return l - 1
     }
   }
-  throw new Error("never")
+  throw new Error('never')
 }

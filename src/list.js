@@ -1,10 +1,6 @@
-//@flow
-export opaque type List<A>: null | [A, List<A>] = null | [A, List<A>]
+//@flow strict
+export type List<A> = null | [A, List<A>]
 
-export function empty<A>(): List<A> {
-  return null
-}
-
-export function cons<A>(a: A, l: List<A>): List<A> {
-  return [a, l]
+export function cons<A>(head: A, tail: List<A>): List<A> {
+  return [head, tail]
 }

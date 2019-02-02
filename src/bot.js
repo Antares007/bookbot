@@ -56,6 +56,7 @@ function postJson<A>(url: string, message: A): Promise<SendApiResponse> {
   }
   return new Promise((resolve, reject) => {
     const req = https.request(options, res => {
+      console.log(res.headers)
       res.setEncoding("utf8")
       let data = ""
       res.on("data", d => {
