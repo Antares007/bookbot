@@ -17,9 +17,10 @@ declare var o: O => void
 
 o({
   type: 'string',
-  s: (o, schedule) => {
-    s.emptyDisposable
-  }
+  s: s.Of((o, schedule) => {
+    o(s.event(schedule.now(), '0'))
+    return { dispose() {} }
+  })
 })
 
 const v = {

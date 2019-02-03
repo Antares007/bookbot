@@ -1,4 +1,6 @@
 //@flow strict
+import { defer } from './defer'
+export opaque type TimePoint: number = number
 export type Scheduler = (number | ScheduleAction, ?ScheduleAction) => void
 export type ScheduleAction = number => void
 
@@ -6,26 +8,16 @@ export function mkScheduler(
   tf: () => number,
   setTimeout: (f: () => void, delay: number) => void
 ): Scheduler {
-  let p = Promise.resolve()
-  const currentTime: () => number = (() => {
-    let t = -1
-    const reset = () => (t = -1)
-    return () => {
-      if (t !== -1) return t
-      t = tf()
-      p = p.then(reset)
-      return t
-    }
-  })()
-
+  const now = mkPureNow(tf)
   let line: Array<[number, ScheduleAction]> = []
 
   return schedule
 
   function schedule(a, b) {
+    const currentTime = now()
     if (typeof a === 'number' && typeof b === 'function') {
-      const t = currentTime() + Math.max(0, a)
-      if (line.length === 0) p = p.then(onTimeout)
+      if (line.length === 0) defer(onTimeout)
+      const t = currentTime + (a < 0 ? 0 : a)
       const ap = findAppendPosition(t, line)
       const li = line[ap]
       if (ap > -1 && li[0] === t)
@@ -35,22 +27,36 @@ export function mkScheduler(
         })(li[1])
       else line.splice(ap + 1, 0, [t, b])
     } else {
-      if (typeof a === 'function') a(currentTime())
-      if (typeof b === 'function') b(currentTime())
+      if (typeof a === 'function') a(currentTime)
+      if (typeof b === 'function') b(currentTime)
     }
   }
-
   function onTimeout() {
-    const t = currentTime()
+    const currentTime = now()
     while (true) {
-      const ap = findAppendPosition(t, line)
+      const ap = findAppendPosition(currentTime, line)
       if (ap === -1) break
       const line_ = line
       line = ap === line.length - 1 ? [] : line.slice(ap + 1)
       for (let i = 0; i <= ap; i++) line_[i][1](line_[i][0])
     }
     if (line.length === 0) return
-    setTimeout(onTimeout, Math.max(0, line[0][0] - tf()))
+    const delay = line[0][0] - tf()
+    if (delay <= 0) defer(onTimeout)
+    else setTimeout(onTimeout, delay)
+  }
+}
+
+function mkPureNow(tf: () => number): () => TimePoint {
+  let currentTime = -1
+  const reset = () => {
+    currentTime = -1
+  }
+  return () => {
+    if (currentTime !== -1) return currentTime
+    defer(reset)
+    currentTime = tf()
+    return currentTime
   }
 }
 
