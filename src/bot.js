@@ -1,18 +1,18 @@
-//@flow strict
-import https from "https"
+// @flow strict
+import https from 'https'
 
-const querystring = require("querystring")
+const querystring = require('querystring')
 var a = {
   recipient: {
-    id: "376858172875329"
+    id: '376858172875329'
   },
   timestamp: 1548870035697,
   sender: {
-    id: "2081128551910714"
+    id: '2081128551910714'
   },
   postback: {
-    payload: "<postback_payload>",
-    title: "Get Started"
+    payload: '<postback_payload>',
+    title: 'Get Started'
   }
 }
 
@@ -31,15 +31,15 @@ type SendApiResponse =
       }
     }
 
-if (!process.env.PAGE_ACCESS_TOKEN) throw new Error("PAGE_ACCESS_TOKEN not set")
+if (!process.env.PAGE_ACCESS_TOKEN) throw new Error('PAGE_ACCESS_TOKEN not set')
 
 const url =
-  "https://graph.facebook.com/v2.6/me/messages?access_token=" +
+  'https://graph.facebook.com/v2.6/me/messages?access_token=' +
   process.env.PAGE_ACCESS_TOKEN
 
 const psid = postJson(url, {
-  recipient: { id: "2081128551910714" },
-  sender_action: "typing_off"
+  recipient: { id: '2081128551910714' },
+  sender_action: 'typing_off'
 }).then(rez => console.log(rez))
 
 function postJson<A>(url: string, message: A): Promise<SendApiResponse> {
@@ -48,24 +48,24 @@ function postJson<A>(url: string, message: A): Promise<SendApiResponse> {
   const options = {
     hostname,
     path: pathname + search,
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
-      "Content-Length": data.length
+      'Content-Type': 'application/json',
+      'Content-Length': data.length
     }
   }
   return new Promise((resolve, reject) => {
     const req = https.request(options, res => {
       console.log(res.headers)
-      res.setEncoding("utf8")
-      let data = ""
-      res.on("data", d => {
+      res.setEncoding('utf8')
+      let data = ''
+      res.on('data', d => {
         data += d
       })
-      res.on("end", () => resolve(JSON.parse(data)))
-      res.on("error", reject)
+      res.on('end', () => resolve(JSON.parse(data)))
+      res.on('error', reject)
     })
-    req.on("error", reject)
+    req.on('error', reject)
     req.write(data)
     req.end()
   })

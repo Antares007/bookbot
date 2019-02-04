@@ -8,7 +8,7 @@ const schedule = mkScheduler(
   }
 )
 
-schedule(t => {
+schedule(0, t => {
   const offset = 0 - t
   const rec = (tag, d: number) => t => {
     console.log(tag)

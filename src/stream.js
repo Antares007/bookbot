@@ -1,48 +1,36 @@
-//@flow strict
-import type { Scheduler } from './scheduler.js'
+// @flow strict
+import type { Scheduler, TimePoint } from './scheduler'
+import type { Disposable } from './disposable'
+import { relative, local } from './scheduler'
+import * as disposable from './disposable'
 
 export type O<A> =
-  | { type: 'event', t: number, v: A }
-  | { type: 'end', t: number }
-  | { type: 'error', t: number, v: Error }
+  | { type: 'event', t: TimePoint, v: A }
+  | { type: 'end', t: TimePoint }
+  | { type: 'error', t: TimePoint, v: Error }
 
-export function event<A>(t: number, v: A): O<A> {
+export function event<A>(t: TimePoint, v: A): O<A> {
   return { type: 'event', t, v }
 }
-export function end<A>(t: number): O<A> {
+export function end<A>(t: TimePoint): O<A> {
   return { type: 'end', t }
 }
-export function error<A>(t: number, v: Error): O<A> {
+export function error<A>(t: TimePoint, v: Error): O<A> {
   return { type: 'error', t, v }
 }
 
-export type S<A> = ((O<A>) => void, Scheduler) => D
+export type S<A> = ((O<A>) => void, Scheduler) => Disposable
 
-export type D = { +dispose: () => void }
+export const empty = () => disposable.empty
 
-const emptyDisposable: D = { dispose: () => {} }
-
-export const empty = () => emptyDisposable
-
-export function Of<A>(f: ((O<A>) => void, Scheduler) => D): S<A> {
+export function Of<A>(f: S<A>): S<A> {
   return (o, schedule) => {
-    let active = true
-    let d: D = emptyDisposable
-    schedule(0, _ => {
-      if (!active) return
-      d = f(e => {
-        if (e.type === 'event') return o(e)
-        active = false
-        o(e)
-      }, schedule)
+    const ref = aRef()
+    let di = null
+    const ds = schedule(0, t0 => {
+      di = f(trySink(aSink(ref, o)), relative(t0, schedule))
     })
-    return {
-      dispose() {
-        if (!active) return
-        active = false
-        d.dispose()
-      }
-    }
+    return aDisposable(ref)
   }
 }
 
@@ -50,16 +38,21 @@ export function at<A>(a: A, delay: number): S<A> {
   return (sink_, schedule) => {
     const ref = aRef()
     const sink = trySink(aSink(ref, sink_))
-    schedule(delay, _ => (sink(event(delay, a)), sink(end(delay))))
-    return aDisposable(ref)
+    return disposable.mappend(
+      local(schedule)(delay, t => {
+        sink(event(t, a))
+        sink(end(t))
+      }),
+      aDisposable(ref)
+    )
   }
 }
 
 export function throwError<A>(err: Error): S<A> {
-  return (sink_, scheduler) => {
+  return (sink_, schedule) => {
     const ref = aRef()
     const sink = aSink(ref, sink_)
-    scheduler(0, _ => sink(error(0, err)))
+    local(schedule)(0, t => sink(error(t, err)))
     return aDisposable(ref)
   }
 }
@@ -68,10 +61,10 @@ export function fromArray<A>(as: Array<A>): S<A> {
   return (sink_, scheduler) => {
     const ref = aRef()
     const sink = trySink(aSink(ref, sink_))
-    scheduler(0, _ => {
+    local(scheduler)(0, t => {
       for (var i = 0, l = as.length; i < l && ref.active; i++)
-        sink(event(0, as[i]))
-      sink(end(0))
+        sink(event(t, as[i]))
+      sink(end(t))
     })
     return aDisposable(ref)
   }
@@ -84,7 +77,7 @@ export function map<A, B>(f: A => B, s: S<A>): S<B> {
 
 export function merge<A>(...lr: Array<S<A>>): S<A> {
   return (sink_, schedule) => {
-    const m: Map<number, D> = new Map()
+    const m: Map<number, Disposable> = new Map()
     const ref = aRef()
     const sink = aSink(ref, sink_)
     for (var i = 0, l = lr.length; i < l; i++) {
@@ -96,7 +89,7 @@ export function merge<A>(...lr: Array<S<A>>): S<A> {
 
 export function combine<A>(...lr: Array<S<A>>): S<Array<A>> {
   return (sink_, schedule) => {
-    const m: Map<number, D> = new Map()
+    const m: Map<number, Disposable> = new Map()
     const ref = aRef()
     const sink = aSink(ref, sink_)
     const as: Array<?A> = lr.map(() => null)
@@ -121,7 +114,7 @@ export function combine<A>(...lr: Array<S<A>>): S<Array<A>> {
 
 export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
   return (sink_, schedule) => {
-    const m: Map<number, D> = new Map()
+    const m: Map<number, Disposable> = new Map()
     const ref = aRef()
     const sink = aSink(ref, sink_)
     let i = 0
@@ -135,11 +128,11 @@ export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
               i,
               f(eo.v)(
                 indexSink(i, m, ei => {
-                  if (ei.type === 'event') sink(event(ei.t - eo.t, ei.v))
-                  else if (ei.type === 'end') sink(end(ei.t - eo.t))
-                  else sink(error(ei.t - eo.t, ei.v))
+                  if (ei.type === 'event') sink(event(ei.t, ei.v))
+                  else if (ei.type === 'end') sink(end(ei.t))
+                  else sink(error(ei.t, ei.v))
                 }),
-                schedule
+                relative(eo.t, schedule)
               )
             )
           } else {
@@ -155,7 +148,7 @@ export function flatMap<A, B>(f: A => S<B>, s: S<A>): S<B> {
 
 function indexSink<A>(
   index: number,
-  dmap: Map<number, D>,
+  dmap: Map<number, Disposable>,
   o: (O<A>, number) => void
 ): (O<A>) => void {
   return e => {
@@ -196,7 +189,7 @@ function aRef() {
   return { active: true }
 }
 
-function aDisposable(ref: { active: boolean }, f?: () => void): D {
+function aDisposable(ref: { active: boolean }, f?: () => void): Disposable {
   return {
     dispose() {
       if (!ref.active) return

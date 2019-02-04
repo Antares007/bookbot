@@ -1,34 +1,56 @@
-//@flow strict
+// @flow strict
+import type { Disposable } from './disposable'
 import { defer } from './defer'
+
 export opaque type TimePoint: number = number
-export type Scheduler = (number | ScheduleAction, ?ScheduleAction) => void
-export type ScheduleAction = number => void
+
+export opaque type Scheduler: (number, ScheduleAction) => Disposable = {
+  (number, ScheduleAction): Disposable,
+  now(): TimePoint
+}
+
+export type ScheduleAction = TimePoint => void
+
+export function relative(t0: TimePoint, schedule: Scheduler): Scheduler {
+  const rel = (delay, action) => schedule(delay, t => action(t - t0))
+  rel.now = () => schedule.now() - t0
+  return rel
+}
+
+export function local(schedule: Scheduler): Scheduler {
+  return relative(schedule.now(), schedule)
+}
 
 export function mkScheduler(
   tf: () => number,
   setTimeout: (f: () => void, delay: number) => void
 ): Scheduler {
   const now = mkPureNow(tf)
-  let line: Array<[number, ScheduleAction]> = []
+  let line: Array<[number, Array<?ScheduleAction>]> = []
 
+  schedule.now = now
   return schedule
 
-  function schedule(a, b) {
+  function schedule(delay, action) {
+    var actions: Array<?ScheduleAction>
+    var index: number
+    if (line.length === 0) defer(onTimeout)
     const currentTime = now()
-    if (typeof a === 'number' && typeof b === 'function') {
-      if (line.length === 0) defer(onTimeout)
-      const t = currentTime + (a < 0 ? 0 : a)
-      const ap = findAppendPosition(t, line)
-      const li = line[ap]
-      if (ap > -1 && li[0] === t)
-        li[1] = (l => t => {
-          l(t)
-          b(t)
-        })(li[1])
-      else line.splice(ap + 1, 0, [t, b])
+    const at = currentTime + (delay < 0 ? 0 : delay)
+    const ap = findAppendPosition(at, line)
+    if (ap > -1 && line[ap][0] === at) {
+      actions = line[ap][1]
+      index = actions.length
+      actions.push(action)
     } else {
-      if (typeof a === 'function') a(currentTime)
-      if (typeof b === 'function') b(currentTime)
+      actions = [action]
+      index = 0
+      line.splice(ap + 1, 0, [at, actions])
+    }
+    return {
+      dispose() {
+        actions[index] = null
+      }
     }
   }
   function onTimeout() {
@@ -38,7 +60,8 @@ export function mkScheduler(
       if (ap === -1) break
       const line_ = line
       line = ap === line.length - 1 ? [] : line.slice(ap + 1)
-      for (let i = 0; i <= ap; i++) line_[i][1](line_[i][0])
+      for (let i = 0; i <= ap; i++)
+        for (let action of line_[i][1]) if (action) action(line_[i][0])
     }
     if (line.length === 0) return
     const delay = line[0][0] - tf()

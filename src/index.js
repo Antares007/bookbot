@@ -1,5 +1,5 @@
 // @flow
-import type { IO } from "./io.js"
+import type { IO } from './io.js'
 
 type Success = { success: true, value: boolean }
 type Failed = { success: false, error: string }
@@ -17,12 +17,12 @@ function handleResponse(response: Response) {
 }
 
 let a: (o: (v: string) => void) => (i: number) => boolean = o => i => {
-  o(i + 1 + "")
+  o(i + 1 + '')
   return true
 }
 a(v => console.log(v))(1)
 const see: IO<
   number,
-  { tag: "a" } | { tag: "b" } | { tag: "c" },
+  { tag: 'a' } | { tag: 'b' } | { tag: 'c' },
   void
 > = o => i => {}

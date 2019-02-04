@@ -1,5 +1,5 @@
-//@flow strict
-import { map, take, filter } from "./iterable.js"
+// @flow strict
+import { map, take, filter } from './iterable'
 
 export type A = {
   +ok: <A>(value: A, message?: string) => void,
@@ -22,7 +22,7 @@ type Require = {
 export function* run(
   prefix: string,
   platform: A & FS & Require,
-  f: string => boolean = name => name.endsWith(".js"),
+  f: string => boolean = name => name.endsWith('.js'),
   timeout: number = 1000
 ): Iterable<Promise<{ name: string, time: number, error: ?Error }>> {
   const resolveFns = []
@@ -32,7 +32,7 @@ export function* run(
       for (let name in exports) {
         const r = /^function .+\(assert([0-9]*)\)/
         const export_ = exports[name]
-        if (typeof export_ !== "function") continue
+        if (typeof export_ !== 'function') continue
         const src: string = export_.toString()
         const plan = src
           .split(/assert\[/)
@@ -98,11 +98,11 @@ function runATest(
       const asserts = new Array(plan)
       for (let i = 0; i <= plan; i++)
         asserts[i] = {
-          ok: mkAssertFn("ok", i),
-          strictEqual: mkAssertFn("strictEqual", i),
-          deepStrictEqual: mkAssertFn("deepStrictEqual", i),
-          notStrictEqual: mkAssertFn("notStrictEqual", i),
-          notDeepStrictEqual: mkAssertFn("notDeepStrictEqual", i)
+          ok: mkAssertFn('ok', i),
+          strictEqual: mkAssertFn('strictEqual', i),
+          deepStrictEqual: mkAssertFn('deepStrictEqual', i),
+          notStrictEqual: mkAssertFn('notStrictEqual', i),
+          notDeepStrictEqual: mkAssertFn('notDeepStrictEqual', i)
         }
       try {
         aTest(asserts)

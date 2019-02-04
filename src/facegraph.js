@@ -1,1 +1,1 @@
-//@flow strict
+// @flow strict

@@ -1,7 +1,7 @@
-//@flow
-export opaque type Disposable: { dispose: () => void } = { dispose: () => void }
+// @flow strict
+export type Disposable = { dispose: () => void }
 
-export function rtrn(f: () => void): Disposable {
+export function create(f: () => void): Disposable {
   var disposed = false
   return {
     dispose: () => {
@@ -12,11 +12,10 @@ export function rtrn(f: () => void): Disposable {
   }
 }
 
-export function mappend(l: Disposable, r: Disposable): Disposable {
+export function mappend(...lr: Array<Disposable>): Disposable {
   return {
     dispose: () => {
-      l.dispose()
-      r.dispose()
+      for (var d of lr) d.dispose()
     }
   }
 }
