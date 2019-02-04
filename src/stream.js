@@ -26,11 +26,10 @@ export const empty = () => disposable.empty
 export function Of<A>(f: S<A>): S<A> {
   return (o, schedule) => {
     const ref = aRef()
-    let di = null
-    const ds = schedule(0, t0 => {
-      di = f(trySink(aSink(ref, o)), relative(t0, schedule))
-    })
-    return aDisposable(ref)
+    return disposable.mappend(
+      aDisposable(ref),
+      f(trySink(aSink(ref, o)), local(schedule))
+    )
   }
 }
 
