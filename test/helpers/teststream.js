@@ -15,7 +15,6 @@ export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
       ])
     }, scheduler)
     scheduler(99, t => {
-      d.dispose()
       resolve(vs.slice(0))
     })
   })

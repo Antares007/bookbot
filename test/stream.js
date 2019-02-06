@@ -5,6 +5,48 @@ import * as h from './helpers/teststream.js'
 
 const id = a => a
 
+export async function of1(assert: Array<A>) {
+  var d = 0
+  const act = s.Of((o, schedule) => {
+    schedule(1, t => {
+      assert[0].strictEqual(t, 1)
+      o(s.event(t, 'a'))
+      o(s.end(t))
+      o(s.event(t, 'b'))
+      o(s.error(t, new Error('never')))
+    })
+    return {
+      dispose() {
+        d++
+      }
+    }
+  })
+  const exp = '-(a|)'
+  assert[1].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+  assert[2].strictEqual(d, 0)
+}
+
+export async function of2(assert: Array<A>) {
+  var d = 0
+  const act = s.Of((o, schedule) => {
+    schedule(1, t => {
+      assert[0].strictEqual(t, 1)
+      o(s.error(t, new Error('X')))
+      o(s.error(t, new Error('Y')))
+      o(s.end(t))
+      o(s.event(t, 'b'))
+    })
+    return {
+      dispose() {
+        d++
+      }
+    }
+  })
+  const exp = '-X'
+  assert[1].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+  assert[2].strictEqual(d, 1)
+}
+
 export async function at(assert: Array<A>) {
   const act = s.at('a', 3)
   const exp = '---(a|)'

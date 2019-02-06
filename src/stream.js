@@ -37,7 +37,7 @@ export function Of<A>(f: ((O<A>) => void, Scheduler) => ?Disposable): S<A> {
           return o(err)
         }
       active = false
-      if (d) d.dispose()
+      if (e.type === 'error' && d) d.dispose()
       o(e)
     }, local(schedule))
     return {
