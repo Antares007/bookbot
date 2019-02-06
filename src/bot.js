@@ -15,12 +15,15 @@ var a = {
     title: 'Get Started'
   }
 }
+function persistent_menu() {
+  type O = { a: 42 }
+  return (() => {}: O => void)
+}
 
-type SendApiResponse =
-  | {
-      recipient_id: string,
-      message_id?: string
-    }
+let see12 = persistent_menu()
+
+type MessengerProfile =
+  | { type: 'whitelisted_domains', endpoint: 'messenger_profile' }
   | {
       error: {
         message: string,
@@ -38,11 +41,11 @@ const url =
   process.env.PAGE_ACCESS_TOKEN
 
 const psid = postJson(url, {
-  recipient: { id: '2081128551910714' },
+  recipient: { id: '20811285519107144' },
   sender_action: 'typing_off'
-}).then(rez => console.log(rez))
+})
 
-function postJson<A>(url: string, message: A): Promise<SendApiResponse> {
+function postJson<A, B>(url: string, message: A): void {
   const data = JSON.stringify(message)
   const { hostname, pathname, search } = new URL(url)
   const options = {
@@ -54,19 +57,17 @@ function postJson<A>(url: string, message: A): Promise<SendApiResponse> {
       'Content-Length': data.length
     }
   }
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, res => {
-      console.log(res.headers)
-      res.setEncoding('utf8')
-      let data = ''
-      res.on('data', d => {
-        data += d
-      })
-      res.on('end', () => resolve(JSON.parse(data)))
-      res.on('error', reject)
+  const req = https.request(options, res => {
+    console.log(res.headers)
+    res.setEncoding('utf8')
+    let data = ''
+    res.on('data', d => {
+      data += d
     })
-    req.on('error', reject)
-    req.write(data)
-    req.end()
+    res.on('end', () => console.log(JSON.parse(data)))
+    res.on('error', console.log.bind(console))
   })
+  req.once('error', console.log.bind(console))
+  req.write(data)
+  req.end()
 }
