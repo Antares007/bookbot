@@ -13,6 +13,7 @@ export function create(f: () => void): Disposable {
 }
 
 export function mappend(...lr: Array<Disposable>): Disposable {
+  if (lr.length === 1) return lr[0]
   return {
     dispose: () => {
       for (var d of lr) d.dispose()

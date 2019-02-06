@@ -37,13 +37,11 @@ export function at<A>(a: A, delay: number): S<A> {
   return (sink_, schedule) => {
     const ref = aRef()
     const sink = trySink(aSink(ref, sink_))
-    return disposable.mappend(
-      local(schedule)(delay, t => {
-        sink(event(t, a))
-        sink(end(t))
-      }),
-      aDisposable(ref)
-    )
+    local(schedule)(delay, t => {
+      sink(event(t, a))
+      sink(end(t))
+    })
+    return disposable.mappend(aDisposable(ref))
   }
 }
 

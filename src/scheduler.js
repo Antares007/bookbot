@@ -4,8 +4,8 @@ import { defer } from './defer'
 
 export opaque type TimePoint: number = number
 
-export opaque type Scheduler: (number, ScheduleAction) => Disposable = {
-  (number, ScheduleAction): Disposable,
+export opaque type Scheduler: (number, ScheduleAction) => void = {
+  (number, ScheduleAction): void,
   now(): TimePoint
 }
 
@@ -26,31 +26,21 @@ export function mkScheduler(
   setTimeout: (f: () => void, delay: number) => void
 ): Scheduler {
   const now = mkPureNow(tf)
-  let line: Array<[number, Array<?ScheduleAction>]> = []
+  let line: Array<[number, ScheduleAction]> = []
 
   schedule.now = now
   return schedule
 
   function schedule(delay, action) {
-    var actions: Array<?ScheduleAction>
-    var index: number
     if (line.length === 0) defer(onTimeout)
     const currentTime = now()
     const at = currentTime + (delay < 0 ? 0 : delay)
     const ap = findAppendPosition(at, line)
-    if (ap > -1 && line[ap][0] === at) {
-      actions = line[ap][1]
-      index = actions.length
-      actions.push(action)
+    const li = line[ap]
+    if (ap > -1 && li[0] === at) {
+      li[1] = (l => t => (l(t), action(t)))(li[1])
     } else {
-      actions = [action]
-      index = 0
-      line.splice(ap + 1, 0, [at, actions])
-    }
-    return {
-      dispose() {
-        actions[index] = null
-      }
+      line.splice(ap + 1, 0, [at, action])
     }
   }
   function onTimeout() {
@@ -60,8 +50,7 @@ export function mkScheduler(
       if (ap === -1) break
       const line_ = line
       line = ap === line.length - 1 ? [] : line.slice(ap + 1)
-      for (let i = 0; i <= ap; i++)
-        for (let action of line_[i][1]) if (action) action(line_[i][0])
+      for (let i = 0; i <= ap; i++) line_[i][1](line_[i][0])
     }
     if (line.length === 0) return
     const delay = line[0][0] - tf()
