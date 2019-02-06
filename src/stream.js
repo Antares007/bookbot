@@ -33,9 +33,11 @@ export function Of<A>(f: ((O<A>) => void, Scheduler) => ?Disposable): S<A> {
           return o(e)
         } catch (err) {
           active = false
+          if (d) d.dispose()
           return o(err)
         }
       active = false
+      if (d) d.dispose()
       o(e)
     }, local(schedule))
     return {
@@ -95,16 +97,44 @@ export function map<A, B>(f: A => B, s: S<A>): S<B> {
 export function sum<A, B>(sa: S<A>, sb: S<B>): S<A | B> {
   return Of((o, schedule) => {
     var i = 2
-    const d = disposable.mappend(sa(sum, schedule), sb(sum, schedule))
-    return d
+    const da = sa(sum, schedule)
+    const db = sb(sum, schedule)
+    return {
+      dispose() {
+        da.dispose()
+        db.dispose()
+      }
+    }
     function sum(e) {
+      if (e.type === 'event') o(event(e.t, e.v))
+      else if (e.type === 'end' && --i === 0) o(e)
+      else o(e)
+    }
+  })
+}
+
+export function product<A, B>(sa: S<A>, sb: S<B>): S<[A, B]> {
+  return Of((o, schedule) => {
+    var i = 2
+    const ab: [?A, ?B] = [null, null]
+    const da = sa(e => {
       if (e.type === 'event') {
-        o(event(e.t, e.v))
-      } else if (e.type === 'end') {
-        if (--i === 0) o(e)
-      } else {
-        d.dispose()
-        o(e)
+        ab[0] = e.v
+        if (ab[1]) o(event(e.t, [e.v, ab[1]]))
+      } else if (e.type === 'end' && --i === 0) o(e)
+      else o(e)
+    }, schedule)
+    const db = sb(e => {
+      if (e.type === 'event') {
+        ab[1] = e.v
+        if (ab[0]) o(event(e.t, [ab[0], e.v]))
+      } else if (e.type === 'end' && --i === 0) o(e)
+      else o(e)
+    }, schedule)
+    return {
+      dispose() {
+        da.dispose()
+        db.dispose()
       }
     }
   })
@@ -121,57 +151,16 @@ export function join<A>(s: S<S<A>>): S<A> {
     }
     ds.push(
       s(e => {
-        if (e.type === 'event') {
+        if (e.type === 'event')
           ds.push(
             e.v(e => {
-              if (e.type === 'event') {
-                o(e)
-              } else if (e.type === 'end') {
-                if (++i === ds.length) o(e)
-              } else {
-                d.dispose()
-                o(e)
-              }
+              if (e.type === 'event') o(e)
+              else if (e.type === 'end' && ++i === ds.length) o(e)
+              else o(e)
             }, relative(e.t, schedule))
           )
-        } else if (e.type === 'end') {
-          if (++i === ds.length) o(e)
-        } else {
-          d.dispose()
-          o(e)
-        }
-      }, schedule)
-    )
-    return d
-  })
-}
-
-export function prod<A, B>(sa: S<A>, sb: S<B>): S<[A, B]> {
-  return Of((o, schedule) => {
-    var i = 2
-    const ab: [?A, ?B] = [null, null]
-    const d = disposable.mappend(
-      sa(e => {
-        if (e.type === 'event') {
-          ab[0] = e.v
-          if (ab[1]) o(event(e.t, [e.v, ab[1]]))
-        } else if (e.type === 'end') {
-          if (--i === 0) o(e)
-        } else {
-          d.dispose()
-          o(e)
-        }
-      }, schedule),
-      sb(e => {
-        if (e.type === 'event') {
-          ab[1] = e.v
-          if (ab[0]) o(event(e.t, [ab[0], e.v]))
-        } else if (e.type === 'end') {
-          if (--i === 0) o(e)
-        } else {
-          d.dispose()
-          o(e)
-        }
+        else if (e.type === 'end' && ++i === ds.length) o(e)
+        else o(e)
       }, schedule)
     )
     return d
