@@ -23,53 +23,159 @@ export type S<A> = ((O<A>) => void, Scheduler) => Disposable
 
 export const empty = () => disposable.empty
 
-export function Of<A>(f: S<A>): S<A> {
-  return (o, schedule) => {
-    const ref = aRef()
-    return disposable.mappend(
-      aDisposable(ref),
-      f(trySink(aSink(ref, o)), local(schedule))
-    )
+export function Of<A>(f: ((O<A>) => void, Scheduler) => ?Disposable): S<A> {
+  return function stream$Of(o, schedule) {
+    var active = true
+    const d = f(function safeO(e) {
+      if (!active) return
+      if (e.type === 'event')
+        try {
+          return o(e)
+        } catch (err) {
+          active = false
+          return o(err)
+        }
+      active = false
+      o(e)
+    }, local(schedule))
+    return {
+      dispose() {
+        if (!active) return
+        active = false
+        if (d) d.dispose()
+      }
+    }
   }
 }
 
-export function at<A>(a: A, delay: number): S<A> {
-  return (sink_, schedule) => {
-    const ref = aRef()
-    const sink = trySink(aSink(ref, sink_))
-    local(schedule)(delay, t => {
-      sink(event(t, a))
-      sink(end(t))
+export function at<A>(a: A, delay: number = 0): S<A> {
+  return Of((o, schedule) => {
+    schedule(delay, t => {
+      o(event(t, a))
+      o(end(t))
     })
-    return disposable.mappend(aDisposable(ref))
-  }
+  })
 }
 
-export function throwError<A>(err: Error): S<A> {
-  return (sink_, schedule) => {
-    const ref = aRef()
-    const sink = aSink(ref, sink_)
-    local(schedule)(0, t => sink(error(t, err)))
-    return aDisposable(ref)
-  }
+export function throwError<A>(err: Error, delay: number = 0): S<A> {
+  return Of((o, schedule) => {
+    schedule(delay, t => o(error(t, err)))
+  })
 }
 
-export function fromArray<A>(as: Array<A>): S<A> {
-  return (sink_, scheduler) => {
-    const ref = aRef()
-    const sink = trySink(aSink(ref, sink_))
-    local(scheduler)(0, t => {
-      for (var i = 0, l = as.length; i < l && ref.active; i++)
-        sink(event(t, as[i]))
-      sink(end(t))
+export function fromArray<A>(as: Array<A>, delay: number = 0): S<A> {
+  return Of((o, schedule) => {
+    var active = true
+    schedule(delay, t => {
+      for (var i = 0, l = as.length; i < l; i++) {
+        o(event(t, as[i]))
+        if (!active) break
+      }
+      o(end(t))
     })
-    return aDisposable(ref)
+    return {
+      dispose() {
+        active = false
+      }
+    }
+  })
+}
+
+export function omap<A, B>(f: A => B, o: (O<B>) => void): (O<A>) => void {
+  return (e: O<A>) => {
+    if (e.type === 'event') o(event(e.t, f(e.v)))
+    else o(e)
   }
 }
 
 export function map<A, B>(f: A => B, s: S<A>): S<B> {
-  return (sink, scheduler) =>
-    s(e => (e.type === 'event' ? sink(event(e.t, f(e.v))) : sink(e)), scheduler)
+  return Of((o, scheduler) => s(omap(f, o), scheduler))
+}
+
+export function sum<A, B>(sa: S<A>, sb: S<B>): S<A | B> {
+  return Of((o, schedule) => {
+    var i = 2
+    const d = disposable.mappend(sa(sum, schedule), sb(sum, schedule))
+    return d
+    function sum(e) {
+      if (e.type === 'event') {
+        o(event(e.t, e.v))
+      } else if (e.type === 'end') {
+        if (--i === 0) o(e)
+      } else {
+        d.dispose()
+        o(e)
+      }
+    }
+  })
+}
+
+export function join<A>(s: S<S<A>>): S<A> {
+  return Of((o, schedule) => {
+    var i = 0
+    const ds = []
+    const d = {
+      dispose() {
+        for (var d of ds) d.dispose()
+      }
+    }
+    ds.push(
+      s(e => {
+        if (e.type === 'event') {
+          ds.push(
+            e.v(e => {
+              if (e.type === 'event') {
+                o(e)
+              } else if (e.type === 'end') {
+                if (++i === ds.length) o(e)
+              } else {
+                d.dispose()
+                o(e)
+              }
+            }, relative(e.t, schedule))
+          )
+        } else if (e.type === 'end') {
+          if (++i === ds.length) o(e)
+        } else {
+          d.dispose()
+          o(e)
+        }
+      }, schedule)
+    )
+    return d
+  })
+}
+
+export function prod<A, B>(sa: S<A>, sb: S<B>): S<[A, B]> {
+  return Of((o, schedule) => {
+    var i = 2
+    const ab: [?A, ?B] = [null, null]
+    const d = disposable.mappend(
+      sa(e => {
+        if (e.type === 'event') {
+          ab[0] = e.v
+          if (ab[1]) o(event(e.t, [e.v, ab[1]]))
+        } else if (e.type === 'end') {
+          if (--i === 0) o(e)
+        } else {
+          d.dispose()
+          o(e)
+        }
+      }, schedule),
+      sb(e => {
+        if (e.type === 'event') {
+          ab[1] = e.v
+          if (ab[0]) o(event(e.t, [ab[0], e.v]))
+        } else if (e.type === 'end') {
+          if (--i === 0) o(e)
+        } else {
+          d.dispose()
+          o(e)
+        }
+      }, schedule)
+    )
+    return d
+  })
 }
 
 export function merge<A>(...lr: Array<S<A>>): S<A> {
