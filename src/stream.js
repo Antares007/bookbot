@@ -19,14 +19,16 @@ export function error<A>(t: TimePoint, v: Error): O<A> {
   return { type: 'error', t, v }
 }
 
-export type S<A> = ((O<A>) => void, Scheduler) => Disposable
+type SFn<A> = ((O<A>) => void, Scheduler) => ?Disposable
 
-export const empty = () => disposable.empty
-
-export function Of<A>(f: ((O<A>) => void, Scheduler) => ?Disposable): S<A> {
-  return function stream$Of(o, schedule) {
+export class S<A> {
+  f: SFn<A>
+  constructor(f: SFn<A>) {
+    this.f = f
+  }
+  run(o: (O<A>) => void, schedule: Scheduler): Disposable {
     var active = true
-    const d = f(function safeO(e) {
+    const d = this.f(function safeO(e) {
       if (!active) return
       if (e.type === 'event')
         try {
@@ -48,6 +50,14 @@ export function Of<A>(f: ((O<A>) => void, Scheduler) => ?Disposable): S<A> {
       }
     }
   }
+}
+
+export function empty<A>(): S<A> {
+  return new S(() => {})
+}
+
+export function Of<A>(f: ((O<A>) => void, Scheduler) => ?Disposable): S<A> {
+  return new S(f)
 }
 
 export function at<A>(a: A, delay: number = 0): S<A> {
@@ -88,14 +98,14 @@ export function omap<A, B>(f: A => B, o: (O<B>) => void): (O<A>) => void {
 }
 
 export function map<A, B>(f: A => B, s: S<A>): S<B> {
-  return Of((o, scheduler) => s(omap(f, o), scheduler))
+  return Of((o, scheduler) => s.run(omap(f, o), scheduler))
 }
 
 export function sum<A, B>(sa: S<A>, sb: S<B>): S<A | B> {
   return Of((o, schedule) => {
     var i = 2
-    const da = sa(sum, schedule)
-    const db = sb(sum, schedule)
+    const da = sa.run(sum, schedule)
+    const db = sb.run(sum, schedule)
     return {
       dispose() {
         da.dispose()
@@ -114,14 +124,14 @@ export function product<A, B>(sa: S<A>, sb: S<B>): S<[A, B]> {
   return Of((o, schedule) => {
     var i = 2
     const ab: [?A, ?B] = [null, null]
-    const da = sa(e => {
+    const da = sa.run(e => {
       if (e.type === 'event') {
         ab[0] = e.v
         if (ab[1]) o(event(e.t, [e.v, ab[1]]))
       } else if (e.type === 'end') --i === 0 ? o(e) : void 0
       else o(e)
     }, schedule)
-    const db = sb(e => {
+    const db = sb.run(e => {
       if (e.type === 'event') {
         ab[1] = e.v
         if (ab[0]) o(event(e.t, [ab[0], e.v]))
@@ -149,12 +159,12 @@ export function join<A>(s: S<S<A>>): S<A> {
     const di = i++
     dm.set(
       di,
-      s(e => {
+      s.run(e => {
         if (e.type === 'event') {
           const di = i++
           dm.set(
             di,
-            e.v(e => {
+            e.v.run(e => {
               if (e.type === 'event') o(e)
               else if (e.type === 'end') {
                 dm.delete(di)

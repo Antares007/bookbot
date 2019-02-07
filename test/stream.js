@@ -54,7 +54,7 @@ export async function at(assert: Array<A>) {
 }
 
 export async function empty(assert: Array<A>) {
-  const act = s.empty
+  const act = s.empty()
   const exp = ''
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }

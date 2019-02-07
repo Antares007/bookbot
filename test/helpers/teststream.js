@@ -1,5 +1,5 @@
 // @flow strict
-import type { S } from '../../src/stream'
+import { S } from '../../src/stream'
 import * as s from '../../src/stream'
 import { makeTestScheduler } from './testscheduler'
 import { local, relative } from '../../src/scheduler'
@@ -8,7 +8,7 @@ export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
   return new Promise((resolve, reject) => {
     const scheduler = local(makeTestScheduler(99))
     const vs = []
-    const d = s(e => {
+    const d = s.run(e => {
       vs.push([
         e.t,
         e.type === 'event' ? String(e.v) : e.type === 'end' ? '|' : e.v.message
@@ -23,7 +23,7 @@ export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
 export function sOf(str: string): S<string> {
   const line = tlOf(str)
   let active = true
-  return (sink, schedule) => {
+  return new S((sink, schedule) => {
     local(schedule)(0, t0 => {
       for (let p of line) {
         if (!active) return
@@ -41,7 +41,7 @@ export function sOf(str: string): S<string> {
         active = false
       }
     }
-  }
+  })
 }
 
 export function tlOf(str: string): Array<[number, string]> {

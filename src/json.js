@@ -1,5 +1,5 @@
 // @flow strictlocal
-import type { S } from './stream'
+import { S } from './stream'
 import * as s from './stream'
 
 opaque type O =
@@ -10,7 +10,7 @@ opaque type O =
   | { type: 'array', index: number, s: S<((O) => void) => void> }
 
 export function run(v: O): S<number> {
-  return s.empty
+  return new S(() => {})
 }
 
 declare var o: O => void
