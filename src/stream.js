@@ -140,24 +140,32 @@ export function product<A, B>(sa: S<A>, sb: S<B>): S<[A, B]> {
 export function join<A>(s: S<S<A>>): S<A> {
   return Of((o, schedule) => {
     var i = 0
-    const ds = []
+    const dm = new Map()
     const d = {
       dispose() {
-        for (var d of ds) d.dispose()
+        dm.forEach(d => d.dispose())
       }
     }
-    ds.push(
+    const di = i++
+    dm.set(
+      di,
       s(e => {
-        if (e.type === 'event')
-          ds.push(
+        if (e.type === 'event') {
+          const di = i++
+          dm.set(
+            di,
             e.v(e => {
               if (e.type === 'event') o(e)
-              else if (e.type === 'end') ++i === ds.length ? o(e) : void 0
-              else o(e)
+              else if (e.type === 'end') {
+                dm.delete(di)
+                if (dm.size === 0) o(e)
+              } else o(e)
             }, relative(e.t, schedule))
           )
-        else if (e.type === 'end') ++i === ds.length ? o(e) : void 0
-        else o(e)
+        } else if (e.type === 'end') {
+          dm.delete(di)
+          if (dm.size === 0) o(e)
+        } else o(e)
       }, schedule)
     )
     return d
