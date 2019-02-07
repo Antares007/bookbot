@@ -37,14 +37,14 @@ function tree(s: S<Buffer>): O {
   return { type: 'blob', s }
 }
 
-function run(jsgit: any, v: O): S<Sha1> {
-  if (v.type === 'blob') {
-    return s.flatMap(buffer => s.empty, v.s)
-  } else if (v.type === 'tree') {
-    return s.flatMap(buffer => s.empty, v.s)
-  }
-  return s.empty
-}
+// function run(jsgit: any, v: O): S<Sha1> {
+//   if (v.type === 'blob') {
+//     return s.flatMap(buffer => s.empty, v.s)
+//   } else if (v.type === 'tree') {
+//     return s.flatMap(buffer => s.empty, v.s)
+//   }
+//   return s.empty
+// }
 
 const modes = require('js-git/lib/modes')
 // const memdb: () => JsGit = require("js-git/mixins/mem-db.js")
