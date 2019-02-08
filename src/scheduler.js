@@ -21,6 +21,13 @@ export function local(schedule: Scheduler): Scheduler {
   return relative(schedule.now(), schedule)
 }
 
+export const defaultScheduler = mkScheduler(
+  () => Date.now(),
+  (f, delay) => {
+    setTimeout(f, delay)
+  }
+)
+
 export function mkScheduler(
   tf: () => number,
   setTimeout: (f: () => void, delay: number) => void
