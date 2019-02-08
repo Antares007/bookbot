@@ -4,7 +4,7 @@ import { defer } from './defer'
 
 export opaque type TimePoint: number = number
 
-export opaque type Scheduler: (number, ScheduleAction) => void = {
+export type Scheduler = {
   (number, ScheduleAction): void,
   now(): TimePoint
 }
