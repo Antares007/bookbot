@@ -181,3 +181,32 @@ export function join<A>(s: S<S<A>>): S<A> {
     return d
   })
 }
+
+export function periodic(period: number): S<number> {
+  return Of((o, schedule) => {
+    var active = true
+    schedule(0, function rec(t) {
+      o(event(t, t))
+      if (active) schedule(period, rec)
+    })
+    return {
+      dispose() {
+        active = false
+      }
+    }
+  })
+}
+
+export function take<A>(n: number, s: S<A>): S<A> {
+  return Of((o, schedule) => {
+    if (n <= 0) return schedule(0, t => o(end(t)))
+    var i = 0
+    const d = s.run(e => {
+      if (e.type === 'event') {
+        o(e)
+        if (++i === n) d.dispose(), o(end(e.t))
+      } else o(e)
+    }, schedule)
+    return d
+  })
+}

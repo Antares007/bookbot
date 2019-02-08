@@ -205,3 +205,10 @@ export async function product4(assert: Array<A>) {
 
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
+
+export async function periodic(assert: Array<A>) {
+  const act = s.take(5, s.map(n => '' + n, s.periodic(2)))
+  const exp = '0-2-4-6-(8|)'
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
