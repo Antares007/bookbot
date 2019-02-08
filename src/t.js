@@ -1,7 +1,7 @@
 // @flow strict
-import { mkScheduler } from './scheduler'
+import { makeScheduler } from './scheduler'
 let t = 0
-const schedule = mkScheduler(
+const schedule = makeScheduler(
   () => Date.now(),
   (f, d) => {
     setTimeout(f, d)

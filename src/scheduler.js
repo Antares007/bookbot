@@ -21,18 +21,29 @@ export function local(schedule: Scheduler): Scheduler {
   return relative(schedule.now(), schedule)
 }
 
-export const defaultScheduler = mkScheduler(
+export const defaultScheduler = makeScheduler(
   () => Date.now(),
   (f, delay) => {
     setTimeout(f, delay)
   }
 )
 
-export function mkScheduler(
+export function makeTestScheduler(startTime: number) {
+  let t = startTime
+  return makeScheduler(
+    () => t,
+    (f, delay) => {
+      t += delay
+      Promise.resolve().then(f)
+    }
+  )
+}
+
+export function makeScheduler(
   tf: () => number,
   setTimeout: (f: () => void, delay: number) => void
 ): Scheduler {
-  const now = mkPureNow(tf)
+  const now = makeCallStackPureNow(tf)
   let line: Array<[number, ScheduleAction]> = []
 
   schedule.now = now
@@ -66,7 +77,7 @@ export function mkScheduler(
   }
 }
 
-function mkPureNow(tf: () => number): () => TimePoint {
+function makeCallStackPureNow(tf: () => number): () => TimePoint {
   let currentTime = -1
   const reset = () => {
     currentTime = -1

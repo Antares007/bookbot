@@ -1,6 +1,6 @@
 //@flow strict
-import type { A } from '../src/atest.js'
-import { makeTestScheduler } from './helpers/testscheduler.js'
+import type { A } from '../src/atest'
+import { makeTestScheduler } from '../src/scheduler'
 
 export function can_execute_in_expected_order(assert: Array<A>): void {
   const s = makeTestScheduler(30)

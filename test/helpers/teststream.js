@@ -1,7 +1,7 @@
 // @flow strict
 import { S } from '../../src/stream'
 import * as s from '../../src/stream'
-import { makeTestScheduler } from './testscheduler'
+import { makeTestScheduler } from '../../src/scheduler'
 import { local, relative } from '../../src/scheduler'
 
 export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
