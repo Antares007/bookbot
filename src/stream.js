@@ -210,3 +210,17 @@ export function take<A>(n: number, s: S<A>): S<A> {
     return d
   })
 }
+
+export function scan<A, B>(f: (B, A) => B, b: B, s: S<A>): S<B> {
+  return Of((o, schedule) => {
+    var active = true
+    var b_ = b
+    schedule(0, t => o(event(t, b_)))
+    return s.run(e => {
+      if (e.type === 'event') {
+        b_ = f(b_, e.v)
+        o(event(e.t, b_))
+      } else o(e)
+    }, schedule)
+  })
+}

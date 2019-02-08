@@ -212,3 +212,15 @@ export async function periodic(assert: Array<A>) {
 
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
+
+export async function scan(assert: Array<A>) {
+  const s01 = '( 1)23|'
+  const exp = '(01)36|'
+
+  const act = s.map(
+    n => '' + n,
+    s.scan((a, n) => a + parseInt(n, 10), 0, h.sOf(s01))
+  )
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
