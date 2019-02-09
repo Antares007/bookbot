@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import { makeScheduler } from './scheduler'
 let t = 0
 const schedule = makeScheduler(

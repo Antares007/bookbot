@@ -1,11 +1,11 @@
 //@flow strict
-import type { A } from "../src/atest.js"
-import { awaitPromises } from "../src/iterable.js"
-import { run } from "../src/atest.js"
-import * as path from "path"
+import type { A } from '../src/atest.js'
+import { awaitPromises } from '../src/iterable.js'
+import { run } from '../src/atest.js'
+import * as path from 'path'
 
-const fail = "\u001b[31mfail\u001b[39m"
-const pass = "\u001b[32mpass\u001b[39m"
+const fail = '\u001b[31mfail\u001b[39m'
+const pass = '\u001b[32mpass\u001b[39m'
 
 const rez = [0, 0]
 awaitPromises(
@@ -25,27 +25,31 @@ awaitPromises(
         console.log(
           e.stack
             .split(/\n/gi)
-            .filter(l => l.includes(path.join(__dirname, "..")))
+            .filter(l => l.includes(path.join(__dirname, '..')))
             .map(l =>
               l
                 .trim()
-                .split(path.join(__dirname, "..") + "/")
-                .join("./")
+                .split(path.join(__dirname, '..') + '/')
+                .join('./')
             )
-            .join("\n")
+            .join('\n')
         )
         console.groupEnd()
         console.log()
       } else {
         rez[0]++
-        process.stdout.write(".")
+        process.stdout.write('.')
       }
     }
   },
-  run(__dirname, {
-    ...require("fs"),
-    ...require("assert"),
-    ...path,
-    require: s => require.call(module, s)
-  })
+  run(
+    __dirname,
+    {
+      ...require('fs'),
+      ...require('assert'),
+      ...path,
+      require: s => require.call(module, s)
+    }
+    //n => n.includes('schedu')
+  )
 )

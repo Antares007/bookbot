@@ -1,4 +1,4 @@
-// @flow strictlocal
+// flow strictlocal
 import { S } from './stream'
 import * as s from './stream'
 

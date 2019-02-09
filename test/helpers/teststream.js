@@ -1,12 +1,11 @@
 // @flow strict
 import { S } from '../../src/stream'
 import * as s from '../../src/stream'
-import { makeTestScheduler } from '../../src/scheduler'
-import { local, relative } from '../../src/scheduler'
+import { Scheduler } from '../../src/scheduler'
 
 export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
   return new Promise((resolve, reject) => {
-    const scheduler = local(makeTestScheduler(99))
+    const scheduler = Scheduler.test(99).local()
     const vs = []
     const d = s.run(e => {
       vs.push([
@@ -14,7 +13,7 @@ export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
         e.type === 'event' ? String(e.v) : e.type === 'end' ? '|' : e.v.message
       ])
     }, scheduler)
-    scheduler(99, t => {
+    scheduler.schedule(99, t => {
       resolve(vs.slice(0))
     })
   })
@@ -24,16 +23,18 @@ export function sOf(str: string): S<string> {
   const line = tlOf(str)
   let active = true
   return new S((sink, schedule) => {
-    local(schedule)(0, t0 => {
+    schedule.local().schedule(0, t0 => {
       for (let p of line) {
         if (!active) return
-        relative(t0, schedule)(p[0], t =>
-          p[1] === '|'
-            ? sink(s.end(t))
-            : p[1] === 'X'
-            ? sink(s.error(t, new Error('X')))
-            : sink(s.event(t, p[1]))
-        )
+        schedule
+          .relative(t0)
+          .schedule(p[0], t =>
+            p[1] === '|'
+              ? sink(s.end(t))
+              : p[1] === 'X'
+              ? sink(s.error(t, new Error('X')))
+              : sink(s.event(t, p[1]))
+          )
       }
     })
     return {

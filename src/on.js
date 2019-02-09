@@ -1,4 +1,4 @@
-// @flow
+// flow
 import { S, Of, event } from './stream'
 export type On = {
   (MouseEventTypes): S<MouseEvent>,

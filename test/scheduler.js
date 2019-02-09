@@ -1,27 +1,28 @@
 //@flow strict
 import type { A } from '../src/atest'
-import { makeTestScheduler } from '../src/scheduler'
+import { Scheduler } from '../src/scheduler'
 
 export function can_execute_in_expected_order(assert: Array<A>): void {
-  const s = makeTestScheduler(30)
+  const scheduler = Scheduler.test(30)
+  const s = scheduler.schedule.bind(scheduler)
   s(0, t => {
-    assert[1].ok(t === 30)
+    assert[1].strictEqual(t, 30)
     s(0, t => {
-      assert[2].ok(t === 30)
+      assert[2].strictEqual(t, 30)
       s(60, t => {
-        assert[5].ok(t === 90)
+        assert[5].strictEqual(t, 90)
       })
     })
     s(30, t => {
-      assert[4].ok(t === 60)
+      assert[4].strictEqual(t, 60)
       s(30, t => {
-        assert[7].ok(t === 90)
+        assert[7].strictEqual(t, 90)
       })
     })
     s(0, t => {
-      assert[3].ok(t === 30)
+      assert[3].strictEqual(t, 30)
       s(60, t => {
-        assert[6].ok(t === 90)
+        assert[6].strictEqual(t, 90)
       })
     })
   })

@@ -1,4 +1,4 @@
-// @flow strict-local
+// flow strict-local
 import type { O as SO } from './stream'
 import type { On } from './on'
 import { mkOn } from './on'
