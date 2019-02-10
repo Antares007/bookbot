@@ -72,7 +72,7 @@ export class S<A> {
       )
     })
   }
-  join<B>(f: A => S<B>): S<B> {
+  flatMap<B>(f: A => S<B>): S<B> {
     return new S((o, scheduler) => {
       var i = 0
       var active = true
@@ -217,7 +217,6 @@ export class S<A> {
   static never(): S<A> {
     return new S(() => disposable.empty)
   }
-
   static empty(): S<A> {
     return new S((o, scheduler) => scheduler.scheduleD(0, t => o(end(t))))
   }

@@ -94,51 +94,51 @@ export async function map2(assert: Array<A>) {
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 
-export async function join(assert: Array<A>) {
+export async function flatMap(assert: Array<A>) {
   const s01 = '-a-b-|'
   const s02 = 'c-d-e-----(f )---|'
   const s03 = '----------(g )|'
   const exp = 'cadbe-----(fg)---|'
 
-  const act = S.fromArray([s01, s02, s03].map(h.sOf)).join(a => a)
+  const act = S.fromArray([s01, s02, s03]).flatMap(h.sOf)
 
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 
-export async function join2(assert: Array<A>) {
+export async function flatMap2(assert: Array<A>) {
   const s01 = '(abc|)'
   const s02 = 'X'
   const exp = '(abcX)'
 
-  const act = S.fromArray([s01, s02].map(h.sOf)).join(a => a)
+  const act = S.fromArray([s01, s02]).flatMap(h.sOf)
 
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 
-export async function join_ends_when_last_one_ends(assert: Array<A>) {
+export async function flatMap_ends_when_last_one_ends(assert: Array<A>) {
   const s01 = '--|'
   const s02 = '|'
   const exp = '--|'
 
-  const act = S.fromArray([s01, s02].map(h.sOf)).join(a => a)
+  const act = S.fromArray([s01, s02]).flatMap(h.sOf)
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 
-export async function join_dont_ends_with_no_end(assert: Array<A>) {
+export async function flatMap_dont_ends_with_no_end(assert: Array<A>) {
   const s01 = 'a|'
   const s02 = ''
   const exp = 'a'
 
-  const act = S.fromArray([s01, s02].map(h.sOf)).join(a => a)
+  const act = S.fromArray([s01, s02]).flatMap(h.sOf)
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 
-export async function join_throws_when_first_one_throws(assert: Array<A>) {
+export async function flatMap_throws_when_first_one_throws(assert: Array<A>) {
   const s01 = '-a|'
   const s02 = 'X'
   const exp = 'X'
 
-  const act = S.fromArray([s01, s02].map(h.sOf)).join(a => a)
+  const act = S.fromArray([s01, s02]).flatMap(h.sOf)
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 
