@@ -112,6 +112,29 @@ export class S<A> {
       return d
     })
   }
+  until<B>(s: S<B>): S<A> {
+    return new S((o, scheduler) => {
+      var active = true
+      const da = this.f(e => {
+        if (!active) return
+        if (e.type !== 'event') active = false
+        o(e)
+      }, scheduler)
+      const du = s.f(e => {
+        if (!active) return
+        active = false
+        if (e.type === 'event') o(end(e.t))
+        else o(e)
+      }, scheduler)
+      return {
+        dispose() {
+          active = false
+          da.dispose()
+          du.dispose()
+        }
+      }
+    })
+  }
   take(n: number): S<A> {
     return new S((o, scheduler) => {
       if (n <= 0) return scheduler.scheduleD(0, t => o(end(t)))
@@ -177,6 +200,11 @@ export class S<A> {
     }, scheduler.local())
     return d
   }
+
+  multicast(): Multicast<A> {
+    return new Multicast((o, s) => this.run(o, s))
+  }
+
   static of(f: SFn<A>): S<A> {
     return new S((o, scheduler) => {
       var active = true
@@ -244,5 +272,31 @@ export class S<A> {
         o(end(t))
       })
     )
+  }
+}
+
+export class Multicast<A> extends S<A> {
+  d: ?Disposable
+  os: Array<(O<A>) => void>
+
+  constructor(f: SFn<A>) {
+    super(f)
+    this.os = []
+  }
+
+  run(o: (O<A>) => void, scheduler: Scheduler): Disposable {
+    this.os.push(o)
+    if (this.d == null)
+      this.d = super.run(e => this.os.forEach(o => o(e)), scheduler)
+    return {
+      dispose: () => {
+        var i, d
+        if ((i = this.os.indexOf(o)) >= 0) this.os.splice(i, 1)
+        if (this.os.length === 0 && (d = this.d)) {
+          this.d = null
+          d.dispose()
+        }
+      }
+    }
   }
 }
