@@ -181,17 +181,18 @@ export class S<A> {
     return new S((o, scheduler) => {
       var active = true
       var d = null
-      try {
-        d = f(function activeO(e) {
-          if (!active) return
-          if (e.type !== 'event') active = false
-          o(e)
-        }, scheduler)
-      } catch (err) {
-        scheduler.schedule(0, t => {
+      scheduler.schedule(0, t => {
+        if (!active) return
+        try {
+          d = f(function activeO(e) {
+            if (!active) return
+            if (e.type !== 'event') active = false
+            o(e)
+          }, scheduler)
+        } catch (err) {
           if (active) o(error(t, err))
-        })
-      }
+        }
+      })
       return {
         dispose() {
           active = false

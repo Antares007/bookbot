@@ -57,10 +57,10 @@ export class Scheduler {
     }
     return new Scheduler(
       n => {
-        if (currentTime !== -1) return n == null ? currentTime : currentTime + n
+        if (currentTime !== -1) return currentTime + (n || 0)
         setTimeout(reset, 0)
         currentTime = Date.now()
-        return n == null ? currentTime : currentTime + n
+        return currentTime + (n || 0)
       },
       (f, d) => {
         setTimeout(f, d)
@@ -70,7 +70,7 @@ export class Scheduler {
   static test(startTime: number): Scheduler {
     let t = startTime
     return new Scheduler(
-      () => t,
+      n => t + (n || 0),
       (f, d) => {
         t += d
         Promise.resolve().then(f)
