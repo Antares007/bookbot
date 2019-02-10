@@ -2,6 +2,7 @@
 import type { A } from '../src/atest.js'
 import { S, event, end, error } from '../src/stream.js'
 import * as h from './helpers/teststream.js'
+import { Scheduler } from '../src/scheduler'
 
 const id = a => a
 
@@ -46,7 +47,52 @@ export async function of2(assert: Array<A>) {
   assert[1].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
   assert[2].strictEqual(d, 1)
 }
-
+export async function of3(assert: Array<A>) {
+  var d = 0
+  const scheduler = Scheduler.test(99)
+  const act = S.of((o, scheduler) => {
+    scheduler.schedule(1, t => {
+      assert[0].strictEqual(t, 1)
+      o(error(t, new Error('X')))
+    })
+    return {
+      dispose() {
+        d++
+      }
+    }
+  })
+  const exp = '-X'
+  const ds = act.run(e => {
+    assert[1].ok(true)
+  }, scheduler)
+  scheduler.schedule(2, t => {
+    ds.dispose()
+    assert[2].strictEqual(d, 1)
+  })
+}
+export async function of4(assert: Array<A>) {
+  var d = 0
+  const scheduler = Scheduler.test(99)
+  const act = S.of((o, scheduler) => {
+    scheduler.schedule(1, t => {
+      assert[0].strictEqual(t, 1)
+      o(end(t))
+    })
+    return {
+      dispose() {
+        d++
+      }
+    }
+  })
+  const exp = '-X'
+  const ds = act.run(e => {
+    assert[1].ok(true)
+  }, scheduler)
+  scheduler.schedule(2, t => {
+    ds.dispose()
+    assert[2].strictEqual(d, 1)
+  })
+}
 export async function at(assert: Array<A>) {
   const act = S.at('a', 3)
   const exp = '---(a|)'
