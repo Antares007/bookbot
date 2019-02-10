@@ -1,4 +1,5 @@
 // @flow strict
+import type { Disposable } from './disposable'
 
 export opaque type TimePoint: number = number
 
@@ -23,6 +24,20 @@ export class Scheduler {
       li[1] = (l => t => (l(t), action(t)))(li[1])
     } else {
       this.line.splice(ap + 1, 0, [at, action])
+    }
+  }
+  scheduleD(
+    delay: number,
+    f: (TimePoint, { active: boolean }) => void
+  ): Disposable {
+    const ref = { active: true }
+    this.schedule(delay, t => {
+      if (ref.active) f(t, ref)
+    })
+    return {
+      dispose() {
+        ref.active = false
+      }
     }
   }
   relative(t0: TimePoint): Scheduler {

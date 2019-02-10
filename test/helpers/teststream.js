@@ -21,11 +21,9 @@ export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
 
 export function sOf(str: string): S<string> {
   const line = tlOf(str)
-  let active = true
-  return new S((sink, schedule) => {
-    schedule.local().schedule(0, t0 => {
+  return S.of((sink, schedule) => {
+    schedule.schedule(0, t0 => {
       for (let p of line) {
-        if (!active) return
         schedule
           .relative(t0)
           .schedule(p[0], t =>
@@ -37,11 +35,7 @@ export function sOf(str: string): S<string> {
           )
       }
     })
-    return {
-      dispose: () => {
-        active = false
-      }
-    }
+    return { dispose() {} }
   })
 }
 

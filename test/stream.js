@@ -55,6 +55,12 @@ export async function at(assert: Array<A>) {
 
 export async function empty(assert: Array<A>) {
   const act = S.empty()
+  const exp = '|'
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+
+export async function never(assert: Array<A>) {
+  const act = S.never()
   const exp = ''
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
@@ -75,6 +81,16 @@ export async function map(assert: Array<A>) {
   const s01 = 'a-b-c-|'
   const exp = 'A-B-C-|'
   const act = h.sOf(s01).map(chr => chr.toUpperCase())
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+
+export async function map2(assert: Array<A>) {
+  const s01 = 'a-b-c-|'
+  const exp = 'A-X'
+  const act = h.sOf(s01).map(chr => {
+    if (chr === 'b') throw new Error('X')
+    else return chr.toUpperCase()
+  })
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
 

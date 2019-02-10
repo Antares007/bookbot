@@ -19,7 +19,7 @@ export function error<A>(t: TimePoint, v: Error): O<A> {
   return { type: 'error', t, v }
 }
 
-type SFn<A> = ((O<A>) => void, Scheduler) => ?Disposable
+type SFn<A> = ((O<A>) => void, Scheduler) => Disposable
 
 export class S<A> {
   f: SFn<A>
@@ -28,27 +28,21 @@ export class S<A> {
   }
   map<B>(f: A => B): S<B> {
     return new S((o, scheduler) =>
-      this.f(
-        e => (e.type === 'event' ? o(event(e.t, f(e.v))) : o(e)),
-        scheduler
-      )
+      this.f(e => {
+        if (e.type === 'event')
+          try {
+            o(event(e.t, f(e.v)))
+          } catch (err) {
+            o(error(e.t, err))
+          }
+        else o(e)
+      }, scheduler)
     )
   }
   sum<B>(sb: S<B>): S<A | B> {
     return new S((o, scheduler) => {
       var i = 2
-      const da = this.f(sum, scheduler)
-      const db = sb.f(sum, scheduler)
-      return da && db
-        ? {
-            dispose() {
-              da.dispose()
-              db.dispose()
-            }
-          }
-        : da
-        ? da
-        : db
+      return disposable.mappend(this.f(sum, scheduler), sb.f(sum, scheduler))
       function sum(e) {
         if (e.type === 'event') o(event(e.t, e.v))
         else if (e.type === 'end') --i === 0 ? o(e) : void 0
@@ -60,41 +54,33 @@ export class S<A> {
     return new S((o, scheduler) => {
       var i = 2
       const ab: [?A, ?B] = [null, null]
-      const da = this.f(e => {
-        if (e.type === 'event') {
-          ab[0] = e.v
-          if (ab[1]) o(event(e.t, [e.v, ab[1]]))
-        } else if (e.type === 'end') --i === 0 ? o(e) : void 0
-        else o(e)
-      }, scheduler)
-      const db = sb.f(e => {
-        if (e.type === 'event') {
-          ab[1] = e.v
-          if (ab[0]) o(event(e.t, [ab[0], e.v]))
-        } else if (e.type === 'end') --i === 0 ? o(e) : void 0
-        else o(e)
-      }, scheduler)
-      return da && db
-        ? {
-            dispose() {
-              da.dispose()
-              db.dispose()
-            }
-          }
-        : da
-        ? da
-        : db
+      return disposable.mappend(
+        this.f(e => {
+          if (e.type === 'event') {
+            ab[0] = e.v
+            if (ab[1]) o(event(e.t, [e.v, ab[1]]))
+          } else if (e.type === 'end') --i === 0 ? o(e) : void 0
+          else o(e)
+        }, scheduler),
+        sb.f(e => {
+          if (e.type === 'event') {
+            ab[1] = e.v
+            if (ab[0]) o(event(e.t, [ab[0], e.v]))
+          } else if (e.type === 'end') --i === 0 ? o(e) : void 0
+          else o(e)
+        }, scheduler)
+      )
     })
   }
   join<B>(f: A => S<B>): S<B> {
     return new S((o, scheduler) => {
       var i = 0
+      var active = true
       const dm = new Map()
       const d = {
         dispose() {
-          dm.forEach(d => {
-            if (d) d.dispose()
-          })
+          active = false
+          dm.forEach(d => d.dispose())
         }
       }
       const di = i++
@@ -102,17 +88,21 @@ export class S<A> {
         di,
         this.f(e => {
           if (e.type === 'event') {
-            const di = i++
-            dm.set(
-              di,
-              f(e.v).f(e => {
-                if (e.type === 'event') o(e)
-                else if (e.type === 'end') {
-                  dm.delete(di)
-                  if (dm.size === 0) o(e)
-                } else o(e)
-              }, scheduler)
-            )
+            try {
+              const di = i++
+              dm.set(
+                di,
+                f(e.v).f(e => {
+                  if (e.type === 'event') o(e)
+                  else if (e.type === 'end') {
+                    dm.delete(di)
+                    if (dm.size === 0) o(e)
+                  } else o(e)
+                }, scheduler)
+              )
+            } catch (err) {
+              o(error(e.t, err))
+            }
           } else if (e.type === 'end') {
             dm.delete(di)
             if (dm.size === 0) o(e)
@@ -124,7 +114,7 @@ export class S<A> {
   }
   take(n: number): S<A> {
     return new S((o, scheduler) => {
-      if (n <= 0) return scheduler.schedule(0, t => o(end(t)))
+      if (n <= 0) return scheduler.scheduleD(0, t => o(end(t)))
       var i = 0
       const d = this.f(e => {
         if (e.type === 'event') {
@@ -142,45 +132,79 @@ export class S<A> {
     return new S((o, scheduler) => {
       var active = true
       var b_ = b
-      scheduler.schedule(0, t => o(event(t, b_)))
-      return this.f(e => {
-        if (e.type === 'event') {
-          b_ = f(b_, e.v)
-          o(event(e.t, b_))
-        } else o(e)
+      scheduler.schedule(0, t => {
+        if (active) o(event(t, b_))
+      })
+      const d = this.f(e => {
+        if (e.type === 'event')
+          try {
+            o(event(e.t, (b_ = f(b_, e.v))))
+          } catch (err) {
+            o(error(e.t, err))
+          }
+        else o(e)
       }, scheduler)
+      return {
+        dispose() {
+          active = false
+          d.dispose()
+        }
+      }
     })
   }
   run(o: (O<A>) => void, scheduler: Scheduler): Disposable {
-    var active = true
-    const d = this.f(function safeO(e) {
-      if (!active) return
-      if (e.type === 'event')
-        try {
-          return o(e)
-        } catch (err) {
-          active = false
-          if (d) d.dispose()
-          return o(err)
-        }
-      active = false
-      if (e.type === 'error' && d) d.dispose()
-      o(e)
-    }, scheduler.local())
-    return {
+    var disposed = false
+    var dupstream
+    const d = {
       dispose() {
-        if (!active) return
-        active = false
-        if (d) d.dispose()
+        if (disposed) return
+        disposed = true
+        dupstream.dispose()
       }
     }
+    dupstream = this.f(function safeO(e) {
+      if (e.type === 'event' || e.type === 'end') {
+        try {
+          o(e)
+        } catch (err) {
+          d.dispose()
+          o(error(e.t, err))
+        }
+      } else {
+        d.dispose()
+        o(e)
+      }
+    }, scheduler.local())
+    return d
   }
-
+  static of(f: SFn<A>): S<A> {
+    return new S((o, scheduler) => {
+      var active = true
+      var d = null
+      try {
+        d = f(function activeO(e) {
+          if (!active) return
+          if (e.type !== 'event') active = false
+          o(e)
+        }, scheduler)
+      } catch (err) {
+        scheduler.schedule(0, t => {
+          if (active) o(error(t, err))
+        })
+      }
+      return {
+        dispose() {
+          active = false
+          if (d) d.dispose()
+        }
+      }
+    })
+  }
   static periodic(period: number): S<number> {
     return new S((o, scheduler) => {
       var active = true
       scheduler.schedule(0, function rec(t) {
-        o(event(t, t))
+        if (active) o(event(t, t))
         if (active) scheduler.schedule(period, rec)
       })
       return {
@@ -190,50 +214,35 @@ export class S<A> {
       }
     })
   }
+  static never(): S<A> {
+    return new S(() => disposable.empty)
+  }
+
   static empty(): S<A> {
-    return new S(() => {})
+    return new S((o, scheduler) => scheduler.scheduleD(0, t => o(end(t))))
   }
-
-  static of(f: ((O<A>) => void, Scheduler) => ?Disposable): S<A> {
-    return new S(f)
-  }
-
   static at(a: A, delay: number = 0): S<A> {
-    return new S((o, scheduler) => {
-      var active = true
-      scheduler.schedule(delay, t => {
+    return new S((o, scheduler) =>
+      scheduler.scheduleD(delay, (t, ref) => {
         o(event(t, a))
-        if (active) o(end(t))
+        if (ref.active) o(end(t))
       })
-      return {
-        dispose() {
-          active = false
-        }
-      }
-    })
+    )
   }
-
   static throwError(err: Error, delay: number = 0): S<A> {
-    return new S((o, scheduler) => {
-      scheduler.schedule(delay, t => o(error(t, err)))
-    })
+    return new S((o, scheduler) =>
+      scheduler.scheduleD(delay, t => o(error(t, err)))
+    )
   }
-
   static fromArray(as: Array<A>, delay: number = 0): S<A> {
-    return new S((o, scheduler) => {
-      var active = true
-      scheduler.schedule(delay, t => {
+    return new S((o, scheduler) =>
+      scheduler.scheduleD(delay, (t, ref) => {
         for (var i = 0, l = as.length; i < l; i++) {
           o(event(t, as[i]))
-          if (!active) return
+          if (!ref.active) return
         }
         o(end(t))
       })
-      return {
-        dispose() {
-          active = false
-        }
-      }
-    })
+    )
   }
 }
