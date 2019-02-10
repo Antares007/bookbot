@@ -24,15 +24,13 @@ export function sOf(str: string): S<string> {
   return S.of((sink, schedule) => {
     schedule.schedule(0, t0 => {
       for (let p of line) {
-        schedule
-          .relative(t0)
-          .schedule(p[0], t =>
-            p[1] === '|'
-              ? sink(s.end(t))
-              : p[1] === 'X'
-              ? sink(s.error(t, new Error('X')))
-              : sink(s.event(t, p[1]))
-          )
+        schedule.schedule(p[0], t =>
+          p[1] === '|'
+            ? sink(s.end(t))
+            : p[1] === 'X'
+            ? sink(s.error(t, new Error('X')))
+            : sink(s.event(t, p[1]))
+        )
       }
     })
     return { dispose() {} }
