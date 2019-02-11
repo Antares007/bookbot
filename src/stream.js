@@ -202,7 +202,24 @@ export class S<A> {
   }
 
   multicast(): Multicast<A> {
-    return new Multicast((o, s) => this.run(o, s))
+    var df: ?Disposable
+    var os: Array<(O<A>) => void> = []
+    return new Multicast((o, scheduler) => {
+      os.push(o)
+      if (df == null) df = this.f(e => os.forEach(o => o(e)), scheduler)
+      return {
+        dispose: () => {
+          const i = os.indexOf(o)
+          if (i === -1) return
+          os.splice(i, 1)
+          const d = df
+          if (os.length === 0 && d) {
+            df = null
+            d.dispose()
+          }
+        }
+      }
+    })
   }
 
   static of(f: SFn<A>): S<A> {
@@ -276,27 +293,7 @@ export class S<A> {
 }
 
 export class Multicast<A> extends S<A> {
-  d: ?Disposable
-  os: Array<(O<A>) => void>
-
-  constructor(f: SFn<A>) {
-    super(f)
-    this.os = []
-  }
-
-  run(o: (O<A>) => void, scheduler: Scheduler): Disposable {
-    this.os.push(o)
-    if (this.d == null)
-      this.d = super.run(e => this.os.forEach(o => o(e)), scheduler)
-    return {
-      dispose: () => {
-        var i, d
-        if ((i = this.os.indexOf(o)) >= 0) this.os.splice(i, 1)
-        if (this.os.length === 0 && (d = this.d)) {
-          this.d = null
-          d.dispose()
-        }
-      }
-    }
+  multicast(): Multicast<A> {
+    return this
   }
 }
