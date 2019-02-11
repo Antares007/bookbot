@@ -115,16 +115,16 @@ export class S<A> {
   until<B>(s: S<B>): S<A> {
     return new S((o, scheduler) => {
       var active = true
-      const da = this.f(e => {
-        if (!active) return
-        if (e.type !== 'event') active = false
-        o(e)
-      }, scheduler)
       const du = s.f(e => {
         if (!active) return
         active = false
         if (e.type === 'event') o(end(e.t))
         else o(e)
+      }, scheduler)
+      const da = this.f(e => {
+        if (!active) return
+        if (e.type !== 'event') active = false
+        o(e)
       }, scheduler)
       return {
         dispose() {
@@ -146,6 +146,19 @@ export class S<A> {
             if (d) d.dispose()
             o(end(e.t))
           }
+        } else o(e)
+      }, scheduler)
+      return d
+    })
+  }
+  skip(n: number): S<A> {
+    if (n <= 0) return this
+    return new S((o, scheduler) => {
+      var i = 0
+      const d = this.f(e => {
+        if (e.type === 'event') {
+          if (i++ < n) return
+          o(e)
         } else o(e)
       }, scheduler)
       return d
