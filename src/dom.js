@@ -1,10 +1,10 @@
-// flow strict-local
+// @flow strict-local
 import type { O as SO } from './stream'
 import type { On } from './on'
 import { mkOn } from './on'
 import { S } from './stream'
 import * as stream from './stream'
-import { defaultScheduler } from './scheduler'
+import { Scheduler } from './scheduler'
 
 type Pith = ((O) => void, On) => void
 type O =
@@ -16,16 +16,16 @@ type O =
 const elm = (tag: string, s_: Pith): O => ({
   type: 'element',
   tag: tag.toUpperCase(),
-  s: stream.at(s_)
+  s: S.at(s_)
 })
-const text = (s_: string): O => ({ type: 'text', s: stream.at(s_) })
+const text = (s_: string): O => ({ type: 'text', s: S.at(s_) })
 const attr = (s_: { [string]: string }): O => ({
   type: 'attr',
-  s: stream.at(s_)
+  s: S.at(s_)
 })
 const style = (s_: { [string]: string }): O => ({
   type: 'style',
-  s: stream.at(s_)
+  s: S.at(s_)
 })
 
 const selm = (tag: string, s: S<Pith>): O => ({
@@ -37,9 +37,13 @@ const stext = (s: S<string>): O => ({ type: 'text', s })
 const sattr = (s: S<{ [string]: string }>): O => ({ type: 'attr', s })
 const sstyle = (s: S<{ [string]: string }>): O => ({ type: 'style', s })
 
-const numbers = stream.scan(a => a + 1, 0, stream.periodic(10))
+const numbers = S.periodic(1000)
+  .scan(a => a + 1, 0)
+  .multicast()
 
-stream.take(100, numbers).run(console.log.bind(console), defaultScheduler)
+numbers
+  .until(numbers.skip(1))
+  .run(console.log.bind(console), Scheduler.default())
 
 const div = elm('div', (o, on) => {
   const actionStreams = []
@@ -47,87 +51,83 @@ const div = elm('div', (o, on) => {
   o(
     elm('button', (o, on) => {
       o(text('+'))
-      actionStreams.push(stream.map(() => +1, on('click')))
+      actionStreams.push(on('click').map(() => +1))
     })
   )
   o(
     elm('button', (o, on) => {
       o(text('-'))
-      actionStreams.push(stream.map(() => -1, on('click')))
+      actionStreams.push(on('click').map(() => -1))
     })
   )
-  const rez = stream.map(
-    n => n + '',
-    stream.join(stream.fromArray(actionStreams))
-  )
-  o(stext(rez))
+  const rez = S.fromArray(actionStreams)
+    .flatMap(a => a)
+    .map(n => n + '')
+  o(text('rez'))
 })
 
-function run(elm: HTMLElement, v: O): S<(void) => void> {
-  if (v.type === 'element') {
-    return stream.Of((o, schedule) => {
-      var d
-      var ecount
-      const ds = []
-      d = v.s.run(epith => {
-        if (epith.type !== 'event') return o(epith)
-        epith.v(velm => {
-          if (velm.type === 'element') {
-            velm.s
-          }
-        }, mkOn(elm))
-      }, schedule)
-      ds.push(d)
-      return {
-        dispose() {
-          for (let d of ds) d.dispose()
-        }
-      }
-    })
-    // return stream.map(pith => {
-    //   return elm => {
-    //     var i = 0
-    //     const patchs: Array<
-    //       S<(HTMLElement & { '@patch': number }) => void>
-    //     > = []
-    //     pith(vi => {
-    //       const children = elm.children
-    //       var li: ?HTMLElement
-    //       if (vi.type === 'element') {
-    //         for (var i = 0, l = children.length; i < l; i++)
-    //           if (children[i].tagName === vi.tag) {
-    //             li = children[i]
-    //             break
-    //           }
-
-    //         const see = run(vi)
-    //       }
-    //     }, mkOn(elm))
-    //   }
-    // }, v.s)
-  }
+function run(elm: HTMLElement, v: O): S<() => void> {
   if (v.type === 'text') {
-    return stream.at(elm => {})
+    return v.s.map(str => () => {
+      elm.textContent = str
+    })
+  } else if (v.type === 'attr') {
+    return v.s.map(map => () => {
+      for (var key in map) elm.setAttribute(key, map[key])
+    })
+  } else if (v.type === 'style') {
+    return v.s.map(map => () => {
+      const style = elm.style
+      for (var key in map) style.setProperty(key, map[key])
+    })
+  } else {
+    const s = v.s.multicast()
+    var omap = new Map()
+    return s.flatMap(pith => {
+      const childs = elm.children
+      const len = childs.length
+      const nmap = new Map()
+      var i = 0
+      var patch = S.at(() => {
+        while (i < len) elm.removeChild(childs[i])
+      })
+      pith(vi => {
+        if (vi.type === 'text' || vi.type === 'element') {
+          const index = i++
+          var li: ?HTMLElement = null
+          var j = index
+          const tag = vi.type === 'element' ? vi.tag : 'SPAN'
+          while (j < len && li == null) {
+            li = childs[j++]
+            if (li.tagName !== tag || omap.get(li) !== vi.s) li = null
+          }
+          if (li == null) {
+            li = document.createElement(tag)
+            nmap.set(li, vi.s)
+            elm.insertBefore(li, childs[index])
+          } else {
+            nmap.set(li, vi.s)
+            if (j - 1 !== index) elm.insertBefore(li, childs[index])
+          }
+          patch = run(li, vi)
+            .product(patch)
+            .map(([a, b]) => () => {
+              b()
+              a()
+            })
+        } else {
+        }
+      }, mkOn(elm))
+      omap = nmap
+      return patch.until(s.skip(1))
+    })
   }
-  return stream.at(elm => {})
-  // const p =
-  //   v.type === 'text'
-  //     ? str => ((elm.textContent = str), void 0)
-  //     : v.type === 'attr'
-  //     ? str => (elm.setAttribute(v.name, str), void 0)
-  //     : str => (elm.style.setProperty(v.name, str), void 0)
-  // return v.s instanceof S
-  //   ? s.map(str => p.bind(null, str), v.s)
-  //   : p.bind(null, v.s)
-  // case 'element':
-  //   return act(pith => {
-  //     var i = 0
-  //     pith(v => {
-  //       const index = i++
-  //       const li = elm.children[i]
-  //       if (li.tagName === v.tag) {
-  //       }
-  //     }, mkOn(elm))
-  //     return
-  //   }, v.pith)
 }
+const rootNode = document.getElementById('root-node')
+if (!rootNode) throw new Error('cant find root-node')
+console.log(rootNode)
+run(rootNode, div).map(p => {
+  console.log('patched', p.toString())
+  p()
+})
+//.run(console.log.bind(console), Scheduler.default())
