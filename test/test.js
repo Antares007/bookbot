@@ -1,7 +1,7 @@
 //@flow strict
-import type { A } from '../src/atest.js'
-import { awaitPromises } from '../src/iterable.js'
-import { run } from '../src/atest.js'
+import type { A } from '../src/atest'
+import { awaitPromises } from '../src/iterable'
+import { run } from '../src/atest'
 import * as path from 'path'
 
 const fail = '\u001b[31mfail\u001b[39m'

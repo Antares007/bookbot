@@ -1,7 +1,7 @@
 // @flow strict
-import type { A } from '../src/atest.js'
-import { S, event, end, error } from '../src/stream.js'
-import * as h from './helpers/teststream.js'
+import type { A } from '../src/atest'
+import { S, event, end, error } from '../src/stream'
+import * as h from './helpers/teststream'
 import { Scheduler } from '../src/scheduler'
 
 const id = a => a

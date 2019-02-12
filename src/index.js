@@ -1,5 +1,5 @@
 // @flow
-import type { IO } from './io.js'
+import type { IO } from './io'
 
 type Success = { success: true, value: boolean }
 type Failed = { success: false, error: string }

@@ -47,6 +47,6 @@ function tree(s: S<Buffer>): O {
 // }
 
 const modes = require('js-git/lib/modes')
-// const memdb: () => JsGit = require("js-git/mixins/mem-db.js")
+// const memdb: () => JsGit = require("js-git/mixins/mem-db")
 //
 const a = 42
