@@ -116,7 +116,7 @@ export class S<A> {
     return new S((o, scheduler) => {
       var active = true
       const du = s.f(e => {
-        if (!active) return
+        if (!active || e.type === 'end') return
         active = false
         if (e.type === 'event') o(end(e.t))
         else o(e)

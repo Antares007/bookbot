@@ -41,9 +41,8 @@ const numbers = S.periodic(1000)
   .scan(a => a + 1, 0)
   .multicast()
 
-numbers
-  .until(numbers.skip(1))
-  .run(console.log.bind(console), Scheduler.default())
+numbers.until(numbers.skip(1))
+//  .run(console.log.bind(console), Scheduler.default())
 
 const div = elm('div', (o, on) => {
   const actionStreams = []
@@ -119,15 +118,16 @@ function run(elm: HTMLElement, v: O): S<() => void> {
         }
       }, mkOn(elm))
       omap = nmap
-      return patch.until(s.skip(1))
+      return patch.until(s)
     })
   }
 }
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 console.log(rootNode)
-run(rootNode, div).map(p => {
-  console.log('patched', p.toString())
-  p()
-})
-//.run(console.log.bind(console), Scheduler.default())
+run(rootNode, div)
+  .map(p => {
+    console.log('patched', p.toString())
+    p()
+  })
+  .run(console.log.bind(console), Scheduler.default())
