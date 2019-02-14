@@ -7,8 +7,7 @@ const tests = ['scheduler.js', 'stream.js']
 run(({ fullname, error }) => {
   if (!error) process.stdout.write('.')
   else {
-    console.group(fullname.slice(__dirname.length))
-    console.log(error)
-    console.groupEnd()
+    console.log(fullname.slice(__dirname.length))
+    console.log(error.message)
   }
 }, tests.map(a => join(__dirname, a)))
