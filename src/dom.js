@@ -1,5 +1,4 @@
 // @flow strict-local
-import type { O as SO } from './stream'
 import type { On } from './on'
 import { mkOn } from './on'
 import { S } from './stream'
@@ -41,8 +40,9 @@ const numbers = S.periodic(1000)
   .scan(a => a + 1, 0)
   .multicast()
 
-numbers.until(numbers.skip(1))
-//  .run(console.log.bind(console), Scheduler.default())
+numbers
+  .until(S.at('a', 200))
+  .run(console.log.bind(console), Scheduler.default(1).o)
 
 const div = elm('div', (o, on) => {
   const actionStreams = []
@@ -122,12 +122,11 @@ function run(elm: HTMLElement, v: O): S<() => void> {
     })
   }
 }
-const rootNode = document.getElementById('root-node')
-if (!rootNode) throw new Error('cant find root-node')
-console.log(rootNode)
-run(rootNode, div)
-  .map(p => {
-    console.log('patched', p.toString())
-    p()
-  })
-  .run(console.log.bind(console), Scheduler.default())
+//const rootNode = document.getElementById('root-node')
+//if (!rootNode) throw new Error('cant find root-node')
+//console.log(rootNode)
+//run(rootNode, div).map(p => {
+//  console.log('patched', p.toString())
+//  p()
+//})
+//.run(console.log.bind(console), Scheduler.default())

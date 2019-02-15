@@ -2,9 +2,30 @@
 import type { Disposable } from './disposable'
 
 export opaque type TimePoint: number = number
-type scheduler$O =
+export type scheduler$O =
   | { type: 'now', action: TimePoint => void }
   | { type: 'delay', delay: number, action: TimePoint => void }
+
+export function now(action: TimePoint => void): scheduler$O {
+  return { type: 'now', action }
+}
+
+export function delay(delay: number, action: TimePoint => void): scheduler$O {
+  return { type: 'delay', delay, action }
+}
+export function local(
+  offset: number,
+  o: scheduler$O => void
+): scheduler$O => void {
+  return i => {
+    const action = t => i.action(t + offset)
+    if (i.type === 'now') {
+      o({ type: 'now', action })
+    } else {
+      o({ type: 'delay', delay: i.delay, action })
+    }
+  }
+}
 
 function scheduler(speed: number = 1): scheduler$O => void {
   var line = []
