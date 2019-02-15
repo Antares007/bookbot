@@ -60,12 +60,12 @@ function runTest(o: (?Error) => void, f): void {
             get(_, property) {
               return (...args) => {
                 try {
-                  assert[property](...args)
-                  if (i === index) o()
-                  else o(new Error(`index actual(${i}) === expected(${index})`))
                   i++
+                  assert[property](...args)
+                  if (i - 1 === index) o()
+                  else o(new Error(`index actual(${i}) === expected(${index})`))
                 } catch (err) {
-                  o(err)
+                  o(new Error(`assert[${index}].${property}:\n${err.message}`))
                 }
               }
             }
