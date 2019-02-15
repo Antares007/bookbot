@@ -5,7 +5,7 @@ import { Scheduler } from '../../src/scheduler'
 
 export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
   return new Promise((resolve, reject) => {
-    const scheduler = Scheduler.test(99).local()
+    const scheduler = Scheduler.default(0).local()
     const vs = []
     const d = s.run(e => {
       vs.push([

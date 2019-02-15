@@ -49,7 +49,7 @@ export async function of2(assert: Array<A>) {
 }
 export async function of3(assert: Array<A>) {
   var d = 0
-  const scheduler = Scheduler.test(99)
+  const scheduler = Scheduler.default(0)
   const act = S.of((o, scheduler) => {
     scheduler.schedule(1, t => {
       assert[0].strictEqual(t, 1)
@@ -72,7 +72,7 @@ export async function of3(assert: Array<A>) {
 }
 export async function of4(assert: Array<A>) {
   var d = 0
-  const scheduler = Scheduler.test(99)
+  const scheduler = Scheduler.default(0)
   const act = S.of((o, scheduler) => {
     scheduler.schedule(1, t => {
       assert[0].strictEqual(t, 1)
