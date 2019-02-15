@@ -40,10 +40,10 @@ function scheduler(speed: number = 1): scheduler$O => void {
   }
   function run() {
     timeoutID = null
-    nowT = nexT
     while (true) {
-      const ap = findAppendPosition(nowT, line)
+      const ap = findAppendPosition(nexT, line)
       if (ap === -1) break
+      nowT = nexT
       const line_ = line
       line = ap === line.length - 1 ? [] : line.slice(ap + 1)
       for (let i = 0; i <= ap; i++) line_[i][1](line_[i][0])
@@ -100,8 +100,7 @@ class Local extends Scheduler {
     })
   }
   local(): Scheduler {
-    if (this instanceof Local) return this
-    return super.local()
+    return this
   }
 }
 
