@@ -118,21 +118,24 @@ export class S<A> {
       const du = s.f(e => {
         if (!active || e.type === 'end') return
         active = false
-        if (e.type === 'event') o(end(e.t))
-        else o(e)
+        if (e.type === 'event') {
+          d.dispose()
+          o(end(e.t))
+        } else o(e)
       }, scheduler)
       const da = this.f(e => {
         if (!active) return
         if (e.type !== 'event') active = false
         o(e)
       }, scheduler)
-      return {
+      const d = {
         dispose() {
           active = false
           da.dispose()
           du.dispose()
         }
       }
+      return d
     })
   }
   take(n: number): S<A> {
