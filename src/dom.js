@@ -37,12 +37,12 @@ const sattr = (s: S<{ [string]: string }>): O => ({ type: 'attr', s })
 const sstyle = (s: S<{ [string]: string }>): O => ({ type: 'style', s })
 
 const numbers = S.periodic(1000)
-  .scan(a => a + 1, 0)
-  .multicast()
+//.scan(a => a + 1, 0)
+//.multicast()
 
 numbers
-  .until(S.at('a', 200))
-  .run(console.log.bind(console), Scheduler.default(1).o)
+  .until(S.at('a', 5000))
+  .run(console.log.bind(console), Scheduler.default(2).o)
 
 const div = elm('div', (o, on) => {
   const actionStreams = []

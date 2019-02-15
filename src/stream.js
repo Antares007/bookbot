@@ -118,15 +118,16 @@ export class S<A> {
       var active = true
       const du = s.f(e => {
         if (!active || e.type === 'end') return
-        active = false
-        if (e.type === 'event') {
+        if (e.type === 'error') active = false
+        else if (e.type === 'event') {
+          active = false
           d.dispose()
           o(end(e.t))
         } else o(e)
       })
       const da = this.f(e => {
         if (!active) return
-        if (e.type !== 'event') active = false
+        if (e.type === 'error' || e.type === 'end') active = false
         o(e)
       })
       const d = {
@@ -205,7 +206,7 @@ export class S<A> {
       }
     }
     o2(
-      now(t0 => {
+      delay(0, t0 => {
         const o2loc = local(0 - t0, o2)
         dupstream = this.f(function safeO(e) {
           if (e.type === 'event' || e.type === 'end') {
@@ -277,11 +278,12 @@ export class S<A> {
   static periodic(period: number): S<void> {
     return new S(o => {
       var active = true
-      const dl = delay(1000, function rec(t) {
-        if (active) o(event(t, void 0))
-        if (active) o(dl)
-      })
-      o(dl)
+      o(
+        delay(0, function rec(t) {
+          if (active) o(event(t, void 0))
+          if (active) o(delay(1000, rec))
+        })
+      )
       return {
         dispose() {
           active = false

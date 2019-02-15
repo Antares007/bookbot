@@ -46,7 +46,7 @@ function scheduler(speed: number = 1): scheduler$O => void {
         line.splice(ap + 1, 0, [at, i.action])
       }
     }
-    reschedule(line.length === 0 ? nowT : line[0][0])
+    reschedule(nowT)
   }
   function reschedule(nT) {
     const delay = (nT - nowT) * speed
@@ -60,11 +60,11 @@ function scheduler(speed: number = 1): scheduler$O => void {
     }
   }
   function run() {
+    nowT = nexT
     timeoutID = null
     while (true) {
       const ap = findAppendPosition(nexT, line)
       if (ap === -1) break
-      nowT = nexT
       const line_ = line
       line = ap === line.length - 1 ? [] : line.slice(ap + 1)
       for (let i = 0; i <= ap; i++) line_[i][1](line_[i][0])
@@ -147,11 +147,14 @@ function findAppendPosition<T>(
   }
   throw new Error('never')
 }
-
-let see = Scheduler.default(0.1).local(888)
-
-const rec = d => t => {
-  console.log(t, d)
-  if (d > 0) see.schedule(1000, rec(d - 1))
-}
-//see.schedule(0, rec(6))
+//const o_ = scheduler(1)
+//o_(
+//  delay(0, t0 => {
+//    const o = local(t0 * -1, o_)
+//    const rec = d => t => {
+//      console.log(t)
+//      if (d > 0) o(delay(1000, rec(d - 1)))
+//    }
+//    o(now(rec(9)))
+//  })
+//)
