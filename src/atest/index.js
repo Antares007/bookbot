@@ -14,12 +14,14 @@ const assert = require.call(module, 'assert').strict
 
 export function run(
   o: ({ fullname: string, error?: Error }) => void,
-  filePaths: Iterable<string>
+  filePaths: Array<string>
 ): void {
-  for (let filePath of filePaths) {
+  const rec = list => {
+    if (list.length === 0) return
+    const [filePath, ...tail] = list
     try {
       const testDeclarations = parse(readFileSync(filePath, 'utf8'))
-      if (testDeclarations.length === 0) continue
+      if (testDeclarations.length === 0) return setTimeout(() => rec(tail), 0)
       const exports = require.call(module, filePath)
       let timeoutID
       let totalPlan = 0
@@ -31,7 +33,10 @@ export function run(
           if (error != null) o({ fullname, error })
           else {
             if (--a[fullname] === 0) o({ fullname })
-            if (--totalPlan === 0) clearTimeout(timeoutID)
+            if (--totalPlan === 0) {
+              clearTimeout(timeoutID)
+              setTimeout(() => rec(tail), 0)
+            }
           }
         }, exports[d.name])
         return a
@@ -45,6 +50,7 @@ export function run(
       o({ fullname: filePath, error })
     }
   }
+  setTimeout(() => rec(filePaths), 0)
 }
 
 function runTest(o: (?Error) => void, f): void {
