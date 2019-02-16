@@ -36,13 +36,12 @@ const stext = (s: S<string>): O => ({ type: 'text', s })
 const sattr = (s: S<{ [string]: string }>): O => ({ type: 'attr', s })
 const sstyle = (s: S<{ [string]: string }>): O => ({ type: 'style', s })
 
-const numbers = S.periodic(1000)
+const numbers = S.periodic(100)
 //.scan(a => a + 1, 0)
 //.multicast()
 
-numbers
-  .until(S.at('a', 5000))
-  .run(console.log.bind(console), Scheduler.default(2).o)
+numbers.until(S.at('a', 5000))
+//  .run(console.log.bind(console), Scheduler.default(10).o)
 
 const div = elm('div', (o, on) => {
   const actionStreams = []
@@ -122,11 +121,13 @@ function run(elm: HTMLElement, v: O): S<() => void> {
     })
   }
 }
-//const rootNode = document.getElementById('root-node')
-//if (!rootNode) throw new Error('cant find root-node')
-//console.log(rootNode)
-//run(rootNode, div).map(p => {
-//  console.log('patched', p.toString())
-//  p()
-//})
-//.run(console.log.bind(console), Scheduler.default())
+
+const rootNode = document.getElementById('root-node')
+if (!rootNode) throw new Error('cant find root-node')
+
+run(rootNode, div)
+  .map(p => {
+    console.log('patched', p.toString())
+    p()
+  })
+  .run(console.log.bind(console), Scheduler.default(1).o)

@@ -205,26 +205,22 @@ export class S<A> {
         dupstream.dispose()
       }
     }
-    o2(
-      delay(0, t0 => {
-        const o2loc = local(0 - t0, o2)
-        dupstream = this.f(function safeO(e) {
-          if (e.type === 'event' || e.type === 'end') {
-            try {
-              o(e)
-            } catch (err) {
-              d.dispose()
-              o(error(e.t, err))
-            }
-          } else if (e.type === 'error') {
-            d.dispose()
-            o(e)
-          } else {
-            o2loc(e)
-          }
-        })
-      })
-    )
+    const o2loc = local(o2)
+    dupstream = this.f(function safeO(e) {
+      if (e.type === 'event' || e.type === 'end') {
+        try {
+          o(e)
+        } catch (err) {
+          d.dispose()
+          o(error(e.t, err))
+        }
+      } else if (e.type === 'error') {
+        d.dispose()
+        o(e)
+      } else {
+        o2loc(e)
+      }
+    })
     return d
   }
 
@@ -281,7 +277,7 @@ export class S<A> {
       o(
         delay(0, function rec(t) {
           if (active) o(event(t, void 0))
-          if (active) o(delay(1000, rec))
+          if (active) o(delay(period, rec))
         })
       )
       return {

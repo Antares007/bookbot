@@ -13,10 +13,13 @@ export function now(action: TimePoint => void): scheduler$O {
 export function delay(delay: number, action: TimePoint => void): scheduler$O {
   return { type: 'delay', delay, action }
 }
-export function local(
-  offset: number,
-  o: scheduler$O => void
-): scheduler$O => void {
+export function local(o: scheduler$O => void): scheduler$O => void {
+  var offset = 0
+  o(
+    now(t0 => {
+      offset = 0 - t0
+    })
+  )
   return i => {
     const action = t => i.action(t + offset)
     if (i.type === 'now') {
@@ -34,6 +37,7 @@ function scheduler(speed: number = 1): scheduler$O => void {
   var timeoutID: ?TimeoutID = null
   return i => {
     nowT = Math.max(nowT, Math.min(nexT, Date.now()))
+    reschedule(nowT)
     if (i.type === 'now') {
       i.action(nowT)
     } else {
@@ -46,7 +50,6 @@ function scheduler(speed: number = 1): scheduler$O => void {
         line.splice(ap + 1, 0, [at, i.action])
       }
     }
-    reschedule(nowT)
   }
   function reschedule(nT) {
     const delay = (nT - nowT) * speed
@@ -63,7 +66,7 @@ function scheduler(speed: number = 1): scheduler$O => void {
     nowT = nexT
     timeoutID = null
     while (true) {
-      const ap = findAppendPosition(nexT, line)
+      const ap = findAppendPosition(nowT, line)
       if (ap === -1) break
       const line_ = line
       line = ap === line.length - 1 ? [] : line.slice(ap + 1)
@@ -147,14 +150,9 @@ function findAppendPosition<T>(
   }
   throw new Error('never')
 }
-//const o_ = scheduler(1)
-//o_(
-//  delay(0, t0 => {
-//    const o = local(t0 * -1, o_)
-//    const rec = d => t => {
-//      console.log(t)
-//      if (d > 0) o(delay(1000, rec(d - 1)))
-//    }
-//    o(now(rec(9)))
-//  })
-//)
+//const o = local(scheduler(1))
+//const rec = d => t => {
+//  console.log(t)
+//  if (d > 0) o(delay(1000, rec(d - 1)))
+//}
+//o(now(rec(9)))
