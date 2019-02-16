@@ -1,6 +1,6 @@
 //@flow strict
 import type { A } from '../src/atest'
-import { Scheduler } from '../src/scheduler'
+import { Scheduler, now, delay } from '../src/scheduler'
 
 export function can_execute_in_expected_order(assert: Array<A>): void {
   const scheduler = Scheduler.default(0).local(30)
@@ -27,4 +27,36 @@ export function can_execute_in_expected_order(assert: Array<A>): void {
     })
   })
   assert[0].ok(true)
+}
+
+export function scheduler1(assert: Array<A>): void {
+  const scheduler = Scheduler.default(1)
+  const s = scheduler.o
+  s(
+    now(t1 => {
+      s(
+        now(t2 => {
+          assert[0].strictEqual(t2, t1)
+        })
+      )
+      setTimeout(
+        () =>
+          s(
+            now(t3 => {
+              assert[1].ok(t3 > t1)
+              setTimeout(
+                () =>
+                  s(
+                    now(t4 => {
+                      assert[2].ok(t4 > t3)
+                    })
+                  ),
+                10
+              )
+            })
+          ),
+        10
+      )
+    })
+  )
 }
