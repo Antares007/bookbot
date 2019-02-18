@@ -2,22 +2,20 @@
 import type { A } from '../src/atest'
 import { S, event, end, error } from '../src/stream'
 import * as h from './helpers/teststream'
-import { Scheduler, delay } from '../src/scheduler'
+import { Scheduler } from '../src/scheduler'
 
 const id = a => a
 
 export async function of1(assert: Array<A>) {
   var d = 0
-  const act = S.of(o => {
-    o(
-      delay(1, t => {
-        assert[0].strictEqual(t, 1)
-        o(event(t, 'a'))
-        o(end(t))
-        o(event(t, 'b'))
-        o(error(t, new Error('never')))
-      })
-    )
+  const act = S.of((o, schdlr) => {
+    schdlr.delay(1, t => {
+      assert[0].strictEqual(t, 1)
+      o(event(t, 'a'))
+      o(end(t))
+      o(event(t, 'b'))
+      o(error(t, new Error('never')))
+    })
     return {
       dispose() {
         d++
@@ -31,16 +29,14 @@ export async function of1(assert: Array<A>) {
 
 export async function of2(assert: Array<A>) {
   var d = 0
-  const act = S.of(o => {
-    o(
-      delay(1, t => {
-        assert[0].strictEqual(t, 1)
-        o(error(t, new Error('X')))
-        o(error(t, new Error('Y')))
-        o(end(t))
-        o(event(t, 'b'))
-      })
-    )
+  const act = S.of((o, schdlr) => {
+    schdlr.delay(1, t => {
+      assert[0].strictEqual(t, 1)
+      o(error(t, new Error('X')))
+      o(error(t, new Error('Y')))
+      o(end(t))
+      o(event(t, 'b'))
+    })
     return {
       dispose() {
         d++
@@ -53,14 +49,12 @@ export async function of2(assert: Array<A>) {
 }
 export async function of3(assert: Array<A>) {
   var d = 0
-  const scheduler = Scheduler.default(0)
-  const act = S.of(o => {
-    o(
-      delay(1, t => {
-        assert[0].strictEqual(t, 1)
-        o(error(t, new Error('X')))
-      })
-    )
+  const scheduler = Scheduler.asap(0)
+  const act = S.of((o, schdlr) => {
+    scheduler.delay(1, t => {
+      assert[0].strictEqual(t, 1)
+      o(error(t, new Error('X')))
+    })
     return {
       dispose() {
         d++
@@ -70,24 +64,20 @@ export async function of3(assert: Array<A>) {
   const exp = '-X'
   const ds = act.run(e => {
     assert[1].ok(true)
-  }, scheduler.o)
-  scheduler.o(
-    delay(2, t => {
-      ds.dispose()
-      assert[2].strictEqual(d, 1)
-    })
-  )
+  }, scheduler)
+  scheduler.delay(2, t => {
+    ds.dispose()
+    assert[2].strictEqual(d, 1)
+  })
 }
 export async function of4(assert: Array<A>) {
   var d = 0
-  const scheduler = Scheduler.default(99)
-  const act = S.of(o => {
-    o(
-      delay(1, t => {
-        assert[0].strictEqual(t, 1)
-        o(end(t))
-      })
-    )
+  const scheduler = Scheduler.asap(0)
+  const act = S.of((o, schdlr) => {
+    schdlr.delay(1, t => {
+      assert[0].strictEqual(t, 1)
+      o(end(t))
+    })
     return {
       dispose() {
         d++
@@ -97,8 +87,8 @@ export async function of4(assert: Array<A>) {
   const exp = '-X'
   const ds = act.run(e => {
     assert[1].ok(true)
-  }, scheduler.o)
-  scheduler.schedule(2, t => {
+  }, scheduler)
+  scheduler.delay(2, t => {
     ds.dispose()
     assert[2].strictEqual(d, 1)
   })

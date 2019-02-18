@@ -1,8 +1,7 @@
 // @flow strict
 import type { TimePoint } from './scheduler'
 import type { Disposable } from './disposable'
-import type { scheduler$O } from './scheduler'
-import { Scheduler, now, delay, local } from './scheduler'
+import { Scheduler } from './scheduler'
 import * as disposable from './disposable'
 
 export type stream$O<A> =
@@ -10,7 +9,7 @@ export type stream$O<A> =
   | { type: 'end', t: TimePoint }
   | { type: 'error', t: TimePoint, v: Error }
 
-type SFn<A> = ((stream$O<A> | scheduler$O) => void) => Disposable
+type SFn<A> = ((stream$O<A>) => void, Scheduler) => Disposable
 
 export function event<A>(t: TimePoint, v: A): stream$O<A> {
   return { type: 'event', t, v }
@@ -28,7 +27,7 @@ export class S<A> {
     this.f = f
   }
   map<B>(f: A => B): S<B> {
-    return new S(o =>
+    return new S((o, scheduler) =>
       this.f(e => {
         if (e.type === 'event')
           try {
@@ -37,13 +36,13 @@ export class S<A> {
             o(error(e.t, err))
           }
         else o(e)
-      })
+      }, scheduler)
     )
   }
   sum<B>(sb: S<B>): S<A | B> {
-    return new S(o => {
+    return new S((o, schdlr) => {
       var i = 2
-      return disposable.mappend(this.f(sum), sb.f(sum))
+      return disposable.mappend(this.f(sum, schdlr), sb.f(sum, schdlr))
       function sum(e) {
         if (e.type === 'event') o(event(e.t, e.v))
         else if (e.type === 'end') --i === 0 ? o(e) : void 0
@@ -52,7 +51,7 @@ export class S<A> {
     })
   }
   product<B>(sb: S<B>): S<[A, B]> {
-    return new S(o => {
+    return new S((o, schdlr) => {
       var i = 2
       const ab: [?A, ?B] = [null, null]
       return disposable.mappend(
@@ -62,19 +61,19 @@ export class S<A> {
             if (ab[1]) o(event(e.t, [e.v, ab[1]]))
           } else if (e.type === 'end') --i === 0 ? o(e) : void 0
           else o(e)
-        }),
+        }, schdlr),
         sb.f(e => {
           if (e.type === 'event') {
             ab[1] = e.v
             if (ab[0]) o(event(e.t, [ab[0], e.v]))
           } else if (e.type === 'end') --i === 0 ? o(e) : void 0
           else o(e)
-        })
+        }, schdlr)
       )
     })
   }
   flatMap<B>(f: A => S<B>): S<B> {
-    return new S(o => {
+    return new S((o, schdlr) => {
       var i = 0
       var active = true
       const dm = new Map()
@@ -99,7 +98,7 @@ export class S<A> {
                     dm.delete(di)
                     if (dm.size === 0) o(e)
                   } else o(e)
-                })
+                }, schdlr)
               )
             } catch (err) {
               o(error(e.t, err))
@@ -108,13 +107,13 @@ export class S<A> {
             dm.delete(di)
             if (dm.size === 0) o(e)
           } else o(e)
-        })
+        }, schdlr)
       )
       return d
     })
   }
   until<B>(s: S<B>): S<A> {
-    return new S(o => {
+    return new S((o, schdlr) => {
       var active = true
       const du = s.f(e => {
         if (!active || e.type === 'end') return
@@ -124,12 +123,12 @@ export class S<A> {
           d.dispose()
           o(end(e.t))
         } else o(e)
-      })
+      }, schdlr)
       const da = this.f(e => {
         if (!active) return
         if (e.type === 'error' || e.type === 'end') active = false
         o(e)
-      })
+      }, schdlr)
       const d = {
         dispose() {
           active = false
@@ -142,7 +141,7 @@ export class S<A> {
   }
   take(n: number): S<A> {
     if (n <= 0) return S.empty()
-    return new S(o => {
+    return new S((o, schdlr) => {
       var i = 0
       const d = this.f(e => {
         if (e.type === 'event') {
@@ -152,32 +151,30 @@ export class S<A> {
             o(end(e.t))
           }
         } else o(e)
-      })
+      }, schdlr)
       return d
     })
   }
   skip(n: number): S<A> {
     if (n <= 0) return this
-    return new S(o => {
+    return new S((o, schdlr) => {
       var i = 0
       const d = this.f(e => {
         if (e.type === 'event') {
           if (i++ < n) return
           o(e)
         } else o(e)
-      })
+      }, schdlr)
       return d
     })
   }
   scan<B>(f: (B, A) => B, b: B): S<B> {
-    return new S(o => {
+    return new S((o, schdlr) => {
       var active = true
       var b_ = b
-      o(
-        delay(0, t => {
-          if (active) o(event(t, b_))
-        })
-      )
+      schdlr.delay(0, t => {
+        if (active) o(event(t, b_))
+      })
       const d = this.f(e => {
         if (e.type === 'event')
           try {
@@ -186,7 +183,7 @@ export class S<A> {
             o(error(e.t, err))
           }
         else o(e)
-      })
+      }, schdlr)
       return {
         dispose() {
           active = false
@@ -195,7 +192,7 @@ export class S<A> {
       }
     })
   }
-  run(o: (stream$O<A>) => void, o2: scheduler$O => void): Disposable {
+  run(o: (stream$O<A>) => void, schdlr: Scheduler): Disposable {
     var disposed = false
     var dupstream
     const d = {
@@ -205,7 +202,6 @@ export class S<A> {
         dupstream.dispose()
       }
     }
-    const o2loc = local(o2)
     dupstream = this.f(function safeO(e) {
       if (e.type === 'event' || e.type === 'end') {
         try {
@@ -214,27 +210,20 @@ export class S<A> {
           d.dispose()
           o(error(e.t, err))
         }
-      } else if (e.type === 'error') {
+      } else {
         d.dispose()
         o(e)
-      } else {
-        o2loc(e)
       }
-    })
+    }, schdlr.local())
     return d
   }
 
   multicast(): Multicast<A> {
     var df: ?Disposable
-    var os: Array<(stream$O<A> | scheduler$O) => void> = []
-    return new Multicast(o => {
+    var os: Array<(stream$O<A>) => void> = []
+    return new Multicast((o, schdlr) => {
       os.push(o)
-      if (df == null)
-        df = this.f(e => {
-          if (e.type === 'event' || e.type === 'end' || e.type === 'error')
-            os.forEach(o => o(e))
-          else o(e)
-        })
+      if (df == null) df = this.f(e => os.forEach(o => o(e)), schdlr)
       return {
         dispose: () => {
           const i = os.indexOf(o)
@@ -251,23 +240,21 @@ export class S<A> {
   }
 
   static of(f: SFn<A>): S<A> {
-    return new S(o => {
+    return new S((o, schdlr) => {
       var active = true
       var d = null
-      o(
-        delay(0, t => {
-          if (!active) return
-          try {
-            d = f(function activeO(e) {
-              if (!active) return
-              if (e.type === 'error' || e.type === 'end') active = false
-              o(e)
-            })
-          } catch (err) {
-            if (active) o(error(t, err))
-          }
-        })
-      )
+      schdlr.delay(0, t => {
+        if (!active) return
+        try {
+          d = f(function activeO(e) {
+            if (!active) return
+            if (e.type === 'error' || e.type === 'end') active = false
+            o(e)
+          }, schdlr)
+        } catch (err) {
+          if (active) o(error(t, err))
+        }
+      })
       return {
         dispose() {
           active = false
@@ -277,14 +264,12 @@ export class S<A> {
     })
   }
   static periodic(period: number): S<void> {
-    return new S(o => {
+    return new S((o, schdlr) => {
       var active = true
-      o(
-        delay(0, function rec(t) {
-          if (active) o(event(t, void 0))
-          if (active) o(delay(period, rec))
-        })
-      )
+      schdlr.delay(0, function rec(t) {
+        if (active) o(event(t, void 0))
+        if (active) schdlr.delay(period, rec)
+      })
       return {
         dispose() {
           active = false
@@ -296,13 +281,11 @@ export class S<A> {
     return new S(() => disposable.empty)
   }
   static empty(): S<A> {
-    return new S(o => {
+    return new S((o, schdlr) => {
       var active = true
-      o(
-        delay(0, t => {
-          if (active) o(end(t))
-        })
-      )
+      schdlr.delay(0, t => {
+        if (active) o(end(t))
+      })
       return {
         dispose() {
           active = false
@@ -311,14 +294,12 @@ export class S<A> {
     })
   }
   static at(a: A, delay_: number = 0): S<A> {
-    return new S(o => {
+    return new S((o, schdlr) => {
       var active = true
-      o(
-        delay(delay_, t => {
-          if (active) o(event(t, a))
-          if (active) o(end(t))
-        })
-      )
+      schdlr.delay(delay_, t => {
+        if (active) o(event(t, a))
+        if (active) o(end(t))
+      })
       return {
         dispose() {
           active = false
@@ -327,13 +308,11 @@ export class S<A> {
     })
   }
   static throwError(err: Error, delay_: number = 0): S<A> {
-    return new S(o => {
+    return new S((o, schdlr) => {
       var active = true
-      o(
-        delay(delay_, t => {
-          if (active) o(error(t, err))
-        })
-      )
+      schdlr.delay(delay_, t => {
+        if (active) o(error(t, err))
+      })
       return {
         dispose() {
           active = false
@@ -342,15 +321,12 @@ export class S<A> {
     })
   }
   static fromArray(as: Array<A>, delay_: number = 0): S<A> {
-    return new S(o => {
+    return new S((o, schdlr) => {
       var active = true
-      o(
-        delay(delay_, t => {
-          for (var i = 0, l = as.length; i < l && active; i++)
-            o(event(t, as[i]))
-          if (active) o(end(t))
-        })
-      )
+      schdlr.delay(delay_, t => {
+        for (var i = 0, l = as.length; i < l && active; i++) o(event(t, as[i]))
+        if (active) o(end(t))
+      })
       return {
         dispose() {
           active = false

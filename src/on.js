@@ -1,6 +1,5 @@
 // @flow
 import { S, event } from './stream'
-import { now } from './scheduler'
 export type On = {
   (MouseEventTypes): S<MouseEvent>,
   (FocusEventTypes): S<FocusEvent>,
@@ -20,8 +19,8 @@ export type On = {
 }
 
 export const mkOn = (elm: HTMLElement): On => (name: string): S<any> => {
-  return S.of(o => {
-    const listener = (e: Event) => o(now(t => o(event(t, e))))
+  return S.of((o, schdlr) => {
+    const listener = (e: Event) => o(event(schdlr.now(), e))
     elm.addEventListener(name, listener)
     return {
       dispose() {

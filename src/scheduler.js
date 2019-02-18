@@ -1,125 +1,80 @@
 // @flow strict
 import type { Disposable } from './disposable'
+import * as assert from 'assert'
 
 export opaque type TimePoint: number = number
-export type scheduler$O =
-  | { type: 'now', action: TimePoint => void }
-  | { type: 'delay', delay: number, action: TimePoint => void }
-
-export function now(action: TimePoint => void): scheduler$O {
-  return { type: 'now', action }
-}
-
-export function delay(delay: number, action: TimePoint => void): scheduler$O {
-  return { type: 'delay', delay, action }
-}
-export function local(o: scheduler$O => void): scheduler$O => void {
-  var offset = 0
-  o(
-    now(t0 => {
-      offset = 0 - t0
-    })
-  )
-  return i => {
-    const action = t => i.action(t + offset)
-    if (i.type === 'now') {
-      o({ type: 'now', action })
-    } else {
-      o({ type: 'delay', delay: i.delay, action })
-    }
-  }
-}
-
-function scheduler(speed: number = 1): scheduler$O => void {
-  var line = []
-  var nowT = -Infinity
-  var nexT = +Infinity
-  var timeoutID: ?TimeoutID = null
-  return i => {
-    if (timeoutID == null) {
-      nowT = nexT = Math.max(nowT, Math.min(nexT, Date.now()))
-      timeoutID = setTimeout(run, 0)
-    }
-    if (i.type === 'now') {
-      i.action(nowT)
-    } else {
-      const at = (i.delay < 0 ? 0 : i.delay) + nowT
-      const ap = findAppendPosition(at, line)
-      const li = line[ap]
-      if (ap > -1 && li[0] === at) {
-        li[1] = (l => t => (l(t), i.action(t)))(li[1])
-      } else {
-        line.splice(ap + 1, 0, [at, i.action])
-      }
-    }
-  }
-  function run() {
-    nowT = nexT
-    while (true) {
-      const ap = findAppendPosition(nowT, line)
-      if (ap === -1) break
-      const line_ = line
-      line = ap === line.length - 1 ? [] : line.slice(ap + 1)
-      for (let i = 0; i <= ap; i++) line_[i][1](line_[i][0])
-    }
-    if (line.length === 0) {
-      nexT = +Infinity
-      timeoutID = null
-    } else {
-      nexT = line[0][0]
-      timeoutID = setTimeout(run, nowT - nexT)
-    }
-  }
-}
 
 export class Scheduler {
-  o: scheduler$O => void
-  constructor(o: scheduler$O => void) {
-    this.o = o
+  nowf: () => number
+  delayf: (delay: number, f: () => void) => void
+  line: Array<[number, (TimePoint) => void]>
+  nowT: number
+  nexT: number
+  constructor(
+    nowf: () => number,
+    delay: (delay: number, f: () => void) => void
+  ) {
+    this.nowf = nowf
+    this.delayf = delay
+    this.line = []
+    this.nowT = -Infinity
+    this.nexT = +Infinity
   }
-  now(offset?: number): TimePoint {
-    var tp: number = 0
-    this.o({ type: 'now', action: t => ((tp = t), void 0) })
-    return tp + (offset || 0)
+  now(): TimePoint {
+    if (this.nowT !== this.nexT) {
+      this.delayf(0, run.bind(this))
+      var now = this.nowf()
+      if (this.nowT > now) now = this.nowT
+      if (this.nexT < now) now = this.nexT
+      this.nowT = this.nexT = now
+    }
+    return this.nowT
   }
-  schedule(delay: number, action: TimePoint => void) {
-    this.o({ type: 'delay', delay: delay < 0 ? 0 : delay, action })
-  }
-  scheduleD(
-    delay: number,
-    f: (TimePoint, { active: boolean }) => void
-  ): Disposable {
-    const ref = { active: true }
-    this.schedule(delay, t => {
-      if (ref.active) f(t, ref)
-    })
-    return {
-      dispose() {
-        ref.active = false
-      }
+  delay(delay: number, f: TimePoint => void) {
+    const at = delay < 0 ? this.now() : this.now() + delay
+    const ap = findAppendPosition(at, this.line)
+    const li = this.line[ap]
+    if (ap > -1 && li[0] === at) {
+      li[1] = (l => t => (l(t), f(t)))(li[1])
+    } else {
+      this.line.splice(ap + 1, 0, [at, f])
     }
   }
-  local(t0: number = 0): Scheduler {
-    return new Local(t0 - this.now(), this.o)
+  local(): Scheduler {
+    const t0 = this.now()
+    return new Scheduler(() => this.now() - t0, this.delay.bind(this))
   }
-  static default(speed: number): Scheduler {
-    return new Scheduler(scheduler(speed))
+  static asap(start: number): Scheduler {
+    var t = start
+    return new Scheduler(
+      () => t,
+      (d, f) => {
+        Promise.resolve(d).then(d => ((t += d), f()))
+      }
+    )
   }
 }
 
-class Local extends Scheduler {
-  constructor(offset: number, o: scheduler$O => void) {
-    super(i => {
-      const action = t => i.action(t + offset)
-      if (i.type === 'now') {
-        o({ type: 'now', action })
-      } else {
-        o({ type: 'delay', delay: i.delay, action })
-      }
-    })
+export const defaultScheduler: Scheduler = new Scheduler(
+  Date.now.bind(Date),
+  (d, f) => setTimeout.call(null, f, d)
+)
+
+function run() {
+  this.nowT = this.nexT
+  while (true) {
+    const ap = findAppendPosition(this.nowT, this.line)
+    if (ap === -1) break
+    const line_ = this.line
+    this.line = ap === this.line.length - 1 ? [] : this.line.slice(ap + 1)
+    for (let i = 0; i <= ap; i++) line_[i][1](line_[i][0])
   }
-  local(): Scheduler {
-    return this
+  if (this.line.length === 0) {
+    this.nexT = +Infinity
+  } else {
+    this.nexT = this.line[0][0]
+    assert.ok(this.nexT > this.nowT)
+    this.delayf(this.nexT - this.nowT, run.bind(this))
   }
 }
 
