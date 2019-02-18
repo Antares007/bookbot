@@ -229,7 +229,12 @@ export class S<A> {
     var os: Array<(stream$O<A> | scheduler$O) => void> = []
     return new Multicast(o => {
       os.push(o)
-      if (df == null) df = this.f(e => os.forEach(o => o(e)))
+      if (df == null)
+        df = this.f(e => {
+          if (e.type === 'event' || e.type === 'end' || e.type === 'error')
+            os.forEach(o => o(e))
+          else o(e)
+        })
       return {
         dispose: () => {
           const i = os.indexOf(o)
