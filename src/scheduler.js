@@ -36,8 +36,10 @@ function scheduler(speed: number = 1): scheduler$O => void {
   var nexT = +Infinity
   var timeoutID: ?TimeoutID = null
   return i => {
-    nowT = Math.max(nowT, Math.min(nexT, Date.now()))
-    reschedule(nowT)
+    if (timeoutID == null) {
+      nowT = nexT = Math.max(nowT, Math.min(nexT, Date.now()))
+      timeoutID = setTimeout(run, 0)
+    }
     if (i.type === 'now') {
       i.action(nowT)
     } else {
@@ -51,20 +53,8 @@ function scheduler(speed: number = 1): scheduler$O => void {
       }
     }
   }
-  function reschedule(nT) {
-    const delay = (nT - nowT) * speed
-    if (timeoutID == null) {
-      nexT = nT
-      timeoutID = setTimeout(run, delay)
-    } else if (nT < nexT) {
-      clearTimeout(timeoutID)
-      nexT = nT
-      timeoutID = setTimeout(run, delay)
-    }
-  }
   function run() {
     nowT = nexT
-    timeoutID = null
     while (true) {
       const ap = findAppendPosition(nowT, line)
       if (ap === -1) break
@@ -72,8 +62,13 @@ function scheduler(speed: number = 1): scheduler$O => void {
       line = ap === line.length - 1 ? [] : line.slice(ap + 1)
       for (let i = 0; i <= ap; i++) line_[i][1](line_[i][0])
     }
-    if (line.length === 0) nexT = +Infinity
-    else reschedule(line[0][0])
+    if (line.length === 0) {
+      nexT = +Infinity
+      timeoutID = null
+    } else {
+      nexT = line[0][0]
+      timeoutID = setTimeout(run, nowT - nexT)
+    }
   }
 }
 
