@@ -334,6 +334,35 @@ export class S<A> {
       }
     })
   }
+  static combine<A, B>(f: (...Array<A>) => B, ...array: Array<S<A>>): S<B> {
+    return new S((o, schdlr) => {
+      const dmap = new Map()
+      const mas: Array<?A> = array.map(
+        (s, i) => (dmap.set(i, s.f(ring(i), schdlr)), null)
+      )
+      return {
+        dispose() {
+          dmap.forEach(d => d.dispose())
+        }
+      }
+      function ring(index) {
+        return e => {
+          if (e.type === 'event') {
+            mas[index] = e.v
+            var as = []
+            for (var a of mas) {
+              if (a == null) return
+              as.push(a)
+            }
+            o(event(e.t, f.apply(null, as)))
+          } else if (e.type === 'end') {
+            dmap.delete(index)
+            if (dmap.size === 0) o(e)
+          } else o(e)
+        }
+      }
+    })
+  }
 }
 
 export class Multicast<A> extends S<A> {

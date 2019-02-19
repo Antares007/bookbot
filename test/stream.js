@@ -230,6 +230,21 @@ export async function product1(assert: Array<A>) {
 
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
+const combine = (...args) =>
+  S.combine(
+    (a, b) => parseInt(a, 10) * parseInt(b, 10) + '',
+    ...args.map(h.sOf)
+  ).map((...args) => '' + args.reduce((a, b) => parseInt(b, 10) * a, 1))
+
+export async function combine1(assert: Array<A>) {
+  const s01 = '2----1----|'
+  const s02 = '-0-1--2|'
+  const exp = '-0-2-12---|'
+
+  const act = combine(s01, s02)
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
 
 export async function product2(assert: Array<A>) {
   const s01 = '(10|)'
@@ -240,6 +255,15 @@ export async function product2(assert: Array<A>) {
     .sOf(s01)
     .product(h.sOf(s02))
     .map(([a, b]) => '' + parseInt(a, 10) * parseInt(b, 10))
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+export async function combine2(assert: Array<A>) {
+  const s01 = '(10|)'
+  const s02 = '(23|)'
+  const exp = '(00|)'
+
+  const act = combine(s01, s02, exp)
 
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
@@ -256,6 +280,15 @@ export async function product3(assert: Array<A>) {
 
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
+export async function combine3(assert: Array<A>) {
+  const s01 = '|'
+  const s02 = '---|'
+  const exp = '---|'
+
+  const act = combine(s01, s02, exp)
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
 
 export async function product4(assert: Array<A>) {
   const s01 = '1|'
@@ -266,6 +299,15 @@ export async function product4(assert: Array<A>) {
     .sOf(s01)
     .product(h.sOf(s02))
     .map(([a, b]) => '' + parseInt(a, 10) * parseInt(b, 10))
+
+  assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
+}
+export async function combine4(assert: Array<A>) {
+  const s01 = '1|'
+  const s02 = '-X'
+  const exp = '-X'
+
+  const act = combine(s01, s02, exp)
 
   assert[0].deepStrictEqual(await h.toTl(act), h.tlOf(exp))
 }
