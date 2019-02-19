@@ -4,12 +4,7 @@ import { Scheduler } from '../src/scheduler'
 
 export function can_execute_in_expected_order(assert: Array<A>): void {
   var t = 30
-  const schdlr = new Scheduler(
-    () => t,
-    (d, f) => {
-      Promise.resolve(d).then(d => ((t += d), f()))
-    }
-  )
+  const schdlr = Scheduler.asap(30)
   const delay = schdlr.delay.bind(schdlr)
   delay(0, t => {
     assert[1].strictEqual(t, 30)

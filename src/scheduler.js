@@ -6,23 +6,26 @@ export opaque type TimePoint: number = number
 
 export class Scheduler {
   nowf: () => number
-  delayf: (delay: number, f: () => void) => void
-  line: Array<[number, (TimePoint) => void]>
+  delayf: (delay: number, f: () => void) => Disposable
+  line: Array<[number, Array<?(TimePoint) => void>]>
   nowT: number
   nexT: number
+  d: ?Disposable
   constructor(
     nowf: () => number,
-    delay: (delay: number, f: () => void) => void
+    delay: (delay: number, f: () => void) => Disposable
   ) {
     this.nowf = nowf
     this.delayf = delay
     this.line = []
     this.nowT = -Infinity
     this.nexT = +Infinity
+    this.d = null
   }
   now(): TimePoint {
     if (this.nowT !== this.nexT) {
-      this.delayf(0, run.bind(this))
+      this.d && this.d.dispose()
+      this.d = this.delayf(0, run.bind(this))
       var now = this.nowf()
       if (this.nowT > now) now = this.nowT
       if (this.nexT < now) now = this.nexT
@@ -30,14 +33,19 @@ export class Scheduler {
     }
     return this.nowT
   }
-  delay(delay: number, f: TimePoint => void) {
+  delay(delay: number, f: TimePoint => void): Disposable {
     const at = delay < 0 ? this.now() : this.now() + delay
     const ap = findAppendPosition(at, this.line)
-    const li = this.line[ap]
-    if (ap > -1 && li[0] === at) {
-      li[1] = (l => t => (l(t), f(t)))(li[1])
-    } else {
-      this.line.splice(ap + 1, 0, [at, f])
+    var li = this.line[ap]
+    if (ap === -1 || li[0] !== at) {
+      li = [at, []]
+      this.line.splice(ap + 1, 0, li)
+    }
+    const index = li[1].push(f) - 1
+    return {
+      dispose() {
+        li[1][index] = null
+      }
     }
   }
   local(): Scheduler {
@@ -49,7 +57,12 @@ export class Scheduler {
     return new Scheduler(
       () => t,
       (d, f) => {
-        Promise.resolve(d).then(d => ((t += d), f()))
+        const timeoutID = setTimeout(() => ((t += d), f()), 0)
+        return {
+          dispose() {
+            clearTimeout(timeoutID)
+          }
+        }
       }
     )
   }
@@ -57,7 +70,14 @@ export class Scheduler {
 
 export const defaultScheduler: Scheduler = new Scheduler(
   Date.now.bind(Date),
-  (d, f) => setTimeout.call(null, f, d)
+  (d, f) => {
+    const timeoutID = setTimeout(f, d)
+    return {
+      dispose() {
+        clearTimeout(timeoutID)
+      }
+    }
+  }
 )
 
 function run() {
@@ -67,14 +87,18 @@ function run() {
     if (ap === -1) break
     const line_ = this.line
     this.line = ap === this.line.length - 1 ? [] : this.line.slice(ap + 1)
-    for (let i = 0; i <= ap; i++) line_[i][1](line_[i][0])
+    for (var i = 0; i <= ap; i++) {
+      const [t, fs] = line_[i]
+      for (var f of fs) f && f(t)
+    }
   }
   if (this.line.length === 0) {
     this.nexT = +Infinity
+    this.d = null
   } else {
     this.nexT = this.line[0][0]
     assert.ok(this.nexT > this.nowT)
-    this.delayf(this.nexT - this.nowT, run.bind(this))
+    this.d = this.delayf(this.nexT - this.nowT, run.bind(this))
   }
 }
 

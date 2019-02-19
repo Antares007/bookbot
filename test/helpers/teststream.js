@@ -5,13 +5,7 @@ import { Scheduler } from '../../src/scheduler'
 
 export function toTl<A>(s: S<A>): Promise<Array<[number, string]>> {
   return new Promise((resolve, reject) => {
-    var t = 0
-    const scheduler = new Scheduler(
-      () => t,
-      (d, f) => {
-        Promise.resolve(d).then(d => ((t += d), f()))
-      }
-    )
+    const scheduler = Scheduler.asap(0)
     const vs = []
     const d = s.run(e => {
       vs.push([
