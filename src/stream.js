@@ -4,26 +4,26 @@ import type { Disposable } from './disposable'
 import { Scheduler } from './scheduler'
 import * as disposable from './disposable'
 
-export type stream$O<A> =
+export type Stream$O<A> =
   | { type: 'event', t: TimePoint, v: A }
   | { type: 'end', t: TimePoint }
   | { type: 'error', t: TimePoint, v: Error }
 
-type SFn<A> = ((stream$O<A>) => void, Scheduler) => Disposable
+type Stream$Pith<A> = ((Stream$O<A>) => void, Scheduler) => Disposable
 
-export function event<A>(t: TimePoint, v: A): stream$O<A> {
+export function event<A>(t: TimePoint, v: A): Stream$O<A> {
   return { type: 'event', t, v }
 }
-export function end<A>(t: TimePoint): stream$O<A> {
+export function end<A>(t: TimePoint): Stream$O<A> {
   return { type: 'end', t }
 }
-export function error<A>(t: TimePoint, v: Error): stream$O<A> {
+export function error<A>(t: TimePoint, v: Error): Stream$O<A> {
   return { type: 'error', t, v }
 }
 
 export class S<A> {
-  f: SFn<A>
-  constructor(f: SFn<A>) {
+  f: Stream$Pith<A>
+  constructor(f: Stream$Pith<A>) {
     this.f = f
   }
   map<B>(f: A => B): S<B> {
@@ -192,7 +192,7 @@ export class S<A> {
       }
     })
   }
-  run(o: (stream$O<A>) => void, schdlr: Scheduler): Disposable {
+  run(o: (Stream$O<A>) => void, schdlr: Scheduler): Disposable {
     var disposed = false
     var dupstream
     const d = {
@@ -220,7 +220,7 @@ export class S<A> {
 
   multicast(): Multicast<A> {
     var df: ?Disposable
-    var os: Array<(stream$O<A>) => void> = []
+    var os: Array<(Stream$O<A>) => void> = []
     return new Multicast((o, schdlr) => {
       os.push(o)
       if (df == null) df = this.f(e => os.forEach(o => o(e)), schdlr)
@@ -239,7 +239,7 @@ export class S<A> {
     })
   }
 
-  static of(f: SFn<A>): S<A> {
+  static of(f: Stream$Pith<A>): S<A> {
     return new S((o, schdlr) => {
       var active = true
       var d = null
@@ -334,7 +334,29 @@ export class S<A> {
       }
     })
   }
-  static combine<A, B>(f: (...Array<A>) => B, ...array: Array<S<A>>): S<B> {
+  static switchLatest(ss: S<S<A>>): S<A> {
+    return new S((o, schdlr) => {
+      var des: ?Disposable = null
+      var dss: ?Disposable = ss.f(e => {
+        if (e.type === 'event') {
+          des && des.dispose()
+          des = e.v.f(e => {
+            if (e.type === 'event') o(e)
+            else if (e.type === 'end' && dss == (des = null)) o(e)
+            else o(e)
+          }, schdlr)
+        } else if (e.type === 'end' && des == (dss = null)) o(e)
+        else o(e)
+      }, schdlr)
+      return {
+        dispose() {
+          dss && dss.dispose()
+          des && des.dispose()
+        }
+      }
+    })
+  }
+  static combine<B>(f: (...Array<A>) => B, ...array: Array<S<A>>): S<B> {
     return new S((o, schdlr) => {
       const dmap = new Map()
       const mas: Array<?A> = array.map(
@@ -364,6 +386,7 @@ export class S<A> {
     })
   }
 }
+export const empty: S<*> = S.empty()
 
 export class Multicast<A> extends S<A> {
   multicast(): Multicast<A> {
