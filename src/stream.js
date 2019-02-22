@@ -342,11 +342,15 @@ export class S<A> {
           des && des.dispose()
           des = e.v.f(e => {
             if (e.type === 'event') o(e)
-            else if (e.type === 'end' && dss == (des = null)) o(e)
-            else o(e)
+            else if (e.type === 'end') {
+              des = null
+              if (dss == null) o(e)
+            } else o(e)
           }, schdlr)
-        } else if (e.type === 'end' && des == (dss = null)) o(e)
-        else o(e)
+        } else if (e.type === 'end') {
+          dss = null
+          if (des == null) o(e)
+        } else o(e)
       }, schdlr)
       return {
         dispose() {
