@@ -5,126 +5,107 @@ import { S } from './stream'
 import * as stream from './stream'
 import { defaultScheduler } from './scheduler'
 
-type Pith = ((O) => void, On) => void
-type O =
-  | { type: 'element', s: S<Pith>, tag: string }
+type Pith<A: Node> = ((O<A>) => void, A) => void
+type O<A> =
+  | { type: 'element', s: S<Pith<A>>, tag: string }
   | { type: 'text', s: S<string> }
-  | { type: 'attr', s: S<{ [string]: string }> }
-  | { type: 'style', s: S<{ [string]: string }> }
 
-const elm = (tag: string, s_: Pith): O => ({
+const elm = <A>(tag: string, s_: Pith<A>): O<A> => ({
   type: 'element',
   tag: tag.toUpperCase(),
   s: S.at(s_)
 })
-const text = (s_: string): O => ({ type: 'text', s: S.at(s_) })
-const attr = (s_: { [string]: string }): O => ({
-  type: 'attr',
-  s: S.at(s_)
-})
-const style = (s_: { [string]: string }): O => ({
-  type: 'style',
-  s: S.at(s_)
-})
-
-const selm = (tag: string, s: S<Pith>): O => ({
+const text = <A>(s_: string): O<A> => ({ type: 'text', s: S.at(s_) })
+const selm = <A>(tag: string, s: S<Pith<A>>): O<A> => ({
   type: 'element',
   tag: tag.toUpperCase(),
   s
 })
-const stext = (s: S<string>): O => ({ type: 'text', s })
-const sattr = (s: S<{ [string]: string }>): O => ({ type: 'attr', s })
-const sstyle = (s: S<{ [string]: string }>): O => ({ type: 'style', s })
+const stext = <A>(s: S<string>): O<A> => ({ type: 'text', s })
 
-const div = elm('div', (o, on) => {
-  const actionStreams = []
-  o(style({ background: 'blue' }))
-  o(
-    elm('button', (o, on) => {
-      o(text('+'))
-      actionStreams.push(on('click').map(() => +1))
-    })
-  )
-  o(
-    elm('button', (o, on) => {
-      o(text('-'))
-      actionStreams.push(on('click').map(() => -1))
-    })
-  )
-  const rez = S.fromArray(actionStreams)
-    .flatMap(a => a)
-    .map(n => n + '')
+const btn = label =>
+  elm('button', (o, n) => {
+    o(text(label))
+  })
 
-  o(
-    stext(
-      on('click')
-        .scan(a => a + 1, 0)
-        .map(String)
+const btnInc = btn('+')
+const btnDec = btn('-')
+const div = selm(
+  'div',
+  S.periodic(1000)
+    .skip(1)
+    .scan(a => a + 1, 0)
+    .skip(1)
+    .take(19)
+    .map(nn => (nn % 3) + 1)
+    .map(nn => (o, n: HTMLElement) => {
+      o(btnInc)
+      o(btnDec)
+    })
+    .sum(
+      S.at(o => {
+        o(text('loading...'))
+      })
     )
-  )
-})
+)
 
-function run(elm: HTMLElement, v: O): S<() => void> {
-  if (v.type === 'text') {
+function run<A: Node>(elm: A, v: O<A>): S<() => void> {
+  if (v.type === 'text')
     return v.s.map(str => () => {
       elm.textContent = str
     })
-  } else if (v.type === 'attr') {
-    return v.s.map(map => () => {
-      for (var key in map) elm.setAttribute(key, map[key])
-    })
-  } else if (v.type === 'style') {
-    return v.s.map(map => () => {
-      const style = elm.style
-      for (var key in map) style.setProperty(key, map[key])
-    })
-  } else {
-    const s = v.s.multicast()
-    var omap = new Map()
-    return s.flatMap(pith => {
-      const childs = elm.children
-      const len = childs.length
-      const nmap = new Map()
-      var i = 0
-      var patch = S.at(() => {
-        while (i < len) elm.removeChild(childs[i])
-      })
-      pith(vi => {
-        if (vi.type === 'text' || vi.type === 'element') {
-          const index = i++
-          var li: ?HTMLElement = null
-          var j = index
-          const tag = vi.type === 'element' ? vi.tag : 'SPAN'
-          while (j < len && li == null) {
-            li = childs[j++]
-            if (li.tagName !== tag || omap.get(li) !== vi.s) li = null
-          }
-          if (li == null) {
-            li = document.createElement(tag)
-            nmap.set(li, vi.s)
-            elm.insertBefore(li, childs[index])
-          } else {
-            nmap.set(li, vi.s)
-            if (j - 1 !== index) elm.insertBefore(li, childs[index])
-          }
-          patch = run(li, vi)
-            .product(patch)
-            .map(([a, b]) => () => {
-              b()
-              a()
-            })
-        } else {
-        }
-      }, mkOn(elm))
-      omap = nmap
-      return patch.until(s)
-    })
-  }
+  const s = v.s.multicast()
+  var limap = new Map()
+  return s.flatMap(pith => {
+    var i = 0
+    const childs = elm.childNodes
+    const newlimap = new Map()
+    const patches: Array<S<() => void>> = []
+    pith(vi => {
+      const index = i++
+      var li: ?A = null
+      if (vi.type === 'text') {
+        li = childs[index]
+        if (li == null || li.nodeName !== '#text')
+          li = elm.insertBefore(document.createTextNode(''), li)
+        patches.push(run(li, vi))
+      } else if (vi.type === 'element') {
+        for (var j = index, l = childs.length; j < l; j++)
+          if ((li = childs[j]) && limap.get(li) === vi) break
+          else li = null
+        if (li == null)
+          li = elm.insertBefore(document.createElement(vi.tag), childs[index])
+        else if (j !== index) elm.insertBefore(li, childs[index])
+        newlimap.set(li, vi)
+        patches.push(run(li, vi))
+      }
+    }, elm)
+    limap = newlimap
+    return S.combine(
+      (...patches) => () => {
+        patches.forEach(p => p())
+        for (var j = childs.length - 1; j >= i; j--)
+          console.log('rm', elm.removeChild(childs[j]))
+      },
+      ...patches.map(p => p)
+    ).until(s)
+  })
 }
 
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
-run(rootNode, div)
-  .map(p => p())
-  .run(console.log.bind(console), defaultScheduler)
+run(rootNode, div).map(p => p())
+//  .run(console.log.bind(console), defaultScheduler)
+
+const numbers = S.periodic(1000)
+  .scan(a => a + 1, 0)
+  .multicast()
+const clicks = mkOn(window)('click')
+const v = S.periodic(400)
+  .skip(1)
+  .scan(a => a + 1, 0)
+  .skip(1)
+  .multicast()
+numbers.flatMap(e => v.until(numbers))
+//.run(console.log.bind(console), defaultScheduler)
