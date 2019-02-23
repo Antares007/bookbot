@@ -19,64 +19,46 @@ const elm = <A>(tag: string, pith: Pith<A>, key?: string): O<A> => ({
 })
 const text = <A>(text: string): O<A> => ({ type: 'text', text })
 
-const counter = S.at(
+const counter = d =>
   elm('div', (o, n) => {
     const on = mkOn(n)
-
     o(
-      S.at(
-        elm('button', o => {
-          o(text('+'))
-        })
-      )
+      elm('button', o => {
+        o(text('+'))
+        d > 0 && o(counter(d - 1))
+      })
     )
     o(
-      S.at(
-        elm('button', o => {
-          o(text('-'))
-        })
-      )
+      elm('button', o => {
+        o(text('-'))
+        d > 0 && o(counter(d - 1))
+      })
     )
-    const numbers = S.periodic(4000)
-      .scan(a => a + 1, 0)
-      .map(a => (console.log('a', a), a))
-      .map(n => text('hello ' + n))
-    //.multicast()
-
-    o(
-      S.at(
-        elm('button', o => {
-          o(numbers)
-        })
-      )
-    )
-    o(numbers)
     o(
       on('click')
-        .map(e => (e.target instanceof Node ? e.target.textContent : ''))
+        .map(e => (e.target instanceof Node ? e.target.textContent[0] : ''))
         .map(str => (str === '+' ? 1 : str === '-' ? -1 : 0))
         .scan((a, b) => a + b, 0)
         .map(n => text(n + ''))
     )
   })
-)
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
-groupPatches(run(rootNode, counter))
+groupPatches(run(rootNode, counter(3)))
   .map(p => p())
   .run(console.log.bind(console), defaultScheduler)
 
 function run<A: Node>(elm: A, vnode: S<O<A>> | O<A>): S<Patch> {
   return vnode instanceof S
-    ? S.switchLatest(vnode.map(vnode => patchParent(vnode, elm)))
-    : patchParent(vnode, elm)
+    ? S.switchLatest(vnode.map(vnode => patchParent(elm, vnode)))
+    : patchParent(elm, vnode)
 }
 
-function patchParent<A: Node>(vnode: O<A>, elm: A) {
+function patchParent<A: Node>(parent: A, vnode: O<A>) {
   if (vnode.type === 'text')
     return S.at(() => {
-      if (elm.textContent !== vnode.text) elm.textContent = vnode.text
+      if (parent.textContent !== vnode.text) parent.textContent = vnode.text
     })
   const patches: Array<S<Patch>> = []
   var i = 0
@@ -85,14 +67,14 @@ function patchParent<A: Node>(vnode: O<A>, elm: A) {
     const index = i++
     const patch =
       vnode instanceof S
-        ? S.switchLatest(vnode.map(v => patchChild(v, index, elm)))
-        : patchChild(vnode, index, elm)
+        ? S.switchLatest(vnode.map(vnode => patchChild(parent, index, vnode)))
+        : patchChild(parent, index, vnode)
     patches.push(patch)
-  }, elm)
+  }, parent)
   patches.push(
     S.at(() => {
-      for (var j = elm.childNodes.length - 1; j >= i; j--)
-        elm.removeChild(elm.childNodes[j])
+      for (var j = parent.childNodes.length - 1; j >= i; j--)
+        parent.removeChild(parent.childNodes[j])
     })
   )
   return combinePatches(
@@ -104,17 +86,17 @@ function patchParent<A: Node>(vnode: O<A>, elm: A) {
   )
 }
 
-function patchChild<A: Node>(vnode: O<A>, index, elm: A) {
+function patchChild<A: Node>(parent: A, index: number, vnode: O<A>) {
   var li: ?A
   if (vnode.type === 'text') {
-    li = elm.childNodes[index]
+    li = parent.childNodes[index]
     if (li == null || li.nodeName !== '#text')
-      li = elm.insertBefore(document.createTextNode(''), li)
+      li = parent.insertBefore(document.createTextNode(''), li)
     return run(li, vnode)
   }
-  for (var j = index, l = elm.childNodes.length; j < l; j++)
+  for (var j = index, l = parent.childNodes.length; j < l; j++)
     if (
-      (li = elm.childNodes[j]) &&
+      (li = parent.childNodes[j]) &&
       li instanceof HTMLElement &&
       li.nodeName === vnode.tag &&
       li.dataset.key == vnode.key
@@ -122,12 +104,12 @@ function patchChild<A: Node>(vnode: O<A>, index, elm: A) {
       break
     else li = null
   if (li == null) {
-    li = elm.insertBefore(
+    li = parent.insertBefore(
       document.createElement(vnode.tag),
-      elm.childNodes[index]
+      parent.childNodes[index]
     )
     vnode.key && (li.dataset.key = vnode.key)
-  } else if (j !== index) elm.insertBefore(li, elm.childNodes[index])
+  } else if (j !== index) parent.insertBefore(li, parent.childNodes[index])
   return run(li, vnode)
 }
 function groupPatches(s: S<Patch>): S<Patch> {
