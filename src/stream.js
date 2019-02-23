@@ -39,6 +39,19 @@ export class S<A> {
       }, scheduler)
     )
   }
+  filter(f: A => boolean): S<A> {
+    return new S((o, scheduler) =>
+      this.f(e => {
+        if (e.type === 'event')
+          try {
+            f(e.v) && o(e)
+          } catch (err) {
+            o(error(e.t, err))
+          }
+        else o(e)
+      }, scheduler)
+    )
+  }
   sum<B>(sb: S<B>): S<A | B> {
     return new S((o, schdlr) => {
       var i = 2
@@ -380,7 +393,7 @@ export class S<A> {
               if (a == null) return
               as.push(a)
             }
-            o(event(e.t, f.apply(null, as)))
+            o(event(e.t, f(...as)))
           } else if (e.type === 'end') {
             dmap.delete(index)
             if (dmap.size === 0) o(e)
