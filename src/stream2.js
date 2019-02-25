@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 
 import type { Disposable } from './disposable'
 import type { TimePoint, Scheduler$O } from './scheduler2'
