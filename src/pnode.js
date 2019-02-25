@@ -6,7 +6,6 @@ type PNode$Pith = ((S<PNode$O> | PNode$O) => void) => void
 type PNode$O =
   | { type: 'element', pith: PNode$Pith, tag: string, key?: string }
   | { type: 'text', text: string }
-type Patch = () => void
 
 export const elm = (tag: string, pith: PNode$Pith, key?: string): PNode$O => ({
   type: 'element',
@@ -14,26 +13,25 @@ export const elm = (tag: string, pith: PNode$Pith, key?: string): PNode$O => ({
   pith,
   key
 })
-export const text = <A>(text: string): PNode$O => ({ type: 'text', text })
+export const text = <N>(text: string): PNode$O => ({ type: 'text', text })
 
-export function run<A: Node>(vnode: S<PNode$O> | PNode$O): S<(A) => void> {
+export function run<N: Node>(vnode: S<PNode$O> | PNode$O): S<(N) => void> {
   return vnode instanceof S ? S.switchLatest(vnode.map(p1)) : p1(vnode)
 }
 
-function p1<A: Node>(vnode: PNode$O): S<(A) => void> {
+function p1<N: Node>(vnode: PNode$O): S<(N) => void> {
   if (vnode.type === 'text')
     return S.at(parent => {
       if (parent.textContent !== vnode.text) parent.textContent = vnode.text
     })
-  const patches: Array<S<(A) => void>> = []
+  const patches: Array<S<(N) => void>> = []
   var i = 0
   vnode.pith(vnode => {
-    const index = i++
-    const patch =
+    patches.push(
       vnode instanceof S
-        ? S.switchLatest(vnode.map(vnode => p2(index, vnode)))
-        : p2(index, vnode)
-    patches.push(patch)
+        ? S.switchLatest(vnode.map(vnode => p2(i++, vnode)))
+        : p2(i++, vnode)
+    )
   })
   patches.push(
     S.at(parent => {
@@ -43,12 +41,12 @@ function p1<A: Node>(vnode: PNode$O): S<(A) => void> {
       }
     })
   )
-  return combinePatches(patches).map(p => node => p(node))
+  return combinePatches(patches)
 }
 
-function p2<A: Node>(index: number, vnode: PNode$O): S<(A) => void> {
+function p2<N: Node>(index: number, vnode: PNode$O): S<(N) => void> {
   return p1(vnode).map(p => parent => {
-    var li: ?A
+    var li: ?N
     if (vnode.type === 'text') {
       li = parent.childNodes[index]
       if (li == null || li.nodeName !== '#text')
@@ -59,10 +57,11 @@ function p2<A: Node>(index: number, vnode: PNode$O): S<(A) => void> {
       li = parent.childNodes[j]
       if (
         li.nodeName === vnode.tag &&
-        (li instanceof HTMLElement && li.dataset.key == vnode.key)
-      ) {
+        li instanceof HTMLElement &&
+        li.dataset.key == vnode.key
+      )
         break
-      } else li = null
+      li = null
     }
     if (li == null) {
       li = parent.insertBefore(
@@ -74,10 +73,11 @@ function p2<A: Node>(index: number, vnode: PNode$O): S<(A) => void> {
     p(li)
   })
 }
-function combinePatches<A>(array: Array<S<(A) => void>>): S<(A) => void> {
+
+function combinePatches<N>(array: Array<S<(N) => void>>): S<(N) => void> {
   return new S((o, schdlr) => {
     const dmap = new Map()
-    var mas: Array<?Array<(A) => void>> = array.map(
+    var mas: Array<?Array<(N) => void>> = array.map(
       (s, i) => (dmap.set(i, s.f(ring(i), schdlr)), null)
     )
     return {
@@ -90,7 +90,7 @@ function combinePatches<A>(array: Array<S<(A) => void>>): S<(A) => void> {
         if (e.type === 'event') {
           if (mas[index] == null) mas[index] = [e.v]
           else mas[index].push(e.v)
-          var as: Array<Array<(A) => void>> = []
+          var as: Array<Array<(N) => void>> = []
           for (var a of mas) {
             if (a == null) return
             as.push(a)

@@ -49,7 +49,12 @@ if (!rootNode) throw new Error('cant find root-node')
 run(
   S.periodic(3000)
     .scan(a => a + 1, 0)
-    .map(n => counter(n % 5))
+    .map(n => {
+      if (n % 2 === 0) {
+        return text('')
+      }
+      return counter(n % 5)
+    })
 )
   .map(p => p(rootNode))
   .run(console.log.bind(console), defaultScheduler)
