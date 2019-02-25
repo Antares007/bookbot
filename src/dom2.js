@@ -13,7 +13,7 @@ type Patch = () => void
 
 const elm = <A>(tag: string, pith: Pith<A>, key?: string): O<A> => ({
   type: 'element',
-  tag,
+  tag: tag.toUpperCase(),
   pith,
   key
 })
@@ -44,8 +44,12 @@ const counter = d =>
   })
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
-
-groupPatches(run(rootNode, counter(3)))
+run(
+  rootNode,
+  S.periodic(1000)
+    .scan(a => a + 1, 0)
+    .map(n => counter(n % 3))
+)
   .map(p => p())
   .run(console.log.bind(console), defaultScheduler)
 
@@ -73,8 +77,10 @@ function patchParent<A: Node>(parent: A, vnode: O<A>) {
   }, parent)
   patches.push(
     S.at(() => {
-      for (var j = parent.childNodes.length - 1; j >= i; j--)
+      for (var j = parent.childNodes.length - 1; j >= i; j--) {
+        console.log('rm')
         parent.removeChild(parent.childNodes[j])
+      }
     })
   )
   return combinePatches(
@@ -94,15 +100,15 @@ function patchChild<A: Node>(parent: A, index: number, vnode: O<A>) {
       li = parent.insertBefore(document.createTextNode(''), li)
     return run(li, vnode)
   }
-  for (var j = index, l = parent.childNodes.length; j < l; j++)
+  for (var j = index, l = parent.childNodes.length; j < l; j++) {
+    li = parent.childNodes[j]
     if (
-      (li = parent.childNodes[j]) &&
-      li instanceof HTMLElement &&
       li.nodeName === vnode.tag &&
-      li.dataset.key == vnode.key
-    )
+      (li instanceof HTMLElement && li.dataset.key == vnode.key)
+    ) {
       break
-    else li = null
+    } else li = null
+  }
   if (li == null) {
     li = parent.insertBefore(
       document.createElement(vnode.tag),
