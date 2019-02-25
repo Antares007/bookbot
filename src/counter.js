@@ -1,6 +1,6 @@
 // @flow strict-local
 import { mkOn } from './on'
-import { run, elm, text } from './dom'
+import { run, elm, text } from './node'
 import { defaultScheduler } from './scheduler'
 import { S } from './stream'
 

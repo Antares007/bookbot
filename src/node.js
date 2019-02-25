@@ -3,28 +3,35 @@ import type { Disposable } from './disposable'
 import { S, event, end, empty } from './stream'
 import { defaultScheduler } from './scheduler'
 
-type Pith<A> = ((S<O<A>> | O<A>) => void, A) => void
+type Node$Pith<A> = ((S<Node$O<A>> | Node$O<A>) => void, A) => void
 
-type O<A> =
-  | { type: 'element', pith: Pith<A>, tag: string, key?: string }
+type Node$O<A> =
+  | { type: 'element', pith: Node$Pith<A>, tag: string, key?: string }
   | { type: 'text', text: string }
 type Patch = () => void
 
-export const elm = <A>(tag: string, pith: Pith<A>, key?: string): O<A> => ({
+export const elm = <A>(
+  tag: string,
+  pith: Node$Pith<A>,
+  key?: string
+): Node$O<A> => ({
   type: 'element',
   tag: tag.toUpperCase(),
   pith,
   key
 })
-export const text = <A>(text: string): O<A> => ({ type: 'text', text })
+export const text = <A>(text: string): Node$O<A> => ({ type: 'text', text })
 
-export function run<A: Node>(elm: A, vnode: S<O<A>> | O<A>): S<Patch> {
+export function run<A: Node>(
+  elm: A,
+  vnode: S<Node$O<A>> | Node$O<A>
+): S<Patch> {
   return vnode instanceof S
     ? S.switchLatest(vnode.map(vnode => patchParent(elm, vnode)))
     : patchParent(elm, vnode)
 }
 
-function patchParent<A: Node>(parent: A, vnode: O<A>) {
+function patchParent<A: Node>(parent: A, vnode: Node$O<A>) {
   if (vnode.type === 'text')
     return S.at(() => {
       if (parent.textContent !== vnode.text) parent.textContent = vnode.text
@@ -57,7 +64,7 @@ function patchParent<A: Node>(parent: A, vnode: O<A>) {
   )
 }
 
-function patchChild<A: Node>(parent: A, index: number, vnode: O<A>) {
+function patchChild<A: Node>(parent: A, index: number, vnode: Node$O<A>) {
   var li: ?A
   if (vnode.type === 'text') {
     li = parent.childNodes[index]
