@@ -1,7 +1,8 @@
 // @flow strict-local
 import type { On } from './on'
 import { mkOn } from './on'
-import { run, elm, text } from './pnode'
+import type { PNode$Node, PNode$Pith } from './pnode'
+import { run, node, pith } from './pnode'
 import { defaultScheduler } from './scheduler'
 import { S } from './stream'
 
@@ -25,7 +26,24 @@ export const style = <A>(v: {
   v
 })
 export const dispatch = <A>(v: S<A>): O<A> => ({ type: 'dispatch', v })
-export { elm, text }
+
+export const elm = (
+  tag: string,
+  p: ((S<PNode$Node<Node>> | PNode$Node<Node>) => void) => void
+): PNode$Node<Node> =>
+  node(
+    () => document.createElement(tag),
+    elm => elm.nodeName === tag.toUpperCase(),
+    run(pith(p))
+  )
+export const text = (text: S<string> | string): PNode$Node<Node> =>
+  node(
+    () => document.createTextNode(''),
+    elm => elm.nodeName === '#text',
+    (text instanceof S ? text : S.at(text)).map(text => parent => {
+      if (parent.textContent !== text) parent.textContent = text
+    })
+  )
 
 const counter = d =>
   elm('div', (o, n) => {
@@ -47,14 +65,34 @@ const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
 run(
-  S.periodic(3000)
-    .scan(a => a + 1, 0)
-    .map(n => {
-      if (n % 2 === 0) {
-        return text('')
-      }
-      return counter(n % 5)
-    })
+  pith(o => {
+    o(text('zmuki0'))
+    o(
+      S.periodic(1000)
+        .skip(1)
+        .scan(a => a + 1, 0)
+        .skip(1)
+        .map(n => {
+          if (n % 2 === 0) {
+            return text('hey' + n)
+          }
+          return counter(n % 5)
+        })
+    )
+    o(text('zmuki'))
+    o(
+      S.periodic(1000)
+        .skip(1)
+        .scan(a => a + 1, 0)
+        .skip(1)
+        .map(n => {
+          if (n % 2 === 0) {
+            return text('hey' + n)
+          }
+          return counter(n % 5)
+        })
+    )
+  })
 )
   .map(p => p(rootNode))
   .run(console.log.bind(console), defaultScheduler)
