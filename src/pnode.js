@@ -1,10 +1,11 @@
-// @flow strict-local
+// @flow strict
 import { S, event } from './stream'
 
 export type PNode$Pith<N> = {
   type: 'pith',
   pith: ((S<PNode$Node<N>> | PNode$Node<N>) => void) => void
 }
+
 export type PNode$Node<N> = {
   type: 'node',
   create: () => N,
@@ -41,10 +42,8 @@ function p1<N: Node>(pith: PNode$Pith<N>): S<(N) => void> {
   })
   patches.push(
     S.at(parent => {
-      for (var j = parent.childNodes.length - 1; j >= i; j--) {
-        console.log('rm')
+      for (var j = parent.childNodes.length - 1; j >= i; j--)
         parent.removeChild(parent.childNodes[j])
-      }
     })
   )
   var lastPatches = []

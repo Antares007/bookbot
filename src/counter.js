@@ -6,27 +6,6 @@ import { run, node, pith } from './pnode'
 import { defaultScheduler } from './scheduler'
 import { S } from './stream'
 
-type Pith<A> = ((S<O<A>> | O<A>) => void, On) => void
-
-type O<A> =
-  | { type: 'attribute', v: { [string]: string } }
-  | { type: 'style', v: { [$Keys<CSSStyleDeclaration>]: string } }
-  | { type: 'dispatch', v: S<A> }
-  | { type: 'element', pith: Pith<A> }
-  | { type: 'text', text: string }
-
-export const attribute = <A>(v: { [string]: string }): O<A> => ({
-  type: 'attribute',
-  v
-})
-export const style = <A>(v: {
-  [$Keys<CSSStyleDeclaration>]: string
-}): O<A> => ({
-  type: 'style',
-  v
-})
-export const dispatch = <A>(v: S<A>): O<A> => ({ type: 'dispatch', v })
-
 export const elm = (
   tag: string,
   p: ((S<PNode$Node<Node>> | PNode$Node<Node>) => void) => void
@@ -46,7 +25,7 @@ export const text = (text: S<string> | string): PNode$Node<Node> =>
   )
 
 const counter = d =>
-  elm('div', (o, n) => {
+  elm('div', o => {
     o(
       elm('button', o => {
         o(text('+'))
