@@ -410,3 +410,21 @@ export class Multicast<A> extends S<A> {
     return this
   }
 }
+export class Subject<A> extends S<A> {
+  o: (Stream$O<A>) => void
+  constructor() {
+    var df: ?Disposable
+    var os: Array<(Stream$O<A>) => void> = []
+    super((o, schdlr) => {
+      os.push(o)
+      return {
+        dispose: () => {
+          const i = os.indexOf(o)
+          if (i === -1) return
+          os.splice(i, 1)
+        }
+      }
+    })
+    this.o = e => os.forEach(o => o(e))
+  }
+}
