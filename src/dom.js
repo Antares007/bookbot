@@ -71,7 +71,7 @@ export const pith = <Action>(pith: Pith<Action>): Elm$Pith<Action> => ({
 export function run<Action>(pith: SS<Elm$Pith<Action>>): S<(Node) => void> {
   const proxy = new Subject()
   const ring = (pith: Pith<Action>) =>
-    n.pith(o =>
+    n.pith((o, l) =>
       pith(v => {
         o(
           toS(v).map(v => {
@@ -93,12 +93,7 @@ export function run<Action>(pith: SS<Elm$Pith<Action>>): S<(Node) => void> {
                 elm.nodeName === v.tag &&
                 (v.key == null ||
                   (elm instanceof HTMLElement && elm.dataset.key === v.key)),
-              new S((o, schdlr) => {
-                return n
-                  .run(ring(v.pith))
-                  .map(p => elm => p(elm))
-                  .f(o, schdlr)
-              })
+              n.run(ring(v.pith))
             )
           })
         )

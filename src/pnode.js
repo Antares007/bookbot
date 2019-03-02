@@ -1,9 +1,14 @@
 // @flow strict
-import { S, event } from './stream'
+import { S, event, Subject } from './stream'
+
+type Pith<N> = (
+  (S<PNode$Node<N>> | PNode$Node<N>) => void,
+  S<['mount', N] | ['unmount']>
+) => void
 
 export type PNode$Pith<N> = {
   type: 'pith',
-  pith: ((S<PNode$Node<N>> | PNode$Node<N>) => void) => void
+  pith: Pith<N>
 }
 
 export type PNode$Node<N> = {
@@ -19,9 +24,10 @@ export const node = <N>(
   patch: S<(N) => void> | (N => void)
 ): PNode$Node<N> => ({ type: 'node', create, eq, patch })
 
-export const pith = <N>(
-  pith: ((S<PNode$Node<N>> | PNode$Node<N>) => void) => void
-): PNode$Pith<N> => ({ type: 'pith', pith })
+export const pith = <N>(pith: Pith<N>): PNode$Pith<N> => ({
+  type: 'pith',
+  pith
+})
 
 export function run<N: Node>(
   pith: S<PNode$Pith<N>> | PNode$Pith<N>
@@ -30,6 +36,7 @@ export function run<N: Node>(
 }
 
 function p1<N: Node>(pith: PNode$Pith<N>): S<(N) => void> {
+  const proxy = new Subject()
   const patches: Array<S<(N) => void>> = []
   var i = 0
   pith.pith(pnode => {
@@ -39,24 +46,35 @@ function p1<N: Node>(pith: PNode$Pith<N>): S<(N) => void> {
         ? S.switchLatest(pnode.map(pnode => p2(index, pnode)))
         : p2(index, pnode)
     )
-  })
+  }, proxy)
   patches.push(
     S.at(parent => {
       for (var j = parent.childNodes.length - 1; j >= i; j--)
         parent.removeChild(parent.childNodes[j])
     })
   )
-  var lastPatches = []
-  return S.combine(
-    (...array) => parent => {
-      var i = 0
-      const l = array.length
-      for (; i < l; i++) if (array[i] !== lastPatches[i]) break
-      for (; i < l; i++) array[i](parent)
-      lastPatches = array
-    },
-    ...patches
-  )
+  const empty = []
+  var lastPatches = empty
+  return new S((o, schdlr) => {
+    const d = S.combine(
+      (...array) => parent => {
+        if (lastPatches === empty)
+          schdlr.delay(0, t => proxy.o(event(t, ['mount', parent])))
+        var i = 0
+        const l = array.length
+        for (; i < l; i++) if (array[i] !== lastPatches[i]) break
+        for (; i < l; i++) array[i](parent)
+        lastPatches = array
+      },
+      ...patches
+    ).f(o, schdlr)
+    return {
+      dispose() {
+        d.dispose()
+        schdlr.delay(0, t => proxy.o(event(t, ['unmount'])))
+      }
+    }
+  })
 }
 
 function p2<N: Node>(index: number, vnode: PNode$Node<N>): S<(N) => void> {
