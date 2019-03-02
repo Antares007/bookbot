@@ -347,6 +347,9 @@ export class S<A> {
       }
     })
   }
+  flatMapLatest<B>(f: A => S<B>): S<B> {
+    return S.switchLatest(this.map(f))
+  }
   static switchLatest(ss: S<S<A>>): S<A> {
     return new S((o, schdlr) => {
       var des: ?Disposable = null
