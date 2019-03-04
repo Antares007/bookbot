@@ -1,5 +1,4 @@
 // @flow strict
-import type { S$pith } from './stream2'
 import * as S from './stream2'
 
 export type PNode$patch = { t: 'PNode$patch', patch: Node => void }
@@ -12,7 +11,7 @@ export const patch = (
 
 export type PNode$pith = {
   t: 'PNode$pith',
-  pith: ((PNode$node | S$pith<PNode$patch>) => void) => void
+  pith: ((PNode$node | S.S<PNode$patch>) => void) => void
 }
 export const pith = (pith: $PropertyType<PNode$pith, 'pith'>): PNode$pith => ({
   t: 'PNode$pith',
@@ -23,7 +22,7 @@ export type PNode$node = {
   t: 'PNode$node',
   create: () => Node,
   eq: Node => boolean,
-  spith: S$pith<PNode$pith>
+  spith: S.S<PNode$pith>
 }
 export const node = (
   create: $PropertyType<PNode$node, 'create'>,
@@ -36,14 +35,14 @@ export const node = (
   spith
 })
 
-export function run(spith: S$pith<PNode$pith>): S$pith<(Node) => void> {
+export function run(spith: S.S<PNode$pith>): S.S<(Node) => void> {
   return S.switchLatest(
     S.map(x => {
       var pnodesCount = 0
-      var p = S.empty
+      var p = S.empty()
       var pnodes: Array<[number, () => Node, (Node) => boolean]> = []
       x.pith(x => {
-        if (x.t === 'S$pith') {
+        if (x instanceof S.S) {
           p = S.merge(p, S.map(p => p.patch, x))
         } else {
           const index = pnodesCount++

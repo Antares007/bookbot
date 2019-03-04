@@ -1,8 +1,7 @@
 // @flow strict
-import type { S$pith } from './stream2'
 import * as S from './stream2'
 
-type SS<A> = S$pith<A> | A
+type SS<A> = S.S<A> | A
 
 type Dom$attr = { t: 'Dom$attr', a: { [string]: string } }
 export const attr = (a: $PropertyType<Dom$attr, 'a'>): Dom$attr => {
