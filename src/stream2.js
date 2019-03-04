@@ -183,21 +183,25 @@ export const scan = <A, B>(f: (B, A) => B, b: B, s: S$pith<A>): S$pith<B> => {
   return {
     t: 'S$pith',
     pith: o => {
-      var b_ = b
+      var active = true
       var d = delay(t => {
-        d = s.pith(e => {
-          if (e instanceof Error || e == null) o(e)
-          else {
-            try {
-              o((b_ = f(b_, e)))
-            } catch (err) {
-              o(err)
+        var b_ = b
+        o(b_)
+        if (active)
+          d = s.pith(e => {
+            if (e instanceof Error || e == null) o(e)
+            else {
+              try {
+                o((b_ = f(b_, e)))
+              } catch (err) {
+                o(err)
+              }
             }
-          }
-        })
+          })
       })
       return {
         dispose() {
+          active = false
           d.dispose()
         }
       }
