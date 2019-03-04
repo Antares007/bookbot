@@ -11,6 +11,11 @@ const pith = <A>(pith: $PropertyType<S$pith<A>, 'pith'>): S$pith<A> => ({
   pith: pith
 })
 
+export const empty = <A>(): S$pith<A> => ({
+  t: 'S$pith',
+  pith: o => delay(() => o())
+})
+
 export const at = <A>(a: A, dly: number = 0): S$pith<A> => ({
   t: 'S$pith',
   pith: o => {
@@ -19,6 +24,24 @@ export const at = <A>(a: A, dly: number = 0): S$pith<A> => ({
       o(a)
       if (active) o()
     }, dly)
+    return {
+      dispose() {
+        active = false
+        d.dispose()
+      }
+    }
+  }
+})
+
+export const periodic = (period: number): S$pith<number> => ({
+  t: 'S$pith',
+  pith: o => {
+    var active = true
+    var i = 0
+    var d = delay(function periodic() {
+      o(i++)
+      if (active) d = delay(periodic, period)
+    }, 0)
     return {
       dispose() {
         active = false
