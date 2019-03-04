@@ -146,6 +146,25 @@ export const merge = <A, B>(sa: S$pith<A>, sb: S$pith<B>): S$pith<A | B> => {
   }
 }
 
+export const startWith = <A>(a: A, s: S$pith<A>): S$pith<A> => {
+  return {
+    t: 'S$pith',
+    a: o => {
+      var active = true
+      var d = delay(() => {
+        o(a)
+        if (active) d = s.a(o)
+      })
+      return {
+        dispose() {
+          active = false
+          d.dispose()
+        }
+      }
+    }
+  }
+}
+
 export const map = <A, B>(f: A => B, s: S$pith<A>): S$pith<B> => ({
   t: 'S$pith',
   a: o =>
