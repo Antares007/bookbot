@@ -3,18 +3,21 @@ import { delay, now } from './scheduler2'
 
 export type S$pith<A> = {
   t: 'S$pith',
-  pith: ((?A | Error) => void) => { dispose: () => void }
+  pith: ((A | Error | TheEnd) => void) => { dispose: () => void }
 }
+
+class TheEnd {}
+const end = new TheEnd()
 
 const pith = <A>(pith: $PropertyType<S$pith<A>, 'pith'>): S$pith<A> => ({
   t: 'S$pith',
   pith: pith
 })
 
-export const empty = <A>(): S$pith<A> => ({
+export const empty = {
   t: 'S$pith',
-  pith: o => delay(() => o())
-})
+  pith: (o: TheEnd => void) => delay(() => o(end))
+}
 
 export const at = <A>(a: A, dly: number = 0): S$pith<A> => ({
   t: 'S$pith',
@@ -22,7 +25,7 @@ export const at = <A>(a: A, dly: number = 0): S$pith<A> => ({
     var active = true
     const d = delay(() => {
       o(a)
-      if (active) o()
+      if (active) o(end)
     }, dly)
     return {
       dispose() {
@@ -52,7 +55,7 @@ export const periodic = (period: number): S$pith<number> => ({
 })
 
 export const run = <A>(
-  o: (?A | Error) => void,
+  o: (A | Error | TheEnd) => void,
   s: S$pith<A>
 ): { dispose: () => void } => {
   var disposed = false
@@ -80,16 +83,16 @@ export const switchLatest = <A>(Hs: S$pith<S$pith<A>>): S$pith<A> => {
       var Esd: ?Disposable = null
       var Hsd: ?Disposable = Hs.pith(e => {
         if (e instanceof Error) o(e)
-        else if (e == null) {
+        else if (e instanceof TheEnd) {
           Hsd = null
-          if (Esd == null) o()
+          if (Esd == null) o(end)
         } else {
           Esd && Esd.dispose()
           Esd = e.pith(e => {
             if (e instanceof Error) return o(e)
-            if (e == null) {
+            if (e instanceof TheEnd) {
               Esd = null
-              if (Hsd == null) o()
+              if (Hsd == null) o(end)
             } else o(e)
           })
         }
@@ -125,9 +128,9 @@ export const combine = <A, B>(
       function ring(index) {
         return e => {
           if (e instanceof Error) o(e)
-          else if (e == null) {
+          else if (e instanceof TheEnd) {
             dmap.delete(index)
-            if (dmap.size === 0) o()
+            if (dmap.size === 0) o(end)
           } else {
             mas[index] = e
             var as = []
@@ -157,8 +160,8 @@ export const merge = <A, B>(sa: S$pith<A>, sb: S$pith<B>): S$pith<A | B> => {
         }
       }
       function merge(e) {
-        if (e == null) {
-          --i === 0 && o()
+        if (e instanceof TheEnd) {
+          --i === 0 && o(end)
         } else o(e)
       }
     }
@@ -202,24 +205,24 @@ export const map = <A, B>(f: A => B, s: S$pith<A>): S$pith<B> => ({
   t: 'S$pith',
   pith: o =>
     s.pith(e => {
-      if (e instanceof Error || e == null) o(e)
+      if (e instanceof Error || e instanceof TheEnd) o(e)
       else o(f(e))
     })
 })
 
 export const take = <A>(n: number, s: S$pith<A>): S$pith<A> => {
-  if (n <= 0) return empty()
+  if (n <= 0) return empty
   return {
     t: 'S$pith',
     pith: (o, schdlr) => {
       var i = 0
       const d = s.pith(e => {
-        if (e instanceof Error || e == null) o(e)
+        if (e instanceof Error || e instanceof TheEnd) o(e)
         else {
           o(e)
           if (++i === n) {
             d.dispose()
-            o()
+            o(end)
           }
         }
       })
@@ -235,7 +238,7 @@ export const skip = <A>(n: number, s: S$pith<A>): S$pith<A> => {
     pith: (o, schdlr) => {
       var i = 0
       const d = s.pith(e => {
-        if (e instanceof Error || e == null) o(e)
+        if (e instanceof Error || e instanceof TheEnd) o(e)
         else {
           if (i++ < n) return
           o(e)
@@ -256,7 +259,7 @@ export const scan = <A, B>(f: (B, A) => B, b: B, s: S$pith<A>): S$pith<B> => {
         o(b_)
         if (active)
           d = s.pith(e => {
-            if (e instanceof Error || e == null) o(e)
+            if (e instanceof Error || e instanceof TheEnd) o(e)
             else o((b_ = f(b_, e)))
           })
       })
