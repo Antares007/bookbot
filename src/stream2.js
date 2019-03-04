@@ -112,11 +112,7 @@ export const combine = <A, B>(
               if (a == null) return
               as.push(a)
             }
-            try {
-              o(f(as))
-            } catch (err) {
-              o(err)
-            }
+            o(f(as))
           }
         }
       }
@@ -165,17 +161,26 @@ export const startWith = <A>(a: A, s: S$pith<A>): S$pith<A> => {
   }
 }
 
+export const tryCatch = <A>(s: S$pith<A>): S$pith<A> => ({
+  t: 'S$pith',
+  pith: o =>
+    s.pith(e => {
+      if (e instanceof Error) o(e)
+      else
+        try {
+          o(e)
+        } catch (err) {
+          o(err)
+        }
+    })
+})
+
 export const map = <A, B>(f: A => B, s: S$pith<A>): S$pith<B> => ({
   t: 'S$pith',
   pith: o =>
     s.pith(e => {
       if (e instanceof Error || e == null) o(e)
-      else
-        try {
-          o(f(e))
-        } catch (err) {
-          o(err)
-        }
+      else o(f(e))
     })
 })
 
@@ -190,13 +195,7 @@ export const scan = <A, B>(f: (B, A) => B, b: B, s: S$pith<A>): S$pith<B> => {
         if (active)
           d = s.pith(e => {
             if (e instanceof Error || e == null) o(e)
-            else {
-              try {
-                o((b_ = f(b_, e)))
-              } catch (err) {
-                o(err)
-              }
-            }
+            else o((b_ = f(b_, e)))
           })
       })
       return {
