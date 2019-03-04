@@ -124,6 +124,28 @@ export const combine = <A, B>(
   }
 }
 
+export const merge = <A, B>(sa: S$pith<A>, sb: S$pith<B>): S$pith<A | B> => {
+  return {
+    t: 'S$pith',
+    a: o => {
+      var i = 2
+      const sad = sa.a(merge)
+      const sbd = sb.a(merge)
+      return {
+        dispose() {
+          sad.dispose()
+          sbd.dispose()
+        }
+      }
+      function merge(e) {
+        if (e == null) {
+          --i === 0 && o()
+        } else o(e)
+      }
+    }
+  }
+}
+
 export const map = <A, B>(f: A => B, s: S$pith<A>): S$pith<B> => ({
   t: 'S$pith',
   a: o =>
