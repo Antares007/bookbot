@@ -1,19 +1,19 @@
 // @flow strict
 import { delay, now } from './scheduler2'
 
-export opaque type S$pith<A> = {
+export type S$pith<A> = {
   t: 'S$pith',
-  a: ((?A | Error) => void) => { dispose: () => void }
+  pith: ((?A | Error) => void) => { dispose: () => void }
 }
 
-const pith = <A>(a: $PropertyType<S$pith<A>, 'a'>): S$pith<A> => ({
+const pith = <A>(pith: $PropertyType<S$pith<A>, 'pith'>): S$pith<A> => ({
   t: 'S$pith',
-  a
+  pith: pith
 })
 
 export const at = <A>(a: A, dly: number = 0): S$pith<A> => ({
   t: 'S$pith',
-  a: o => {
+  pith: o => {
     var active = true
     const d = delay(() => {
       o(a)
@@ -33,7 +33,7 @@ export const run = <A>(
   s: S$pith<A>
 ): { dispose: () => void } => {
   var disposed = false
-  const d = s.a(e => {
+  const d = s.pith(e => {
     if (e instanceof Error) {
       disposed = true
       d.dispose()
@@ -53,16 +53,16 @@ type Disposable = { dispose: () => void }
 export const switchLatest = <A>(Hs: S$pith<S$pith<A>>): S$pith<A> => {
   return {
     t: 'S$pith',
-    a: o => {
+    pith: o => {
       var Esd: ?Disposable = null
-      var Hsd: ?Disposable = Hs.a(e => {
+      var Hsd: ?Disposable = Hs.pith(e => {
         if (e instanceof Error) o(e)
         else if (e == null) {
           Hsd = null
           if (Esd == null) o()
         } else {
           Esd && Esd.dispose()
-          Esd = e.a(e => {
+          Esd = e.pith(e => {
             if (e instanceof Error) return o(e)
             if (e == null) {
               Esd = null
@@ -87,12 +87,12 @@ export const combine = <A, B>(
 ): S$pith<B> => {
   return {
     t: 'S$pith',
-    a: o => {
+    pith: o => {
       const dmap = new Map()
       const mas: Array<?A> = []
       for (var i = 0, l = array.length; i < l; i++) {
         mas.push(null)
-        dmap.set(i, array[i].a(ring(i)))
+        dmap.set(i, array[i].pith(ring(i)))
       }
       return {
         dispose() {
@@ -127,10 +127,10 @@ export const combine = <A, B>(
 export const merge = <A, B>(sa: S$pith<A>, sb: S$pith<B>): S$pith<A | B> => {
   return {
     t: 'S$pith',
-    a: o => {
+    pith: o => {
       var i = 2
-      const sad = sa.a(merge)
-      const sbd = sb.a(merge)
+      const sad = sa.pith(merge)
+      const sbd = sb.pith(merge)
       return {
         dispose() {
           sad.dispose()
@@ -149,11 +149,11 @@ export const merge = <A, B>(sa: S$pith<A>, sb: S$pith<B>): S$pith<A | B> => {
 export const startWith = <A>(a: A, s: S$pith<A>): S$pith<A> => {
   return {
     t: 'S$pith',
-    a: o => {
+    pith: o => {
       var active = true
       var d = delay(() => {
         o(a)
-        if (active) d = s.a(o)
+        if (active) d = s.pith(o)
       })
       return {
         dispose() {
@@ -167,8 +167,8 @@ export const startWith = <A>(a: A, s: S$pith<A>): S$pith<A> => {
 
 export const map = <A, B>(f: A => B, s: S$pith<A>): S$pith<B> => ({
   t: 'S$pith',
-  a: o =>
-    s.a(e => {
+  pith: o =>
+    s.pith(e => {
       if (e instanceof Error || e == null) o(e)
       else
         try {
@@ -182,10 +182,10 @@ export const map = <A, B>(f: A => B, s: S$pith<A>): S$pith<B> => ({
 export const scan = <A, B>(f: (B, A) => B, b: B, s: S$pith<A>): S$pith<B> => {
   return {
     t: 'S$pith',
-    a: o => {
+    pith: o => {
       var b_ = b
       var d = delay(t => {
-        d = s.a(e => {
+        d = s.pith(e => {
           if (e instanceof Error || e == null) o(e)
           else {
             try {
