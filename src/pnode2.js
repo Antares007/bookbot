@@ -2,75 +2,81 @@
 import type { S$pith } from './stream2'
 import * as S from './stream2'
 
-export type PNode$patch = { t: 'PNode$patch', a: S$pith<(Node) => void> }
-const patch = (a: $PropertyType<PNode$patch, 'a'>): PNode$patch => ({
+export type PNode$patch = { t: 'PNode$patch', patch: Node => void }
+export const patch = (
+  patch: $PropertyType<PNode$patch, 'patch'>
+): PNode$patch => ({
   t: 'PNode$patch',
-  a
+  patch
 })
 
 export type PNode$pith = {
   t: 'PNode$pith',
-  a: ((PNode$node | PNode$patch) => void) => void
+  pith: ((PNode$node | S$pith<PNode$patch>) => void) => void
 }
-const pith = (a: $PropertyType<PNode$pith, 'a'>): PNode$pith => ({
+export const pith = (pith: $PropertyType<PNode$pith, 'pith'>): PNode$pith => ({
   t: 'PNode$pith',
-  a
+  pith
 })
 
 export type PNode$node = {
   t: 'PNode$node',
-  a: () => Node,
-  b: Node => boolean,
-  c: S$pith<PNode$pith>
+  create: () => Node,
+  eq: Node => boolean,
+  spith: S$pith<PNode$pith>
 }
-const node = (
-  a: $PropertyType<PNode$node, 'a'>,
-  b: $PropertyType<PNode$node, 'b'>,
-  c: $PropertyType<PNode$node, 'c'>
-): PNode$node => ({ t: 'PNode$node', a, b, c })
+export const node = (
+  create: $PropertyType<PNode$node, 'create'>,
+  eq: $PropertyType<PNode$node, 'eq'>,
+  spith: $PropertyType<PNode$node, 'spith'>
+): PNode$node => ({
+  t: 'PNode$node',
+  create,
+  eq,
+  spith
+})
 
 export function run(spith: S$pith<PNode$pith>): S$pith<(Node) => void> {
   return S.switchLatest(
     S.map(x => {
-      const patches: Array<S$pith<(Node) => void>> = []
-      var i = 0
-      x.a(x => {
-        if (x.t === 'PNode$patch') return
-        const index = i++
-        patches.push(
-          S.map(
-            p => parent => {
-              var li: ?Node
-              for (var i = index, l = parent.childNodes.length; i < l; i++)
-                if (x.b((li = parent.childNodes[i]))) break
-                else li = null
-              if (li == null)
-                li = parent.insertBefore(x.a(), parent.childNodes[index])
-              else if (i !== index)
-                parent.insertBefore(li, parent.childNodes[index])
-              p(li)
-            },
-            run(x.c)
+      var pnodesCount = 0
+      var p = S.empty
+      var pnodes: Array<[number, () => Node, (Node) => boolean]> = []
+      x.pith(x => {
+        if (x.t === 'S$pith') {
+          p = S.merge(p, S.map(p => p.patch, x))
+        } else {
+          const index = pnodesCount++
+          pnodes.push([index, x.create, x.eq])
+          p = S.merge(
+            p,
+            S.map(p => parent => p(parent.childNodes[index]), run(x.spith))
           )
-        )
+        }
       })
-      patches.push(
-        S.at(parent => {
-          for (var j = parent.childNodes.length - 1; j >= i; j--)
-            parent.removeChild(parent.childNodes[j])
-        })
-      )
-      var lastPatches: Array<(Node) => void> = []
-      return S.combine(
-        array => parent => {
-          var i = 0
-          const l = array.length
-          for (; i < l; i++) if (array[i] !== lastPatches[i]) break
-          for (; i < l; i++) array[i](parent)
-          lastPatches = array
-        },
-        patches
-      )
+      return S.startWith((parent: Node) => {
+        const childNodes = parent.childNodes
+        const misplacedPnodes: Array<[Node, Node]> = []
+        for (var i = 0; i < childNodes.length && pnodes.length > 0; i++) {
+          const li = childNodes[i]
+          for (var j = 0; j < pnodes.length; j++) {
+            const pi = pnodes[j]
+            if (pi[2](li)) {
+              pnodes.splice(j, 1)
+              if (pi[0] !== i) misplacedPnodes.push([li, childNodes[pi[0]]])
+              break
+            }
+          }
+        }
+        for (var pm of misplacedPnodes) parent.replaceChild(pm[0], pm[1])
+        for (var pn of pnodes) {
+          const oldNode = childNodes[pn[0]]
+          if (oldNode) parent.replaceChild(pn[1](), oldNode)
+          else parent.insertBefore(pn[1](), null)
+        }
+        for (var i = childNodes.length - 1; i >= pnodesCount; i--)
+          parent.removeChild(childNodes[i])
+      }, p)
     }, spith)
   )
 }

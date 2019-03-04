@@ -1,30 +1,29 @@
 //@flow strict
 import type { A } from '../src/atest'
-import { Scheduler } from '../src/scheduler'
+import { now as tf, delay } from '../src/scheduler2'
 
 export function can_execute_in_expected_order(assert: Array<A>): void {
-  var t = 30
-  const schdlr = Scheduler.asap(30)
-  const delay = schdlr.delay.bind(schdlr)
-  delay(0, t => {
-    assert[1].strictEqual(t, 30)
-    delay(0, t => {
-      assert[2].strictEqual(t, 30)
-      delay(60, t => {
-        assert[5].strictEqual(t, 90)
-      })
+  const offset = 30 - tf()
+  const now = () => tf() + offset
+  delay(() => {
+    assert[1].strictEqual(now(), 30)
+    delay(() => {
+      assert[2].strictEqual(now(), 30)
+      delay(() => {
+        assert[5].strictEqual(now(), 90)
+      }, 60)
     })
-    delay(30, t => {
-      assert[4].strictEqual(t, 60)
-      delay(30, t => {
-        assert[7].strictEqual(t, 90)
-      })
-    })
-    delay(0, t => {
-      assert[3].strictEqual(t, 30)
-      delay(60, t => {
-        assert[6].strictEqual(t, 90)
-      })
+    delay(() => {
+      assert[4].strictEqual(now(), 60)
+      delay(() => {
+        assert[7].strictEqual(now(), 90)
+      }, 30)
+    }, 30)
+    delay(() => {
+      assert[3].strictEqual(now(), 30)
+      delay(() => {
+        assert[6].strictEqual(now(), 90)
+      }, 60)
     })
   })
   assert[0].ok(true)
