@@ -207,6 +207,45 @@ export const map = <A, B>(f: A => B, s: S$pith<A>): S$pith<B> => ({
     })
 })
 
+export const take = <A>(n: number, s: S$pith<A>): S$pith<A> => {
+  if (n <= 0) return empty()
+  return {
+    t: 'S$pith',
+    pith: (o, schdlr) => {
+      var i = 0
+      const d = s.pith(e => {
+        if (e instanceof Error || e == null) o(e)
+        else {
+          o(e)
+          if (++i === n) {
+            d.dispose()
+            o()
+          }
+        }
+      })
+      return d
+    }
+  }
+}
+
+export const skip = <A>(n: number, s: S$pith<A>): S$pith<A> => {
+  if (n <= 0) return s
+  return {
+    t: 'S$pith',
+    pith: (o, schdlr) => {
+      var i = 0
+      const d = s.pith(e => {
+        if (e instanceof Error || e == null) o(e)
+        else {
+          if (i++ < n) return
+          o(e)
+        }
+      })
+      return d
+    }
+  }
+}
+
 export const scan = <A, B>(f: (B, A) => B, b: B, s: S$pith<A>): S$pith<B> => {
   return {
     t: 'S$pith',
