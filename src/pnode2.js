@@ -37,23 +37,23 @@ export const node = (
 
 export function run(spith: S.S<PNode$pith>): S.S<(Node) => void> {
   return S.switchLatest(
-    S.map(x => {
+    spith.map(x => {
       var pnodesCount = 0
       var p = S.empty()
       var pnodes: Array<[number, () => Node, (Node) => boolean]> = []
       x.pith(x => {
         if (x instanceof S.S) {
-          p = S.merge(p, S.map(p => p.patch, x))
+          p = p.merge(x.map(p => p.patch))
         } else {
           const index = pnodesCount++
           pnodes.push([index, x.create, x.eq])
-          p = S.merge(
-            p,
+          p = p.merge(
             S.map(p => parent => p(parent.childNodes[index]), run(x.spith))
           )
         }
       })
-      return S.startWith((parent: Node) => {
+      if (pnodesCount === 0) return p
+      return p.startWith((parent: Node) => {
         const childNodes = parent.childNodes
         const misplacedPnodes: Array<[Node, Node]> = []
         for (var i = 0; i < childNodes.length && pnodes.length > 0; i++) {
@@ -75,7 +75,7 @@ export function run(spith: S.S<PNode$pith>): S.S<(Node) => void> {
         }
         for (var i = childNodes.length - 1; i >= pnodesCount; i--)
           parent.removeChild(childNodes[i])
-      }, p)
-    }, spith)
+      })
+    })
   )
 }

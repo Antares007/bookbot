@@ -38,7 +38,38 @@ const counter = (d: number) =>
           'button',
           N.pith(o => {
             o(text(S.at('+')))
-            d > 0 && o(counter(d - 1))
+            //     d > 0 && o(counter(d - 1))
+            o(
+              elm(
+                'div',
+                N.pith(o => {
+                  o(
+                    elm(
+                      'button',
+                      N.pith(o => {
+                        o(
+                          text(
+                            S.periodic(1000)
+                              .take(10)
+                              .map(i => i + ' +')
+                          )
+                        )
+                        //     d > 0 && o(counter(d - 1))
+                      })
+                    )
+                  )
+                  o(
+                    elm(
+                      'button',
+                      N.pith(o => {
+                        o(text(S.at('-')))
+                        //    d > 0 && o(counter(d - 1))
+                      })
+                    )
+                  )
+                })
+              )
+            )
           })
         )
       )
@@ -47,7 +78,7 @@ const counter = (d: number) =>
           'button',
           N.pith(o => {
             o(text(S.at('-')))
-            d > 0 && o(counter(d - 1))
+            //    d > 0 && o(counter(d - 1))
           })
         )
       )
@@ -57,11 +88,12 @@ const counter = (d: number) =>
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
-N.run(S.at(N.pith(o => o(counter(3)))))
+const t0 = now()
+N.run(S.at(N.pith(o => o(counter(0)))))
   .map(p => (p(rootNode), 1))
   .scan((a, b) => a + b, 0)
   .skip(1)
-  .map(n => ({ n, t: now() }))
+  .map(n => ({ n, t: now() - t0 }))
   .run(console.log.bind(console))
 
 // S.run(
