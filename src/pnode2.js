@@ -6,7 +6,7 @@ export class Patch {
   constructor(v: $PropertyType<Patch, 'v'>) {
     this.v = v
   }
-  static of(v: $PropertyType<Patch, 'v'>) {
+  static of(v: $PropertyType<Patch, 'v'>): Patch {
     return new Patch(v)
   }
 }
@@ -16,7 +16,7 @@ export class Pith<A> {
   constructor(v: $PropertyType<Pith<A>, 'pith'>) {
     this.pith = v
   }
-  static of(v: $PropertyType<Pith<A>, 'pith'>) {
+  static of(v: $PropertyType<Pith<A>, 'pith'>): Pith<A> {
     return new Pith(v)
   }
 }
@@ -38,22 +38,35 @@ export class PNode<A> {
     create: $PropertyType<PNode<A>, 'create'>,
     eq: $PropertyType<PNode<A>, 'eq'>,
     spith: $PropertyType<PNode<A>, 'spith'>
-  ) {
+  ): PNode<A> {
     return new PNode(create, eq, spith)
   }
 }
 
+let see = Pith.of(o => {
+  o(S.at(true))
+  o(
+    PNode.of(
+      () => document.createElement('div'),
+      () => true,
+      S.at(
+        Pith.of(o => {
+          o(S.at(1))
+        })
+      )
+    )
+  )
+})
 export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
   return S.switchLatest(
     spith.map(x => {
-      var pnodesCount = 0
       var p = S.empty()
       var pnodes: Array<[number, () => Node, (Node) => boolean]> = []
       x.pith(x => {
         if (x instanceof S.S) {
           p = p.merge(x)
         } else {
-          const index = pnodesCount++
+          const index = pnodes.length
           pnodes.push([index, x.create, x.eq])
           p = p.merge(
             run(x.spith).map(x =>
@@ -64,32 +77,35 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
           )
         }
       })
-      if (pnodesCount === 0) return p
-      return p.startWith(
-        Patch.of(parent => {
-          const childNodes = parent.childNodes
-          const misplacedPnodes: Array<[Node, Node]> = []
-          for (var i = 0; i < childNodes.length && pnodes.length > 0; i++) {
-            const li = childNodes[i]
-            for (var j = 0; j < pnodes.length; j++) {
-              const pi = pnodes[j]
-              if (pi[2](li)) {
-                pnodes.splice(j, 1)
-                if (pi[0] !== i) misplacedPnodes.push([li, childNodes[pi[0]]])
-                break
+      return pnodes.length === 0
+        ? p
+        : p.startWith(
+            Patch.of(parent => {
+              const pnodesCount = pnodes.length
+              const childNodes = parent.childNodes
+              const misplacedPnodes: Array<[Node, Node]> = []
+              for (var i = 0; i < childNodes.length && pnodes.length > 0; i++) {
+                const li = childNodes[i]
+                for (var j = 0; j < pnodes.length; j++) {
+                  const pi = pnodes[j]
+                  if (pi[2](li)) {
+                    pnodes.splice(j, 1)
+                    if (pi[0] !== i)
+                      misplacedPnodes.push([li, childNodes[pi[0]]])
+                    break
+                  }
+                }
               }
-            }
-          }
-          for (var pm of misplacedPnodes) parent.replaceChild(pm[0], pm[1])
-          for (var pn of pnodes) {
-            const oldNode = childNodes[pn[0]]
-            if (oldNode) parent.replaceChild(pn[1](), oldNode)
-            else parent.insertBefore(pn[1](), null)
-          }
-          for (var i = childNodes.length - 1; i >= pnodesCount; i--)
-            parent.removeChild(childNodes[i])
-        })
-      )
+              for (var pm of misplacedPnodes) parent.replaceChild(pm[0], pm[1])
+              for (var pn of pnodes) {
+                const oldNode = childNodes[pn[0]]
+                if (oldNode) parent.replaceChild(pn[1](), oldNode)
+                else parent.insertBefore(pn[1](), null)
+              }
+              for (var i = childNodes.length - 1; i >= pnodesCount; i--)
+                parent.removeChild(childNodes[i])
+            })
+          )
     })
   )
 }

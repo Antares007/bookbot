@@ -9,19 +9,17 @@ const elm = <A>(tag: string, xpith: S.S<N.Pith<A>> | N.Pith<A>): N.PNode<A> =>
     n => n.nodeName === tag.toUpperCase(),
     xpith instanceof S.S ? xpith : S.at(xpith)
   )
-const text = <A>(stext: S.S<string>): N.PNode<A> =>
+const text = (stext: S.S<string>) =>
   N.PNode.of(
     () => document.createTextNode(''),
     n => n.nodeName === '#text',
     S.at(
       N.Pith.of(o =>
         o(
-          S.map(
-            text =>
-              N.Patch.of(n => {
-                n.textContent = text
-              }),
-            stext
+          stext.map(text =>
+            N.Patch.of(n => {
+              n.textContent = text
+            })
           )
         )
       )
@@ -37,6 +35,8 @@ const counter = (d: number) =>
         elm(
           'button',
           N.Pith.of(o => {
+            o(S.at(''))
+
             o(text(S.at('+')))
             d > 0 && o(counter(d - 1))
           })
