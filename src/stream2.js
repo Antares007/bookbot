@@ -44,7 +44,7 @@ export const run = <A>(
   s: S<A>
 ): { dispose: () => void } => {
   var disposed = false
-  const d = s.pith(e => {
+  const d = s.pith(function S$run(e) {
     if (e instanceof Error) {
       disposed = true
       d.dispose()
@@ -63,15 +63,14 @@ export const run = <A>(
 export const switchLatest = <A>(Hs: S<S<A>>): S<A> =>
   new S(o => {
     var Esd: ?Disposable = null
-    var Hsd: ?Disposable = Hs.pith(e => {
+    var Hsd: ?Disposable = Hs.pith(function S$switchLatestO(e) {
       if (e instanceof Error) o(e)
       else if (e instanceof End) {
         Hsd = null
         if (Esd == null) o(end)
       } else {
         Esd && Esd.dispose()
-        Esd = e.pith(e => {
-          if (e instanceof Error) return o(e)
+        Esd = e.pith(function S$switchLatestI(e) {
           if (e instanceof End) {
             Esd = null
             if (Hsd == null) o(end)
@@ -93,14 +92,14 @@ export const combine = <A, B>(f: (Array<A>) => B, array: Array<S<A>>): S<B> =>
     const mas: Array<?A> = []
     for (var i = 0, l = array.length; i < l; i++) {
       mas.push(null)
-      dmap.set(i, array[i].pith(ring(i)))
+      dmap.set(i, array[i].pith(S$combine(i)))
     }
     return {
       dispose() {
         for (var e of dmap.entries()) e[1].dispose()
       }
     }
-    function ring(index) {
+    function S$combine(index) {
       return e => {
         if (e instanceof Error) o(e)
         else if (e instanceof End) {
@@ -122,15 +121,15 @@ export const combine = <A, B>(f: (Array<A>) => B, array: Array<S<A>>): S<B> =>
 export const merge = <A, B>(sa: S<A>, sb: S<B>): S<A | B> =>
   new S(o => {
     var i = 2
-    const sad = sa.pith(merge)
-    const sbd = sb.pith(merge)
+    const sad = sa.pith(S$merge)
+    const sbd = sb.pith(S$merge)
     return {
       dispose() {
         sad.dispose()
         sbd.dispose()
       }
     }
-    function merge(e) {
+    function S$merge(e) {
       if (e instanceof End) {
         --i === 0 && o(end)
       } else o(e)
@@ -154,7 +153,7 @@ export const startWith = <A>(a: A, s: S<A>): S<A> =>
 
 export const tryCatch = <A>(s: S<A>): S<A> =>
   new S(o =>
-    s.pith(e => {
+    s.pith(function S$tryCatch(e) {
       if (e instanceof Error) o(e)
       else
         try {
@@ -167,7 +166,7 @@ export const tryCatch = <A>(s: S<A>): S<A> =>
 
 export const map = <A, B>(f: A => B, s: S<A>): S<B> =>
   new S(o =>
-    s.pith(e => {
+    s.pith(function S$map(e) {
       if (e instanceof Error || e instanceof End) o(e)
       else o(f(e))
     })
@@ -177,7 +176,7 @@ export const take = <A>(n: number, s: S<A>): S<A> => {
   if (n <= 0) return empty()
   return new S(o => {
     var i = 0
-    const d = s.pith(e => {
+    const d = s.pith(function S$take(e) {
       if (e instanceof Error || e instanceof End) o(e)
       else {
         o(e)
@@ -195,7 +194,7 @@ export const skip = <A>(n: number, s: S<A>): S<A> => {
   if (n <= 0) return s
   return new S(o => {
     var i = 0
-    const d = s.pith(e => {
+    const d = s.pith(function S$skip(e) {
       if (e instanceof Error || e instanceof End) o(e)
       else {
         if (i++ < n) return
@@ -213,7 +212,7 @@ export const scan = <A, B>(f: (B, A) => B, b: B, s: S<A>): S<B> => {
       var b_ = b
       o(b_)
       if (active)
-        d = s.pith(e => {
+        d = s.pith(function S$scan(e) {
           if (e instanceof Error || e instanceof End) o(e)
           else o((b_ = f(b_, e)))
         })
