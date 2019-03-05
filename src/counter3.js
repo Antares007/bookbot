@@ -59,10 +59,9 @@ if (!rootNode) throw new Error('cant find root-node')
 
 const t0 = now()
 N.run(S.at(N.Pith.of(o => o(counter(3)))))
-  .map(p => {
-    return p instanceof N.Patch ? (p.v(rootNode), 1) : 0
-  })
-  .scan((a, b) => a + b, 0)
+  .filter2(x => (x instanceof N.Patch ? x : null))
+  .map(p => p.v(rootNode))
+  .scan(a => a + 1, 0)
   .skip(1)
   .map(n => ({ n, t: now() - t0 }))
   .run(console.log.bind(console))

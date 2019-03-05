@@ -172,6 +172,25 @@ export const map = <A, B>(f: A => B, s: S<A>): S<B> =>
     })
   )
 
+export const filter = <A>(f: A => boolean, s: S<A>): S<A> =>
+  new S(o =>
+    s.pith(function S$filter(e) {
+      if (e instanceof Error || e instanceof End) o(e)
+      else if (f(e)) o(e)
+    })
+  )
+
+export const filter2 = <A, B>(f: A => ?B, s: S<A>): S<B> =>
+  new S(o =>
+    s.pith(function S$filter(e) {
+      if (e instanceof Error || e instanceof End) o(e)
+      else {
+        const b = f(e)
+        if (b) o(b)
+      }
+    })
+  )
+
 export const take = <A>(n: number, s: S<A>): S<A> => {
   if (n <= 0) return empty()
   return new S(o => {
@@ -245,6 +264,12 @@ export class S<A> {
   }
   map<B>(f: A => B): S<B> {
     return map(f, this)
+  }
+  filter(f: A => boolean): S<A> {
+    return filter(f, this)
+  }
+  filter2<B>(f: A => ?B): S<B> {
+    return filter2(f, this)
   }
   take(n: number): S<A> {
     return take(n, this)
