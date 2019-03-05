@@ -67,20 +67,5 @@ N.run(S.at(N.Pith.of(o => o(counter(3)))))
   .map(n => ({ n, t: now() - t0 }))
   .run(console.log.bind(console))
 
-// S.run(
-//   console.log.bind(console),
-//   S.map(
-//     n => ({ n, t: now() }),
-//     S.skip(
-//       1,
-//       S.scan(
-//         (a, b) => a + b,
-//         0,
-//         S.map(p => (p(rootNode), 1), N.run(S.at(N.pith(o => o(counter(0))))))
-//       )
-//     )
-//   )
-// )
-
 // const s = S.take(3, S.skip(1, S.startWith(-1, S.periodic(1000))))
 // S.run(console.log.bind(console), s)

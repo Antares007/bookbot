@@ -43,20 +43,6 @@ export class PNode<A> {
   }
 }
 
-let see = Pith.of(o => {
-  o(S.at(true))
-  o(
-    PNode.of(
-      () => document.createElement('div'),
-      () => true,
-      S.at(
-        Pith.of(o => {
-          o(S.at(1))
-        })
-      )
-    )
-  )
-})
 export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
   return S.switchLatest(
     spith.map(x => {
