@@ -3,7 +3,7 @@ import { delay, now } from './scheduler2'
 
 type Disposable = { dispose: () => void }
 
-class End {}
+export class End {}
 const end = new End()
 
 export const empty = <A>(): S<A> => new S(o => delay(() => o(end)))

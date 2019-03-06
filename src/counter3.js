@@ -1,7 +1,7 @@
 // @flow strict
 import * as S from './stream2'
 import * as N from './pnode2'
-import { now } from './scheduler2'
+import { now, delay } from './scheduler2'
 
 const elm = <A>(tag: string, xpith: S.S<N.Pith<A>> | N.Pith<A>): N.PNode<A> =>
   N.PNode.of(
@@ -56,15 +56,35 @@ const counter = (d: number) =>
 
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
-
-const t0 = now()
+const patches = []
 N.run(S.at(N.Pith.of(o => o(counter(3)))))
   .filter2(x => (x instanceof N.Patch ? x : null))
-  .map(p => p.v(rootNode))
-  .scan(a => a + 1, 0)
-  .skip(1)
-  .map(n => ({ n, t: now() - t0 }))
-  .run(console.log.bind(console))
+  .run(e => {
+    if (e instanceof Error) throw e
+    else if (e instanceof S.End) {
+      const t0 = now()
+      const run = () => {
+        const p = patches.shift()
+        if (p) {
+          console.log(now() - t0)
+          p.v(rootNode)
+          delay(run, 300)
+        }
+      }
+      delay(run)
+    } else {
+      patches.push(e)
+    }
+  })
+
+// const t0 = now()
+// N.run(S.at(N.Pith.of(o => o(counter(3)))))
+//   .filter2(x => (x instanceof N.Patch ? x : null))
+//   .map(p => p.v(rootNode))
+//   .scan(a => a + 1, 0)
+//   .skip(1)
+//   .map(n => ({ n, t: now() - t0 }))
+//   .run(console.log.bind(console))
 
 // const s = S.take(3, S.skip(1, S.startWith(-1, S.periodic(1000))))
 // S.run(console.log.bind(console), s)
