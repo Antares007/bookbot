@@ -3,11 +3,11 @@ import * as S from './stream2'
 import * as P from './pnode2'
 import { now, delay } from './scheduler2'
 
-const elm = <A>(tag: string, xpith: S.S<P.Pith<A>> | P.Pith<A>): P.PNode<A> =>
+const elm = (tag: string, xpith) =>
   P.pnode(
     () => document.createElement(tag),
     n => n.nodeName === tag.toUpperCase(),
-    xpith instanceof S.S ? xpith : S.at(xpith)
+    xpith
   )
 const text = (stext: S.S<string>) =>
   P.pnode(

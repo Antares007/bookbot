@@ -1,6 +1,8 @@
 // @flow strict
 import * as S from './stream2'
 
+type SS<A> = S.S<A> | A
+
 export class Patch {
   v: Node => void
   constructor(v: $PropertyType<Patch, 'v'>) {
@@ -24,23 +26,29 @@ export function pith<A>(v: $PropertyType<Pith<A>, 'pith'>): Pith<A> {
 export class PNode<A> {
   create: () => Node
   eq: Node => boolean
-  spith: S.S<Pith<A>>
+  piths: S.S<Pith<A>>
   constructor(
     create: $PropertyType<PNode<A>, 'create'>,
     eq: $PropertyType<PNode<A>, 'eq'>,
-    spith: $PropertyType<PNode<A>, 'spith'>
+    piths: $PropertyType<PNode<A>, 'piths'>
   ) {
     this.create = create
     this.eq = eq
-    this.spith = spith
+    this.piths = piths
   }
 }
 export function pnode<A>(
   create: $PropertyType<PNode<A>, 'create'>,
   eq: $PropertyType<PNode<A>, 'eq'>,
-  spith: $PropertyType<PNode<A>, 'spith'>
+  piths: SS<$PropertyType<Pith<A>, 'pith'> | Pith<A>>
 ): PNode<A> {
-  return new PNode(create, eq, spith)
+  return new PNode(
+    create,
+    eq,
+    (piths instanceof S.S ? piths : S.at(piths)).map(x =>
+      x instanceof Pith ? x : pith(x)
+    )
+  )
 }
 
 export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
@@ -55,7 +63,7 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
           const index = pnodes.length
           pnodes.push(x)
           p = p.merge(
-            run(x.spith).map(x =>
+            run(x.piths).map(x =>
               x instanceof Patch
                 ? patch(parent => x.v(parent.childNodes[index]))
                 : x

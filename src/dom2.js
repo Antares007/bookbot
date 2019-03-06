@@ -1,5 +1,6 @@
 // @flow strict
 import * as S from './stream2'
+import * as P from './pnode2'
 
 type SS<A> = S.S<A> | A
 
@@ -56,6 +57,8 @@ export class Elm<A> {
     actions: $PropertyType<Elm<A>, 'actions'>,
     piths: $PropertyType<Elm<A>, 'piths'>
   ) {
+    this.tag = tag.toUpperCase()
+    this.key = key
     this.attrs = attrs
     this.styles = styles
     this.actions = actions
@@ -65,7 +68,7 @@ export class Elm<A> {
 export function elm<A>(
   tag: string,
   attrs: Array<SS<Attr | Style | Action<A>>>,
-  xpith: SS<$PropertyType<Pith<A>, 'pith'>>,
+  piths: SS<$PropertyType<Pith<A>, 'pith'> | Pith<A>>,
   key?: string
 ): Elm<A> {
   var s = S.empty()
@@ -76,7 +79,9 @@ export function elm<A>(
     s.filter2(x => (x instanceof Attr ? x : null)),
     s.filter2(x => (x instanceof Style ? x : null)),
     s.filter2(x => (x instanceof Action ? x : null)),
-    xpith instanceof S.S ? xpith.map(pith) : S.at(pith(xpith))
+    (piths instanceof S.S ? piths : S.at(piths)).map(x =>
+      x instanceof Pith ? x : pith(x)
+    )
   )
 }
 
@@ -96,6 +101,39 @@ export class Pith<A> {
     this.pith = pith
   }
 }
-function pith<A>(pith: $PropertyType<Pith<A>, 'pith'>): Pith<A> {
+export function pith<A>(pith: $PropertyType<Pith<A>, 'pith'>): Pith<A> {
   return new Pith<A>(pith)
+}
+
+export function run<A>(piths: SS<Pith<A>>): S.S<P.Patch> {
+  const ring = (pith: Pith<A>) =>
+    P.pith(o => {
+      pith.pith(v => {
+        if (v instanceof Str) {
+          o(
+            P.pnode(
+              () => document.createTextNode(''),
+              n => n.nodeName === '#text',
+              o =>
+                o(
+                  v.texts.map(text =>
+                    P.patch(n => {
+                      n.textContent = text
+                    })
+                  )
+                )
+            )
+          )
+        } else {
+          o(
+            P.pnode(
+              () => document.createElement(v.tag),
+              n => n.nodeName === v.tag,
+              v.piths.map(ring)
+            )
+          )
+        }
+      }, S.empty())
+    })
+  return P.run(piths instanceof S.S ? piths.map(ring) : S.at(ring(piths)))
 }
