@@ -47,13 +47,13 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
   return S.switchLatest(
     spith.map(x => {
       var p = S.empty()
-      var pnodes: Array<[number, () => Node, (Node) => boolean]> = []
+      var pnodes: Array<PNode<A>> = []
       x.pith(x => {
         if (x instanceof S.S) {
           p = p.merge(x)
         } else {
           const index = pnodes.length
-          pnodes.push([index, x.create, x.eq])
+          pnodes.push(x)
           p = p.merge(
             run(x.spith).map(x =>
               x instanceof Patch
@@ -67,28 +67,19 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
         ? p
         : p.startWith(
             Patch.of(parent => {
-              const pnodesCount = pnodes.length
+              const pnodesLength = pnodes.length
               const childNodes = parent.childNodes
-              const misplacedPnodes: Array<[Node, Node]> = []
-              for (var i = 0; i < childNodes.length && pnodes.length > 0; i++) {
-                const li = childNodes[i]
-                for (var j = 0; j < pnodes.length; j++) {
-                  const pi = pnodes[j]
-                  if (pi[2](li)) {
-                    pnodes.splice(j, 1)
-                    if (pi[0] !== i)
-                      misplacedPnodes.push([li, childNodes[pi[0]]])
-                    break
-                  }
-                }
+              for (var index = 0; index < pnodesLength; index++) {
+                const pi = pnodes[index]
+                var li: ?Node
+                for (var i = index, l = childNodes.length; i < l; i++)
+                  if (pi.eq((li = parent.childNodes[i]))) break
+                  else li = null
+                if (li == null)
+                  parent.insertBefore(pi.create(), childNodes[index])
+                else if (i !== index) parent.insertBefore(li, childNodes[index])
               }
-              for (var pm of misplacedPnodes) parent.replaceChild(pm[0], pm[1])
-              for (var pn of pnodes) {
-                const oldNode = childNodes[pn[0]]
-                if (oldNode) parent.replaceChild(pn[1](), oldNode)
-                else parent.insertBefore(pn[1](), null)
-              }
-              for (var i = childNodes.length - 1; i >= pnodesCount; i--)
+              for (var i = childNodes.length - 1; i >= pnodesLength; i--)
                 parent.removeChild(childNodes[i])
             })
           )
