@@ -1,23 +1,23 @@
 // @flow strict
 import * as S from './stream2'
-import * as N from './pnode2'
+import * as P from './pnode2'
 import { now, delay } from './scheduler2'
 
-const elm = <A>(tag: string, xpith: S.S<N.Pith<A>> | N.Pith<A>): N.PNode<A> =>
-  N.PNode.of(
+const elm = <A>(tag: string, xpith: S.S<P.Pith<A>> | P.Pith<A>): P.PNode<A> =>
+  P.pnode(
     () => document.createElement(tag),
     n => n.nodeName === tag.toUpperCase(),
     xpith instanceof S.S ? xpith : S.at(xpith)
   )
 const text = (stext: S.S<string>) =>
-  N.PNode.of(
+  P.pnode(
     () => document.createTextNode(''),
     n => n.nodeName === '#text',
     S.at(
-      N.Pith.of(o =>
+      P.pith(o =>
         o(
           stext.map(text =>
-            N.Patch.of(n => {
+            P.patch(n => {
               n.textContent = text
             })
           )
@@ -29,12 +29,12 @@ const text = (stext: S.S<string>) =>
 const counter = (d: number) =>
   elm(
     'div',
-    N.Pith.of(o => {
+    P.pith(o => {
       o(S.at(1))
       o(
         elm(
           'button',
-          N.Pith.of(o => {
+          P.pith(o => {
             o(S.at(''))
 
             o(text(S.at('+')))
@@ -45,7 +45,7 @@ const counter = (d: number) =>
       o(
         elm(
           'button',
-          N.Pith.of(o => {
+          P.pith(o => {
             o(text(S.at('-')))
             d > 0 && o(counter(d - 1))
           })
@@ -57,8 +57,8 @@ const counter = (d: number) =>
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 const patches = []
-N.run(S.at(N.Pith.of(o => o(counter(3)))))
-  .filter2(x => (x instanceof N.Patch ? x : null))
+P.run(S.at(P.pith(o => o(counter(3)))))
+  .filter2(x => (x instanceof P.Patch ? x : null))
   .run(e => {
     if (e instanceof Error) throw e
     else if (e instanceof S.End) {
@@ -78,8 +78,8 @@ N.run(S.at(N.Pith.of(o => o(counter(3)))))
   })
 
 // const t0 = now()
-// N.run(S.at(N.Pith.of(o => o(counter(3)))))
-//   .filter2(x => (x instanceof N.Patch ? x : null))
+// P.run(S.at(P.Pith(o => o(counter(3)))))
+//   .filter2(x => (x instanceof P.Patch ? x : null))
 //   .map(p => p.v(rootNode))
 //   .scan(a => a + 1, 0)
 //   .skip(1)

@@ -6,9 +6,9 @@ export class Patch {
   constructor(v: $PropertyType<Patch, 'v'>) {
     this.v = v
   }
-  static of(v: $PropertyType<Patch, 'v'>): Patch {
-    return new Patch(v)
-  }
+}
+export function patch(v: $PropertyType<Patch, 'v'>): Patch {
+  return new Patch(v)
 }
 
 export class Pith<A> {
@@ -16,9 +16,9 @@ export class Pith<A> {
   constructor(v: $PropertyType<Pith<A>, 'pith'>) {
     this.pith = v
   }
-  static of(v: $PropertyType<Pith<A>, 'pith'>): Pith<A> {
-    return new Pith(v)
-  }
+}
+export function pith<A>(v: $PropertyType<Pith<A>, 'pith'>): Pith<A> {
+  return new Pith(v)
 }
 
 export class PNode<A> {
@@ -34,13 +34,13 @@ export class PNode<A> {
     this.eq = eq
     this.spith = spith
   }
-  static of(
-    create: $PropertyType<PNode<A>, 'create'>,
-    eq: $PropertyType<PNode<A>, 'eq'>,
-    spith: $PropertyType<PNode<A>, 'spith'>
-  ): PNode<A> {
-    return new PNode(create, eq, spith)
-  }
+}
+export function pnode<A>(
+  create: $PropertyType<PNode<A>, 'create'>,
+  eq: $PropertyType<PNode<A>, 'eq'>,
+  spith: $PropertyType<PNode<A>, 'spith'>
+): PNode<A> {
+  return new PNode(create, eq, spith)
 }
 
 export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
@@ -57,7 +57,7 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
           p = p.merge(
             run(x.spith).map(x =>
               x instanceof Patch
-                ? Patch.of(parent => x.v(parent.childNodes[index]))
+                ? patch(parent => x.v(parent.childNodes[index]))
                 : x
             )
           )
@@ -66,7 +66,7 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
       return pnodes.length === 0
         ? p
         : p.startWith(
-            Patch.of(parent => {
+            patch(parent => {
               const pnodesLength = pnodes.length
               const childNodes = parent.childNodes
               for (var index = 0; index < pnodesLength; index++) {
