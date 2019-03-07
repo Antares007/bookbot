@@ -1,4 +1,4 @@
-// @flow strict
+// @flow strict-local
 import * as S from './stream'
 import * as P from './pnode'
 import { now, delay } from './scheduler'

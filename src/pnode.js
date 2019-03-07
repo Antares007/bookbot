@@ -1,5 +1,6 @@
 // @flow strict
 import * as S from './stream'
+import * as D from './disposable'
 
 type SS<A> = S.S<A> | A
 
@@ -14,7 +15,7 @@ export function patch(v: $PropertyType<Patch, 'v'>): Patch {
 }
 
 export class Pith<A> {
-  pith: ((PNode<A> | S.S<A>) => void) => void
+  pith: ((PNode<A> | S.S<A>) => void, S.S<Node>) => void
   constructor(v: $PropertyType<Pith<A>, 'pith'>) {
     this.pith = v
   }
@@ -54,23 +55,33 @@ export function pnode<A>(
 export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
   return S.switchLatest(
     spith.map(x => {
+      var on: ?Node
+      const os = []
       var p = S.empty()
       var pnodes: Array<PNode<A>> = []
-      x.pith(x => {
-        if (x instanceof S.S) {
-          p = p.merge(x)
-        } else {
-          const index = pnodes.length
-          pnodes.push(x)
-          p = p.merge(
-            run(x.piths).map(x =>
-              x instanceof Patch
-                ? patch(parent => x.v(parent.childNodes[index]))
-                : x
+      x.pith(
+        x => {
+          if (x instanceof S.S) {
+            p = p.merge(x)
+          } else {
+            const index = pnodes.length
+            pnodes.push(x)
+            p = p.merge(
+              run(x.piths).map(x =>
+                x instanceof Patch
+                  ? patch(parent => x.v(parent.childNodes[index]))
+                  : x
+              )
             )
-          )
-        }
-      })
+          }
+        },
+        S.s(o => {
+          if (on) {
+            o(on)
+            o(S.delay(() => o(S.end)))
+          } else os.push(o)
+        })
+      )
       return pnodes.length === 0
         ? p
         : p.startWith(
@@ -89,6 +100,14 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
               }
               for (var i = childNodes.length - 1; i >= pnodesLength; i--)
                 parent.removeChild(childNodes[i])
+              if (os.length === 0) return
+              os[0](
+                S.delay(() => {
+                  var o
+                  on = parent
+                  while ((o = os.shift())) o(on)
+                }, 1)
+              )
             })
           )
     })

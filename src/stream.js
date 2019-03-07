@@ -5,7 +5,7 @@ import * as D from './disposable'
 export { delay, now }
 
 export class End {}
-const end = new End()
+export const end = new End()
 
 export class S<A> {
   pith: ((A | Error | End | D.Disposable) => void) => void
@@ -26,6 +26,9 @@ export class S<A> {
   }
   map<B>(f: A => B): S<B> {
     return map(f, this)
+  }
+  flatMap<B>(f: A => S<B>): S<B> {
+    return flatMap(f, this)
   }
   filter(f: A => boolean): S<A> {
     return filter(f, this)
@@ -118,6 +121,43 @@ export const switchLatest = <A>(Hs: S<S<A>>): S<A> =>
         Hsd && Hsd.dispose()
         Esd && Esd.dispose()
       })
+    )
+  })
+
+export const flatMap = <A, B>(f: A => S<B>, as: S<A>): S<B> =>
+  s(o => {
+    const dmap = new Map()
+    o(
+      D.disposable(() => {
+        for (var e of dmap.entries()) e[1].dispose()
+      })
+    )
+    var i = 0
+    const index = i++
+    dmap.set(
+      index,
+      run(e => {
+        if (e instanceof Error) o(e)
+        else if (e instanceof End) {
+          dmap.delete(index)
+          if (dmap.size === 0) o(e)
+        } else {
+          const index = i++
+          dmap.set(
+            index,
+            run(e => {
+              if (e instanceof Error) o(e)
+              else if (e instanceof End) {
+                dmap.delete(index)
+                if (dmap.size === 0) o(e)
+              } else if (e instanceof Error) o(e)
+              else {
+                o(e)
+              }
+            }, f(e))
+          )
+        }
+      }, as)
     )
   })
 
