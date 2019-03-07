@@ -1,108 +1,215 @@
-// @flow strict-local
-import { S, Subject } from './stream'
-import * as n from './pnode'
-import { defaultScheduler } from './scheduler'
+// @flow strict
+import * as S from './stream'
+import * as P from './pnode'
 
-type SS<A> = S<A> | A
+type SS<A> = S.S<A> | A
 
-type Attr$Attribute = { type: 'attribute', v: { [string]: string } }
-type Attr$Style = { type: 'style', v: { [$Keys<CSSStyleDeclaration>]: string } }
-type Attr$On<Action> = { type: 'on', name: string, action: Event => Action }
-
-type Attr$Attribs<Action> = Array<
-  SS<Attr$Attribute | Attr$Style | Attr$On<Action>>
->
-
-export const attr = (v: { [string]: string }): Attr$Attribute => ({
-  type: 'attribute',
-  v
-})
-export const style = (v: {
-  [$Keys<CSSStyleDeclaration>]: string
-}): Attr$Style => ({
-  type: 'style',
-  v
-})
-export const on = <Action>(
-  name: string,
-  action: Event => Action
-): Attr$On<Action> => ({
-  type: 'on',
-  name,
-  action
-})
-
-type Pith<Action> = (
-  (SS<Elm$Text | Elm$Elm<Action>>) => void,
-  S<Action>
-) => void
-
-type Elm$Elm<Action> = {
-  type: 'element',
-  tag: string,
-  key?: string,
-  attrs: Attr$Attribs<Action>,
-  pith: Pith<Action>
+export class Attr {
+  map: { [string]: ?string }
+  constructor(map: $PropertyType<Attr, 'map'>) {
+    this.map = map
+  }
 }
-type Elm$Text = { type: 'text', text: string }
-type Elm$Pith<Action> = {
-  type: 'pith',
-  pith: Pith<Action>
+export function attr(map: $PropertyType<Attr, 'map'>): Attr {
+  return new Attr(map)
 }
 
-export const elm = <Action>(
+export class Style {
+  map: { [$Keys<CSSStyleDeclaration>]: ?string }
+  constructor(map: $PropertyType<Style, 'map'>) {
+    this.map = map
+  }
+}
+export function style(map: $PropertyType<Style, 'map'>): Style {
+  return new Style(map)
+}
+
+export class Action<A> {
+  map: { [MouseEventTypes | string]: ?(Event) => A }
+  constructor(map: $PropertyType<Action<A>, 'map'>) {
+    this.map = map
+  }
+}
+export function action<A>(map: $PropertyType<Action<A>, 'map'>): Action<A> {
+  return new Action(map)
+}
+
+export class Elm<A> {
+  tag: string
+  key: ?string
+  attrs: ?S.S<Attr>
+  styles: ?S.S<Style>
+  actions: ?S.S<Action<A>>
+  piths: S.S<Pith<A>>
+  constructor(
+    tag: $PropertyType<Elm<A>, 'tag'>,
+    key: $PropertyType<Elm<A>, 'key'>,
+    attrs: $PropertyType<Elm<A>, 'attrs'>,
+    styles: $PropertyType<Elm<A>, 'styles'>,
+    actions: $PropertyType<Elm<A>, 'actions'>,
+    piths: $PropertyType<Elm<A>, 'piths'>
+  ) {
+    this.tag = tag.toUpperCase()
+    this.key = key
+    this.attrs = attrs
+    this.styles = styles
+    this.actions = actions
+    this.piths = piths
+  }
+}
+export function elm<A>(
   tag: string,
-  attrs: Attr$Attribs<Action>,
-  pith: Pith<Action>,
+  attrsList: Array<SS<Attr | Style | Action<A>>>,
+  piths: SS<$PropertyType<Pith<A>, 'pith'> | Pith<A>>,
   key?: string
-): Elm$Elm<Action> => ({
-  type: 'element',
-  tag: tag.toUpperCase(),
-  attrs,
-  pith,
-  key
-})
-export const text = (text: string): Elm$Text => ({ type: 'text', text })
-export const pith = <Action>(pith: Pith<Action>): Elm$Pith<Action> => ({
-  type: 'pith',
-  pith
-})
+): Elm<A> {
+  const piths_ = (piths instanceof S.S ? piths : S.at(piths)).map(x =>
+    x instanceof Pith ? x : pith(x)
+  )
+  if (attrsList.length === 0)
+    return new Elm<A>(tag, key, null, null, null, piths_)
 
-export function run<Action>(pith: SS<Elm$Pith<Action>>): S<(Node) => void> {
-  const proxy = new Subject()
-  const ring = (pith: Pith<Action>) =>
-    n.pith((o, l) =>
-      pith(v => {
-        o(
-          toS(v).map(v => {
-            if (v.type === 'text')
-              return n.node(
-                () => (document.createTextNode(v.text): Node),
-                n => n.nodeName === '#text',
-                n => {
-                  if (n.textContent === text) n.textContent = v.text
-                }
-              )
-            return n.node(
+  var s: ?S.S<Attr | Style | Action<A>>
+  var attrMap: $PropertyType<Attr, 'map'> = {}
+  var attrs: ?S.S<Attr>
+  var styleMap: $PropertyType<Style, 'map'> = {}
+  var styles: ?S.S<Style>
+  var actionMap: $PropertyType<Action<A>, 'map'> = {}
+  var actions: ?S.S<Action<A>>
+  for (var x of attrsList) {
+    if (x instanceof S.S) {
+      s = s ? S.merge(s, x) : x
+    } else if (x instanceof Attr) {
+      attrMap = { ...attrMap, ...x.map }
+      if (!attrs) attrs = S.at(attr({}))
+    } else if (x instanceof Style) {
+      styleMap = { ...styleMap, ...x.map }
+      if (!styles) styles = S.at(style({}))
+    } else {
+      actionMap = { ...actionMap, ...x.map }
+      if (!actions) actions = S.at(action({}))
+    }
+  }
+  attrs =
+    attrs && s
+      ? attrs.merge(s.filter2(x => (x instanceof Attr ? x : null)))
+      : s != null
+      ? s.filter2(x => (x instanceof Attr ? x : null))
+      : attrs
+  styles =
+    styles && s
+      ? styles.merge(s.filter2(x => (x instanceof Style ? x : null)))
+      : s != null
+      ? s.filter2(x => (x instanceof Style ? x : null))
+      : styles
+  actions =
+    actions && s
+      ? actions.merge(s.filter2(x => (x instanceof Action ? x : null)))
+      : s != null
+      ? s.filter2(x => (x instanceof Action ? x : null))
+      : actions
+  return new Elm<A>(
+    tag,
+    key,
+    attrs ? attrs.map(x => attr({ ...x.map, ...attrMap })) : null,
+    styles ? styles.map(x => style({ ...x.map, ...styleMap })) : null,
+    actions ? actions.map(x => action({ ...x.map, ...actionMap })) : null,
+    piths_
+  )
+}
+
+export class Str {
+  texts: S.S<string>
+  constructor(texts: $PropertyType<Str, 'texts'>) {
+    this.texts = texts
+  }
+}
+export function str(x: SS<string>): Str {
+  return new Str(x instanceof S.S ? x : S.at(x))
+}
+
+export class Pith<A> {
+  pith: ((Elm<A> | Str) => void, S.S<A>) => void
+  constructor(pith: $PropertyType<Pith<A>, 'pith'>) {
+    this.pith = pith
+  }
+}
+export function pith<A>(pith: $PropertyType<Pith<A>, 'pith'>): Pith<A> {
+  return new Pith<A>(pith)
+}
+
+export function run<A>(piths: SS<Pith<A>>): S.S<P.Patch> {
+  const ring = (pith: Pith<A>) =>
+    P.pith(o => {
+      pith.pith(v => {
+        if (v instanceof Str) {
+          o(
+            P.pnode(
+              () => document.createTextNode(''),
+              n => n.nodeName === '#text',
+              o =>
+                o(
+                  v.texts.map(text =>
+                    P.patch(n => {
+                      n.textContent = text
+                    })
+                  )
+                )
+            )
+          )
+        } else {
+          o(
+            P.pnode(
               () => {
                 const elm = document.createElement(v.tag)
-                if (v.key != null) elm.dataset.key = v.key
-                return (elm: Node)
+                if (v.key) elm.dataset.key = v.key
+                return elm
               },
-              elm =>
-                elm.nodeName === v.tag &&
+              n =>
+                n.nodeName === v.tag &&
                 (v.key == null ||
-                  (elm instanceof HTMLElement && elm.dataset.key === v.key)),
-              n.run(ring(v.pith))
+                  (n instanceof HTMLElement && n.dataset.key === v.key)),
+              v.piths.map(ring).map(pith => o => {
+                if (v.actions) {
+                  var actionMap = {}
+                  const mkListener = (
+                    toAction: (e: Event) => A
+                  ): (Event => void) & { toAction(Event): A } => {
+                    handler.toAction = toAction
+                    return handler
+                    function handler(e: Event) {
+                      console.log('Event', handler.toAction(e))
+                    }
+                  }
+                  o(
+                    v.actions.map(({ map }) =>
+                      P.patch(node => {
+                        for (var key in actionMap)
+                          if (map[key] == null) {
+                            node.removeEventListener(key, actionMap[key])
+                            delete actionMap[key]
+                          }
+                        for (var key in map)
+                          if (actionMap[key] == null && map[key] != null) {
+                            const l = mkListener(map[key])
+                            node.addEventListener(key, l)
+                            actionMap[key] = l
+                          } else if (
+                            actionMap[key] != null &&
+                            map[key] != null
+                          ) {
+                            actionMap[key].toAction = map[key]
+                          }
+                      })
+                    )
+                  )
+                }
+                pith.pith(o)
+              })
             )
-          })
-        )
-      }, proxy)
-    )
-  let see = n.run(toS(pith).map(pith => ring(pith.pith)))
-  return see
-}
-
-function toS<A>(ss: S<A> | A): S<A> {
-  return ss instanceof S ? ss : S.at(ss)
+          )
+        }
+      }, S.empty())
+    })
+  return P.run(piths instanceof S.S ? piths.map(ring) : S.at(ring(piths)))
 }

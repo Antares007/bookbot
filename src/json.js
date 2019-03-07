@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import { S } from './stream'
 import * as s from './stream'
 

@@ -1,7 +1,7 @@
 // @flow strict
-import * as S from './stream2'
-import * as P from './pnode2'
-import { now, delay } from './scheduler2'
+import * as S from './stream'
+import * as P from './pnode'
+import { now, delay } from './scheduler'
 
 const elm = (tag: string, xpith) =>
   P.pnode(

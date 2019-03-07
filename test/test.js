@@ -3,7 +3,7 @@ import type { A } from '../src/atest'
 import { run } from '../src/atest'
 import { join } from 'path'
 
-const tests = ['scheduler.js', 'stream.js']
+const tests = ['scheduler.js']
 run(({ fullname, error }) => {
   if (!error) process.stdout.write('.')
   else {

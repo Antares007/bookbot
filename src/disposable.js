@@ -1,26 +1,17 @@
 // @flow strict
-export type Disposable = { dispose: () => void }
-
-export function create(f: () => void): Disposable {
-  var disposed = false
-  return {
-    dispose: () => {
-      if (disposed) return
-      f()
-      disposed = true
-    }
+export class Disposable {
+  dispose: () => void
+  constructor(dispose: $PropertyType<Disposable, 'dispose'>) {
+    this.dispose = dispose
+  }
+  dispose(): void {
+    this.dispose()
   }
 }
-
-export function mappend(...lr: Array<Disposable>): Disposable {
-  if (lr.length === 1) return lr[0]
-  return {
-    dispose: () => {
-      for (var d of lr) d.dispose()
-    }
-  }
+export function disposable(
+  dispose: $PropertyType<Disposable, 'dispose'>
+): Disposable {
+  return new Disposable(dispose)
 }
 
-export const empty: Disposable = {
-  dispose: () => {}
-}
+export const empty: Disposable = new Disposable(() => {})

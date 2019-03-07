@@ -1,31 +1,33 @@
 // @flow
-import { S, event } from './stream'
+import * as S from './stream'
+import * as D from './disposable'
+
 export type On = {
-  (MouseEventTypes): S<MouseEvent>,
-  (FocusEventTypes): S<FocusEvent>,
-  (KeyboardEventTypes): S<KeyboardEvent>,
-  (InputEventTypes): S<InputEvent>,
-  (TouchEventTypes): S<TouchEvent>,
-  (WheelEventTypes): S<WheelEvent>,
-  (AbortProgressEventTypes): S<ProgressEvent>,
-  (ProgressEventTypes): S<ProgressEvent>,
-  (DragEventTypes): S<DragEvent>,
-  (PointerEventTypes): S<PointerEvent>,
-  (AnimationEventTypes): S<AnimationEvent>,
-  (ClipboardEventTypes): S<ClipboardEvent>,
-  (TransitionEventTypes): S<TransitionEvent>,
-  (MessageEventTypes): S<MessageEvent>,
-  (string): S<Event>
+  (MouseEventTypes): S.S<MouseEvent>,
+  (FocusEventTypes): S.S<FocusEvent>,
+  (KeyboardEventTypes): S.S<KeyboardEvent>,
+  (InputEventTypes): S.S<InputEvent>,
+  (TouchEventTypes): S.S<TouchEvent>,
+  (WheelEventTypes): S.S<WheelEvent>,
+  (AbortProgressEventTypes): S.S<ProgressEvent>,
+  (ProgressEventTypes): S.S<ProgressEvent>,
+  (DragEventTypes): S.S<DragEvent>,
+  (PointerEventTypes): S.S<PointerEvent>,
+  (AnimationEventTypes): S.S<AnimationEvent>,
+  (ClipboardEventTypes): S.S<ClipboardEvent>,
+  (TransitionEventTypes): S.S<TransitionEvent>,
+  (MessageEventTypes): S.S<MessageEvent>,
+  (string): S.S<Event>
 }
 
-export const mkOn = (elm: EventTarget): On => (name: string): S<any> => {
-  return S.of((o, schdlr) => {
-    const listener = (e: Event) => o(event(schdlr.now(), e))
+export const mkOn = (elm: EventTarget): On => (name: string): S.S<any> => {
+  return S.s(o => {
+    const listener = (e: Event) => o(e)
     elm.addEventListener(name, listener)
-    return {
-      dispose() {
+    o(
+      D.disposable(() => {
         elm.removeEventListener(name, listener)
-      }
-    }
+      })
+    )
   })
 }

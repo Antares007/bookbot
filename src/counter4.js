@@ -1,8 +1,8 @@
 // @flow strict
-import * as S from './stream2'
-import * as P from './pnode2'
-import * as D from './dom2'
-import { now, delay } from './scheduler2.js'
+import * as S from './stream'
+import * as P from './pnode'
+import * as D from './dom'
+import { now, delay } from './scheduler'
 
 const btn = (a, pith) => D.elm('button', [D.action({ click: e => a })], pith)
 const Counter = (d: number) =>

@@ -1,93 +1,96 @@
 // @flow strict
-import { S, event, Subject } from './stream'
+import * as S from './stream'
 
-type Pith<N> = (
-  (S<PNode$Node<N>> | PNode$Node<N>) => void,
-  S<['mount', N] | ['unmount']>
-) => void
+type SS<A> = S.S<A> | A
 
-export type PNode$Pith<N> = {
-  type: 'pith',
-  pith: Pith<N>
+export class Patch {
+  v: Node => void
+  constructor(v: $PropertyType<Patch, 'v'>) {
+    this.v = v
+  }
+}
+export function patch(v: $PropertyType<Patch, 'v'>): Patch {
+  return new Patch(v)
 }
 
-export type PNode$Node<N> = {
-  type: 'node',
-  create: () => N,
-  eq: N => boolean,
-  patch: S<(N) => void> | (N => void)
+export class Pith<A> {
+  pith: ((PNode<A> | S.S<A>) => void) => void
+  constructor(v: $PropertyType<Pith<A>, 'pith'>) {
+    this.pith = v
+  }
+}
+export function pith<A>(v: $PropertyType<Pith<A>, 'pith'>): Pith<A> {
+  return new Pith(v)
 }
 
-export const node = <N>(
-  create: () => N,
-  eq: N => boolean,
-  patch: S<(N) => void> | (N => void)
-): PNode$Node<N> => ({ type: 'node', create, eq, patch })
-
-export const pith = <N>(pith: Pith<N>): PNode$Pith<N> => ({
-  type: 'pith',
-  pith
-})
-
-export function run<N: Node>(
-  pith: S<PNode$Pith<N>> | PNode$Pith<N>
-): S<(N) => void> {
-  return pith instanceof S ? S.switchLatest(pith.map(p1)) : p1(pith)
+export class PNode<A> {
+  create: () => Node
+  eq: Node => boolean
+  piths: S.S<Pith<A>>
+  constructor(
+    create: $PropertyType<PNode<A>, 'create'>,
+    eq: $PropertyType<PNode<A>, 'eq'>,
+    piths: $PropertyType<PNode<A>, 'piths'>
+  ) {
+    this.create = create
+    this.eq = eq
+    this.piths = piths
+  }
 }
-
-function p1<N: Node>(pith: PNode$Pith<N>): S<(N) => void> {
-  const proxy = new Subject()
-  const patches: Array<S<(N) => void>> = []
-  var i = 0
-  pith.pith(pnode => {
-    const index = i++
-    patches.push(
-      pnode instanceof S
-        ? S.switchLatest(pnode.map(pnode => p2(index, pnode)))
-        : p2(index, pnode)
+export function pnode<A>(
+  create: $PropertyType<PNode<A>, 'create'>,
+  eq: $PropertyType<PNode<A>, 'eq'>,
+  piths: SS<$PropertyType<Pith<A>, 'pith'> | Pith<A>>
+): PNode<A> {
+  return new PNode(
+    create,
+    eq,
+    (piths instanceof S.S ? piths : S.at(piths)).map(x =>
+      x instanceof Pith ? x : pith(x)
     )
-  }, proxy)
-  patches.push(
-    S.at(parent => {
-      for (var j = parent.childNodes.length - 1; j >= i; j--)
-        parent.removeChild(parent.childNodes[j])
-    })
   )
-  const empty = []
-  var lastPatches = empty
-  return new S((o, schdlr) => {
-    const d = S.combine(
-      (...array) => parent => {
-        if (lastPatches === empty)
-          schdlr.delay(0, t => proxy.o(event(t, ['mount', parent])))
-        var i = 0
-        const l = array.length
-        for (; i < l; i++) if (array[i] !== lastPatches[i]) break
-        for (; i < l; i++) array[i](parent)
-        lastPatches = array
-      },
-      ...patches
-    ).f(o, schdlr)
-    return {
-      dispose() {
-        d.dispose()
-        schdlr.delay(0, t => proxy.o(event(t, ['unmount'])))
-      }
-    }
-  })
 }
 
-function p2<N: Node>(index: number, vnode: PNode$Node<N>): S<(N) => void> {
-  return (vnode.patch instanceof S ? vnode.patch : S.at(vnode.patch)).map(
-    p => parent => {
-      var li: ?N
-      for (var i = index, l = parent.childNodes.length; i < l; i++)
-        if (vnode.eq((li = parent.childNodes[i]))) break
-        else li = null
-      if (li == null)
-        li = parent.insertBefore(vnode.create(), parent.childNodes[index])
-      else if (i !== index) parent.insertBefore(li, parent.childNodes[index])
-      p(li)
-    }
+export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
+  return S.switchLatest(
+    spith.map(x => {
+      var p = S.empty()
+      var pnodes: Array<PNode<A>> = []
+      x.pith(x => {
+        if (x instanceof S.S) {
+          p = p.merge(x)
+        } else {
+          const index = pnodes.length
+          pnodes.push(x)
+          p = p.merge(
+            run(x.piths).map(x =>
+              x instanceof Patch
+                ? patch(parent => x.v(parent.childNodes[index]))
+                : x
+            )
+          )
+        }
+      })
+      return pnodes.length === 0
+        ? p
+        : p.startWith(
+            patch(parent => {
+              const pnodesLength = pnodes.length
+              const childNodes = parent.childNodes
+              for (var index = 0; index < pnodesLength; index++) {
+                const pi = pnodes[index]
+                var li: ?Node
+                for (var i = index, l = childNodes.length; i < l; i++)
+                  if (pi.eq((li = parent.childNodes[i]))) break
+                  else li = null
+                if (li == null)
+                  parent.insertBefore(pi.create(), childNodes[index])
+                else if (i !== index) parent.insertBefore(li, childNodes[index])
+              }
+              for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+                parent.removeChild(childNodes[i])
+            })
+          )
+    })
   )
 }
