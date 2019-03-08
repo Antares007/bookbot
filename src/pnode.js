@@ -4,30 +4,30 @@ import * as D from './disposable'
 
 type SS<A> = S.S<A> | A
 
-export class Patch {
+export class PPatch {
   v: Node => void
-  constructor(v: $PropertyType<Patch, 'v'>) {
+  constructor(v: $PropertyType<PPatch, 'v'>) {
     this.v = v
   }
 }
-export function patch(v: $PropertyType<Patch, 'v'>): Patch {
-  return new Patch(v)
+export function patch(v: $PropertyType<PPatch, 'v'>): PPatch {
+  return new PPatch(v)
 }
 
-export class Pith<A> {
+export class PPith<A> {
   pith: ((PNode<A> | S.S<A>) => void, S.S<Node>) => void
-  constructor(v: $PropertyType<Pith<A>, 'pith'>) {
+  constructor(v: $PropertyType<PPith<A>, 'pith'>) {
     this.pith = v
   }
 }
-export function pith<A>(v: $PropertyType<Pith<A>, 'pith'>): Pith<A> {
-  return new Pith(v)
+export function pith<A>(v: $PropertyType<PPith<A>, 'pith'>): PPith<A> {
+  return new PPith(v)
 }
 
 export class PNode<A> {
   create: () => Node
   eq: Node => boolean
-  piths: S.S<Pith<A>>
+  piths: S.S<PPith<A>>
   constructor(
     create: $PropertyType<PNode<A>, 'create'>,
     eq: $PropertyType<PNode<A>, 'eq'>,
@@ -38,21 +38,21 @@ export class PNode<A> {
     this.piths = piths
   }
 }
-export function pnode<A>(
+export function node<A>(
   create: $PropertyType<PNode<A>, 'create'>,
   eq: $PropertyType<PNode<A>, 'eq'>,
-  piths: SS<$PropertyType<Pith<A>, 'pith'> | Pith<A>>
+  piths: SS<$PropertyType<PPith<A>, 'pith'> | PPith<A>>
 ): PNode<A> {
   return new PNode(
     create,
     eq,
     (piths instanceof S.S ? piths : S.at(piths)).map(x =>
-      x instanceof Pith ? x : pith(x)
+      x instanceof PPith ? x : pith(x)
     )
   )
 }
 
-export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
+export function run<A>(spith: S.S<PPith<A>>): S.S<PPatch | A> {
   return S.switchLatest(
     spith.map(x => {
       var on: ?Node
@@ -73,7 +73,7 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
           pnodes.push(x)
           p = p.merge(
             run(x.piths).map(x =>
-              x instanceof Patch
+              x instanceof PPatch
                 ? patch(parent => x.v(parent.childNodes[index]))
                 : x
             )

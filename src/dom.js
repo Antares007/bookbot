@@ -6,14 +6,14 @@ import { mkOn } from './on'
 
 type SS<A> = S.S<A> | A
 
-export class Elm<A> {
+export class DElm<A> {
   tag: string
   key: ?string
   piths: S.S<Pith<A>>
   constructor(
-    tag: $PropertyType<Elm<A>, 'tag'>,
-    key: $PropertyType<Elm<A>, 'key'>,
-    piths: $PropertyType<Elm<A>, 'piths'>
+    tag: $PropertyType<DElm<A>, 'tag'>,
+    key: $PropertyType<DElm<A>, 'key'>,
+    piths: $PropertyType<DElm<A>, 'piths'>
   ) {
     this.tag = tag.toUpperCase()
     this.key = key
@@ -24,25 +24,25 @@ export function elm<A>(
   tag: string,
   piths: SS<$PropertyType<Pith<A>, 'pith'> | Pith<A>>,
   key?: string
-): Elm<A> {
+): DElm<A> {
   const piths_ = (piths instanceof S.S ? piths : S.at(piths)).map(x =>
     x instanceof Pith ? x : pith(x)
   )
-  return new Elm<A>(tag, key, piths_)
+  return new DElm<A>(tag, key, piths_)
 }
 
-export class Str {
+export class DStr {
   texts: S.S<string>
-  constructor(texts: $PropertyType<Str, 'texts'>) {
+  constructor(texts: $PropertyType<DStr, 'texts'>) {
     this.texts = texts
   }
 }
-export function str(x: SS<string>): Str {
-  return new Str(x instanceof S.S ? x : S.at(x))
+export function str(x: SS<string>): DStr {
+  return new DStr(x instanceof S.S ? x : S.at(x))
 }
 
 export class Pith<A> {
-  pith: ((Elm<A> | Str | S.S<A>) => void, S.S<On>) => void
+  pith: ((DElm<A> | DStr | S.S<A>) => void, S.S<On>) => void
   constructor(pith: $PropertyType<Pith<A>, 'pith'>) {
     this.pith = pith
   }
@@ -51,7 +51,7 @@ export function pith<A>(pith: $PropertyType<Pith<A>, 'pith'>): Pith<A> {
   return new Pith<A>(pith)
 }
 
-export function run<A>(piths: SS<Pith<A>>): S.S<P.Patch | A> {
+export function run<A>(piths: SS<Pith<A>>): S.S<P.PPatch | A> {
   var O
   const proxy = S.s(o_ => {
     O = o_
@@ -59,9 +59,9 @@ export function run<A>(piths: SS<Pith<A>>): S.S<P.Patch | A> {
   const ring = (pith: Pith<A>) =>
     P.pith((o, ns) => {
       pith.pith(v => {
-        if (v instanceof Str) {
+        if (v instanceof DStr) {
           o(
-            P.pnode(
+            P.node(
               () => document.createTextNode(''),
               n => n.nodeName === '#text',
               o =>
@@ -74,9 +74,9 @@ export function run<A>(piths: SS<Pith<A>>): S.S<P.Patch | A> {
                 )
             )
           )
-        } else if (v instanceof Elm) {
+        } else if (v instanceof DElm) {
           o(
-            P.pnode(
+            P.node(
               () => {
                 const elm = document.createElement(v.tag)
                 if (v.key) elm.dataset.key = v.key

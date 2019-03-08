@@ -38,7 +38,7 @@ const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
 D.run(D.pith(o => o(Counter(1))))
-  .filter2(x => (x instanceof P.Patch ? x : null))
+  .filter2(x => (x instanceof P.PPatch ? x : null))
   .map(p => p.v(rootNode))
   .run(e => {
     if (e instanceof Error) console.error(e)

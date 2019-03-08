@@ -4,13 +4,13 @@ import * as P from './pnode'
 import { now, delay } from './scheduler'
 
 const elm = (tag: string, xpith) =>
-  P.pnode(
+  P.node(
     () => document.createElement(tag),
     n => n.nodeName === tag.toUpperCase(),
     xpith
   )
 const text = (stext: S.S<string>) =>
-  P.pnode(
+  P.node(
     () => document.createTextNode(''),
     n => n.nodeName === '#text',
     S.at(
@@ -58,7 +58,7 @@ const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 const patches = []
 P.run(S.at(P.pith(o => o(counter(3)))))
-  .filter2(x => (x instanceof P.Patch ? x : null))
+  .filter2(x => (x instanceof P.PPatch ? x : null))
   .run(e => {
     if (e instanceof Error) throw e
     else if (e instanceof S.End) {
