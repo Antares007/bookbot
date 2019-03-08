@@ -57,31 +57,29 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
     spith.map(x => {
       var on: ?Node
       const os = []
+      const proxy = o => {
+        if (on) {
+          const on_ = on
+          o(S.delay(() => o(on_), o(S.delay(() => o(S.end)))))
+        } else os.push(o)
+      }
       var p = S.empty()
       var pnodes: Array<PNode<A>> = []
-      x.pith(
-        x => {
-          if (x instanceof S.S) {
-            p = p.merge(x)
-          } else {
-            const index = pnodes.length
-            pnodes.push(x)
-            p = p.merge(
-              run(x.piths).map(x =>
-                x instanceof Patch
-                  ? patch(parent => x.v(parent.childNodes[index]))
-                  : x
-              )
+      x.pith(x => {
+        if (x instanceof S.S) {
+          p = p.merge(x)
+        } else {
+          const index = pnodes.length
+          pnodes.push(x)
+          p = p.merge(
+            run(x.piths).map(x =>
+              x instanceof Patch
+                ? patch(parent => x.v(parent.childNodes[index]))
+                : x
             )
-          }
-        },
-        S.s(o => {
-          if (on) {
-            o(on)
-            o(S.delay(() => o(S.end)))
-          } else os.push(o)
-        })
-      )
+          )
+        }
+      }, S.s(proxy))
       return pnodes.length === 0
         ? p
         : p.startWith(
@@ -103,9 +101,12 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
               if (os.length === 0) return
               os[0](
                 S.delay(() => {
-                  var o
                   on = parent
-                  while ((o = os.shift())) o(on)
+                  const rec = () => {
+                    var o
+                    if ((o = os.shift())) o(parent), o(S.delay(rec))
+                  }
+                  rec()
                 }, 1)
               )
             })
