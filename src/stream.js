@@ -50,6 +50,9 @@ export class S<A> {
   multicast(): S<A> {
     return multicast(this)
   }
+  skipEquals(): S<A> {
+    return skipEquals(this)
+  }
 }
 export function s<A>(pith: $PropertyType<S<A>, 'pith'>): S<A> {
   return new S(pith)
@@ -329,5 +332,20 @@ export const multicast = <A>(as: S<A>): S<A> => {
         if (os.length === 0 && d) d = d.dispose()
       })
     )
+  })
+}
+
+export const skipEquals = <A>(as: S<A>): S<A> => {
+  var last: A
+  return s(o => {
+    as.pith(e => {
+      if (e instanceof Error || e instanceof End || e instanceof D.Disposable)
+        o(e)
+      else {
+        if (last === e) return
+        last = e
+        o(e)
+      }
+    })
   })
 }
