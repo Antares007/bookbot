@@ -9,7 +9,7 @@ type SS<A> = S.S<A> | A
 export class DElm<A> {
   tag: string
   key: ?string
-  piths: S.S<Pith<A>>
+  piths: S.S<DPith<A>>
   constructor(
     tag: $PropertyType<DElm<A>, 'tag'>,
     key: $PropertyType<DElm<A>, 'key'>,
@@ -22,11 +22,11 @@ export class DElm<A> {
 }
 export function elm<A>(
   tag: string,
-  piths: SS<$PropertyType<Pith<A>, 'pith'> | Pith<A>>,
+  piths: SS<$PropertyType<DPith<A>, 'pith'> | DPith<A>>,
   key?: string
 ): DElm<A> {
   const piths_ = (piths instanceof S.S ? piths : S.at(piths)).map(x =>
-    x instanceof Pith ? x : pith(x)
+    x instanceof DPith ? x : pith(x)
   )
   return new DElm<A>(tag, key, piths_)
 }
@@ -41,22 +41,22 @@ export function str(x: SS<string>): DStr {
   return new DStr(x instanceof S.S ? x : S.at(x))
 }
 
-export class Pith<A> {
+export class DPith<A> {
   pith: ((DElm<A> | DStr | S.S<A>) => void, S.S<On>) => void
-  constructor(pith: $PropertyType<Pith<A>, 'pith'>) {
+  constructor(pith: $PropertyType<DPith<A>, 'pith'>) {
     this.pith = pith
   }
 }
-export function pith<A>(pith: $PropertyType<Pith<A>, 'pith'>): Pith<A> {
-  return new Pith<A>(pith)
+export function pith<A>(pith: $PropertyType<DPith<A>, 'pith'>): DPith<A> {
+  return new DPith<A>(pith)
 }
 
-export function run<A>(piths: SS<Pith<A>>): S.S<P.PPatch | A> {
+export function run<A>(piths: SS<DPith<A>>): S.S<P.PPatch | A> {
   var O
   const proxy = S.s(o_ => {
     O = o_
   })
-  const ring = (pith: Pith<A>) =>
+  const ring = (pith: DPith<A>) =>
     P.pith((o, ns) => {
       pith.pith(v => {
         if (v instanceof DStr) {
@@ -86,9 +86,7 @@ export function run<A>(piths: SS<Pith<A>>): S.S<P.PPatch | A> {
                 n.nodeName === v.tag &&
                 (v.key == null ||
                   (n instanceof HTMLElement && n.dataset.key === v.key)),
-              v.piths.map(ring).map(p => (o, ns) => {
-                p.pith(o, ns)
-              })
+              v.piths.map(ring)
             )
           )
         } else {
