@@ -1,8 +1,7 @@
-// @flow strict-local
+// @flow strict
 import * as S from './stream'
 import * as P from './pnode'
-import type { On } from './on'
-import { mkOn } from './on'
+import { On } from './on'
 
 type SS<A> = S.S<A> | A
 
@@ -52,10 +51,6 @@ export function pith<A>(pith: $PropertyType<DPith<A>, 'pith'>): DPith<A> {
 }
 
 export function run<A>(piths: SS<DPith<A>>): S.S<P.PPatch | A> {
-  var O
-  const proxy = S.s(o_ => {
-    O = o_
-  })
   const ring = (pith: DPith<A>) =>
     P.pith((o, ns) => {
       pith.pith(v => {
@@ -90,39 +85,9 @@ export function run<A>(piths: SS<DPith<A>>): S.S<P.PPatch | A> {
             )
           )
         } else {
-          o(v.map((a: A) => a))
+          o(v.map(a => a))
         }
-      }, ns.map(mkOn))
+      }, ns.map(node => new On(node)))
     })
   return P.run(piths instanceof S.S ? piths.map(ring) : S.at(ring(piths)))
 }
-
-// export class Attr {
-//   map: { [string]: ?string }
-//   constructor(map: $PropertyType<Attr, 'map'>) {
-//     this.map = map
-//   }
-// }
-// export function attr(map: $PropertyType<Attr, 'map'>): Attr {
-//   return new Attr(map)
-// }
-//
-// export class Style {
-//   map: { [$Keys<CSSStyleDeclaration>]: ?string }
-//   constructor(map: $PropertyType<Style, 'map'>) {
-//     this.map = map
-//   }
-// }
-// export function style(map: $PropertyType<Style, 'map'>): Style {
-//   return new Style(map)
-// }
-//
-// export class Action<A> {
-//   map: { [MouseEventTypes | string]: ?(Event) => A }
-//   constructor(map: $PropertyType<Action<A>, 'map'>) {
-//     this.map = map
-//   }
-// }
-// export function action<A>(map: $PropertyType<Action<A>, 'map'>): Action<A> {
-//   return new Action(map)
-// }

@@ -55,14 +55,14 @@ export function node<A>(
 export function run<A>(spith: S.S<PPith<A>>): S.S<PPatch | A> {
   return S.switchLatest(
     spith.map(x => {
-      var on: ?Node
-      const os = []
-      const proxy = o => {
-        if (on) {
-          const on_ = on
-          o(S.delay(() => o(on_), o(S.delay(() => o(S.end)))))
-        } else os.push(o)
-      }
+      var thisNode: ?Node
+      const proxy = S.s(o =>
+        o(
+          S.delay(() => {
+            thisNode && o(thisNode)
+          })
+        )
+      )
       var p = S.empty()
       var pnodes: Array<PNode<A>> = []
       x.pith(x => {
@@ -79,7 +79,7 @@ export function run<A>(spith: S.S<PPith<A>>): S.S<PPatch | A> {
             )
           )
         }
-      }, S.s(proxy))
+      }, proxy)
       return pnodes.length === 0
         ? p
         : p.startWith(
@@ -98,17 +98,7 @@ export function run<A>(spith: S.S<PPith<A>>): S.S<PPatch | A> {
               }
               for (var i = childNodes.length - 1; i >= pnodesLength; i--)
                 parent.removeChild(childNodes[i])
-              if (os.length === 0) return
-              os[0](
-                S.delay(() => {
-                  on = parent
-                  const rec = () => {
-                    var o
-                    if ((o = os.shift())) o(parent), o(S.delay(rec))
-                  }
-                  rec()
-                }, 1)
-              )
+              thisNode = parent
             })
           )
     })
