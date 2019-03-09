@@ -22,7 +22,7 @@ export class DElm<A> {
 export function elm<A>(
   tag: string,
   piths: SS<$PropertyType<DPith<A>, 'pith'> | DPith<A>>,
-  key?: string
+  key?: ?string
 ): DElm<A> {
   const piths_ = (piths instanceof S.S ? piths : S.at(piths)).map(x =>
     x instanceof DPith ? x : pith(x)
@@ -40,8 +40,22 @@ export function str(x: SS<string>): DStr {
   return new DStr(x instanceof S.S ? x : S.at(x))
 }
 
+type O<A> = (DElm<A> | DStr | S.S<DR<A> | P.PPatch>) => void
+
+export function omap<A, B>(f: A => B, g: (A, B) => A, oa: O<A>): O<B> {
+  return (b: DElm<B> | DStr | S.S<DR<B> | P.PPatch>) => {
+    if (b instanceof S.S)
+      oa(b.map(x => (x instanceof DR ? r(s => g(s, x.r(f(s)))) : x)))
+    else if (b instanceof DElm)
+      oa(
+        elm(b.tag, b.piths.map(p => (o, s) => p.pith(omap(f, g, o), s)), b.key)
+      )
+    else oa(b)
+  }
+}
+
 export class DPith<A> {
-  pith: ((DElm<A> | DStr | S.S<A>) => void, S.S<On>) => void
+  pith: (O<A>, S.S<On>) => void
   constructor(pith: $PropertyType<DPith<A>, 'pith'>) {
     this.pith = pith
   }
@@ -50,7 +64,17 @@ export function pith<A>(pith: $PropertyType<DPith<A>, 'pith'>): DPith<A> {
   return new DPith<A>(pith)
 }
 
-export function run<A>(piths: SS<DPith<A>>): S.S<P.PPatch | A> {
+export class DR<A> {
+  r: A => A
+  constructor(r: $PropertyType<DR<A>, 'r'>) {
+    this.r = r
+  }
+}
+export function r<A>(r: $PropertyType<DR<A>, 'r'>): DR<A> {
+  return new DR(r)
+}
+
+export function run<A>(piths: SS<DPith<A>>): S.S<P.PPatch | DR<A>> {
   const ring = (pith: DPith<A>) =>
     P.pith((o, ns) => {
       pith.pith(v => {
