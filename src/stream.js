@@ -7,8 +7,10 @@ export { delay, now }
 export class End {}
 export const end = new End()
 
+type O<A> = (A | Error | End | D.Disposable) => void
+
 export class S<A> {
-  pith: ((A | Error | End | D.Disposable) => void) => void
+  pith: (O<A>) => void
   constructor(pith: $PropertyType<S<A>, 'pith'>) {
     this.pith = pith
   }
@@ -44,6 +46,9 @@ export class S<A> {
   }
   scan<B>(f: (B, A) => B, b: B): S<B> {
     return scan(f, b, this)
+  }
+  multicast(): S<A> {
+    return multicast(this)
   }
 }
 export function s<A>(pith: $PropertyType<S<A>, 'pith'>): S<A> {
@@ -302,6 +307,26 @@ export const scan = <A, B>(f: (B, A) => B, b: B, as: S<A>): S<B> => {
             else o((b_ = f(b_, e)))
           }, as)
         )
+      })
+    )
+  })
+}
+
+export const multicast = <A>(as: S<A>): S<A> => {
+  const os: Array<O<A>> = []
+  var d: ?D.Disposable
+  return s(o => {
+    if (d == null)
+      d = run(e => {
+        for (var o of os) o(e)
+      }, as)
+    os.push(o)
+    o(
+      D.disposable(() => {
+        var index = os.indexOf(o)
+        if (index < 0) return
+        os.splice(index, 1)
+        if (os.length === 0 && d) d = d.dispose()
       })
     )
   })
