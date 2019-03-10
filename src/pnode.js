@@ -60,7 +60,7 @@ export function run<A>(spith: S.S<PPith<A>>): S.S<PPatch | A> {
         o(
           S.delay(() => {
             thisNode && o(thisNode)
-          })
+          }, 1)
         )
       )
       var p = S.empty()

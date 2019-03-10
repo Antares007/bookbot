@@ -55,7 +55,7 @@ export function omap<A, B>(f: A => B, g: (A, B) => A, oa: O<A>): O<B> {
 }
 
 export class DPith<A> {
-  pith: (O<A>, S.S<On>) => void
+  pith: (O<A>, On) => void
   constructor(pith: $PropertyType<DPith<A>, 'pith'>) {
     this.pith = pith
   }
@@ -111,7 +111,7 @@ export function run<A>(piths: SS<DPith<A>>): S.S<P.PPatch | DR<A>> {
         } else {
           o(v.map(a => a))
         }
-      }, ns.map(node => new On(node)))
+      }, new On(ns))
     })
   return P.run(piths instanceof S.S ? piths.map(ring) : S.at(ring(piths)))
 }
