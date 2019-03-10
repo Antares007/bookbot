@@ -64,7 +64,7 @@ P.run(S.at(P.pith(o => o(counter(3)))))
         const p = patches.shift()
         if (p) {
           console.log(now() - t0)
-          p.v(rootNode)
+          p.value.v(rootNode)
           delay(run, 300)
         }
       }

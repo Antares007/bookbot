@@ -10,16 +10,18 @@ export class On {
   event(name: string): S.S<Event> {
     return this.ets.flatMap(et =>
       S.s(o => {
-        et.addEventListener(name, o)
-        o(D.disposable(() => et.removeEventListener(name, o)))
+        const handler = (e: Event) => o(S.event(e))
+        et.addEventListener(name, handler)
+        o(D.disposable(() => et.removeEventListener(name, handler)))
       })
     )
   }
   click(): S.S<MouseEvent> {
     return this.ets.flatMap(et =>
       S.s(o => {
-        et.addEventListener('click', o)
-        o(D.disposable(() => et.removeEventListener('click', o)))
+        const handler = (e: MouseEvent) => o(S.event(e))
+        et.addEventListener('click', handler)
+        o(D.disposable(() => et.removeEventListener('click', handler)))
       })
     )
   }

@@ -59,7 +59,7 @@ export function run(spith: S.S<PPith>): S.S<PPatch> {
       const proxy = S.s(o =>
         o(
           S.delay(() => {
-            thisNode && o(thisNode)
+            thisNode && o(S.event(thisNode))
           }, 1)
         )
       )
