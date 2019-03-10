@@ -14,35 +14,35 @@ export function patch(v: $PropertyType<PPatch, 'v'>): PPatch {
   return new PPatch(v)
 }
 
-export class PPith<A> {
-  pith: ((PNode<A> | S.S<A>) => void, S.S<Node>) => void
-  constructor(v: $PropertyType<PPith<A>, 'pith'>) {
+export class PPith {
+  pith: ((PNode | S.S<PPatch>) => void, S.S<Node>) => void
+  constructor(v: $PropertyType<PPith, 'pith'>) {
     this.pith = v
   }
 }
-export function pith<A>(v: $PropertyType<PPith<A>, 'pith'>): PPith<A> {
+export function pith(v: $PropertyType<PPith, 'pith'>): PPith {
   return new PPith(v)
 }
 
-export class PNode<A> {
+export class PNode {
   create: () => Node
   eq: Node => boolean
-  piths: S.S<PPith<A>>
+  piths: S.S<PPith>
   constructor(
-    create: $PropertyType<PNode<A>, 'create'>,
-    eq: $PropertyType<PNode<A>, 'eq'>,
-    piths: $PropertyType<PNode<A>, 'piths'>
+    create: $PropertyType<PNode, 'create'>,
+    eq: $PropertyType<PNode, 'eq'>,
+    piths: $PropertyType<PNode, 'piths'>
   ) {
     this.create = create
     this.eq = eq
     this.piths = piths
   }
 }
-export function node<A>(
-  create: $PropertyType<PNode<A>, 'create'>,
-  eq: $PropertyType<PNode<A>, 'eq'>,
-  piths: SS<$PropertyType<PPith<A>, 'pith'> | PPith<A>>
-): PNode<A> {
+export function node(
+  create: $PropertyType<PNode, 'create'>,
+  eq: $PropertyType<PNode, 'eq'>,
+  piths: SS<$PropertyType<PPith, 'pith'> | PPith>
+): PNode {
   return new PNode(
     create,
     eq,
@@ -52,7 +52,7 @@ export function node<A>(
   )
 }
 
-export function run<A>(spith: S.S<PPith<A>>): S.S<PPatch | A> {
+export function run(spith: S.S<PPith>): S.S<PPatch> {
   return S.switchLatest(
     spith.map(x => {
       var thisNode: ?Node
@@ -64,7 +64,7 @@ export function run<A>(spith: S.S<PPith<A>>): S.S<PPatch | A> {
         )
       )
       var p = S.empty()
-      var pnodes: Array<PNode<A>> = []
+      var pnodes: Array<PNode> = []
       x.pith(x => {
         if (x instanceof S.S) {
           p = p.merge(x)

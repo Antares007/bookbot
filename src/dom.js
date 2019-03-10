@@ -5,29 +5,29 @@ import { On } from './on'
 
 type SS<A> = S.S<A> | A
 
-export class DElm<A> {
+export class DElm {
   tag: string
   key: ?string
-  piths: S.S<DPith<A>>
+  piths: S.S<DPith>
   constructor(
-    tag: $PropertyType<DElm<A>, 'tag'>,
-    key: $PropertyType<DElm<A>, 'key'>,
-    piths: $PropertyType<DElm<A>, 'piths'>
+    tag: $PropertyType<DElm, 'tag'>,
+    key: $PropertyType<DElm, 'key'>,
+    piths: $PropertyType<DElm, 'piths'>
   ) {
     this.tag = tag.toUpperCase()
     this.key = key
     this.piths = piths
   }
 }
-export function elm<A>(
+export function elm(
   tag: string,
-  piths: SS<$PropertyType<DPith<A>, 'pith'> | DPith<A>>,
+  piths: SS<$PropertyType<DPith, 'pith'> | DPith>,
   key?: ?string
-): DElm<A> {
+): DElm {
   const piths_ = (piths instanceof S.S ? piths : S.at(piths)).map(x =>
     x instanceof DPith ? x : pith(x)
   )
-  return new DElm<A>(tag, key, piths_)
+  return new DElm(tag, key, piths_)
 }
 
 export class DStr {
@@ -40,18 +40,18 @@ export function str(x: SS<string>): DStr {
   return new DStr(x instanceof S.S ? x : S.at(x))
 }
 
-export class DPith<A> {
-  pith: ((DElm<A> | DStr | S.S<A | P.PPatch>) => void, On) => void
-  constructor(pith: $PropertyType<DPith<A>, 'pith'>) {
+export class DPith {
+  pith: ((DElm | DStr | S.S<P.PPatch>) => void, On) => void
+  constructor(pith: $PropertyType<DPith, 'pith'>) {
     this.pith = pith
   }
 }
-export function pith<A>(pith: $PropertyType<DPith<A>, 'pith'>): DPith<A> {
-  return new DPith<A>(pith)
+export function pith(pith: $PropertyType<DPith, 'pith'>): DPith {
+  return new DPith(pith)
 }
 
-export function run<A>(piths: SS<DPith<A>>): S.S<P.PPatch | A> {
-  const ring = (pith: DPith<A>) =>
+export function run(piths: SS<DPith>): S.S<P.PPatch> {
+  const ring = (pith: DPith) =>
     P.pith((o, ns) => {
       pith.pith(v => {
         if (v instanceof DStr) {
@@ -85,7 +85,7 @@ export function run<A>(piths: SS<DPith<A>>): S.S<P.PPatch | A> {
             )
           )
         } else {
-          o(v.map(a => a))
+          o(v)
         }
       }, new On(ns))
     })

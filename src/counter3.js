@@ -30,13 +30,10 @@ const counter = (d: number) =>
   elm(
     'div',
     P.pith(o => {
-      o(S.at(1))
       o(
         elm(
           'button',
           P.pith(o => {
-            o(S.at(''))
-
             o(text(S.at('+')))
             d > 0 && o(counter(d - 1))
           })

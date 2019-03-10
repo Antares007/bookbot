@@ -6,7 +6,6 @@ import { now, delay } from './scheduler'
 
 const Counter = (d: number) =>
   D.elm('div', (o, on) => {
-    o(S.at('a'))
     o(
       D.elm('button', (o, on) => {
         o(D.str('+'))
@@ -35,7 +34,6 @@ const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
 D.run(D.pith(o => o(Counter(1))))
-  .filter2(x => (x instanceof P.PPatch ? x : null))
   .map(x => x.v(rootNode))
   .skipEquals()
   .run(e => {
