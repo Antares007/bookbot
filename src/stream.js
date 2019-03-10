@@ -29,6 +29,9 @@ export class S<A> {
   map<B>(f: A => B): S<B> {
     return map(f, this)
   }
+  tap(f: A => void): S<A> {
+    return tap(f, this)
+  }
   flatMap<B>(f: A => S<B>): S<B> {
     return flatMap(f, this)
   }
@@ -241,6 +244,15 @@ export const map = <A, B>(f: A => B, as: S<A>): S<B> =>
       if (e instanceof Error || e instanceof End || e instanceof D.Disposable)
         o(e)
       else o(f(e))
+    })
+  )
+
+export const tap = <A>(f: A => void, as: S<A>): S<A> =>
+  s(o =>
+    as.pith(function S$tap(e) {
+      if (e instanceof Error || e instanceof End || e instanceof D.Disposable)
+        o(e)
+      else f(e), o(e)
     })
   )
 
