@@ -4,22 +4,23 @@ import * as P from './pnode'
 import { now, delay } from './scheduler'
 
 const elm = (tag: string, xpith) =>
-  P.node(
+  new P.PNode(
     () => document.createElement(tag),
     n => n.nodeName === tag.toUpperCase(),
     xpith
   )
 const text = (stext: S.S<string>) =>
-  P.node(
+  new P.PNode(
     () => document.createTextNode(''),
     n => n.nodeName === '#text',
     S.at(
-      P.pith(o =>
+      new P.Pith(o =>
         o(
-          stext.map(text =>
-            P.patch(n => {
-              n.textContent = text
-            })
+          stext.map(
+            text =>
+              new P.Patch(n => {
+                n.textContent = text
+              })
           )
         )
       )
@@ -29,11 +30,11 @@ const text = (stext: S.S<string>) =>
 const counter = (d: number) =>
   elm(
     'div',
-    P.pith(o => {
+    new P.Pith(o => {
       o(
         elm(
           'button',
-          P.pith(o => {
+          new P.Pith(o => {
             o(text(S.at('+')))
             d > 0 && o(counter(d - 1))
           })
@@ -42,7 +43,7 @@ const counter = (d: number) =>
       o(
         elm(
           'button',
-          P.pith(o => {
+          new P.Pith(o => {
             o(text(S.at('-')))
             d > 0 && o(counter(d - 1))
           })
@@ -54,8 +55,8 @@ const counter = (d: number) =>
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 const patches = []
-P.run(S.at(P.pith(o => o(counter(3)))))
-  .filter2(x => (x instanceof P.PPatch ? x : null))
+P.run(S.at(new P.Pith(o => o(counter(3)))))
+  .filter2(x => (x instanceof P.Patch ? x : null))
   .run(e => {
     if (e instanceof Error) throw e
     else if (e instanceof S.End) {
@@ -73,15 +74,3 @@ P.run(S.at(P.pith(o => o(counter(3)))))
       patches.push(e)
     }
   })
-
-// const t0 = now()
-// P.run(S.at(P.Pith(o => o(counter(3)))))
-//   .filter2(x => (x instanceof P.Patch ? x : null))
-//   .map(p => p.v(rootNode))
-//   .scan(a => a + 1, 0)
-//   .skip(1)
-//   .map(n => ({ n, t: now() - t0 }))
-//   .run(console.log.bind(console))
-
-// const s = S.take(3, S.skip(1, S.startWith(-1, S.periodic(1000))))
-// S.run(console.log.bind(console), s)

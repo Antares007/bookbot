@@ -2,57 +2,36 @@
 import * as S from './stream'
 import * as D from './disposable'
 
-type SS<A> = S.S<A> | A
-
-export class PPatch {
+export class Patch {
   v: Node => void
-  constructor(v: $PropertyType<PPatch, 'v'>) {
+  constructor(v: $PropertyType<Patch, 'v'>) {
     this.v = v
   }
 }
-export function patch(v: $PropertyType<PPatch, 'v'>): PPatch {
-  return new PPatch(v)
-}
 
-export class PPith {
-  pith: ((PNode | S.S<PPatch>) => void, S.S<Node>) => void
-  constructor(v: $PropertyType<PPith, 'pith'>) {
-    this.pith = v
+export class Pith<A> {
+  pith: ((PNode<A> | S.S<Patch | S.Event<A>>) => void, S.S<Node>) => void
+  constructor(pith: $PropertyType<Pith<A>, 'pith'>) {
+    this.pith = pith
   }
 }
-export function pith(v: $PropertyType<PPith, 'pith'>): PPith {
-  return new PPith(v)
-}
 
-export class PNode {
+export class PNode<A> {
   create: () => Node
   eq: Node => boolean
-  piths: S.S<PPith>
+  piths: S.S<Pith<A>>
   constructor(
-    create: $PropertyType<PNode, 'create'>,
-    eq: $PropertyType<PNode, 'eq'>,
-    piths: $PropertyType<PNode, 'piths'>
+    create: $PropertyType<PNode<A>, 'create'>,
+    eq: $PropertyType<PNode<A>, 'eq'>,
+    piths: $PropertyType<PNode<A>, 'piths'>
   ) {
     this.create = create
     this.eq = eq
     this.piths = piths
   }
 }
-export function node(
-  create: $PropertyType<PNode, 'create'>,
-  eq: $PropertyType<PNode, 'eq'>,
-  piths: SS<$PropertyType<PPith, 'pith'> | PPith>
-): PNode {
-  return new PNode(
-    create,
-    eq,
-    (piths instanceof S.S ? piths : S.at(piths)).map(x =>
-      x instanceof PPith ? x : pith(x)
-    )
-  )
-}
 
-export function run(spith: S.S<PPith>): S.S<PPatch> {
+export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | S.Event<A>> {
   return S.switchLatest(
     spith.map(x => {
       var thisNode: ?Node
@@ -64,7 +43,7 @@ export function run(spith: S.S<PPith>): S.S<PPatch> {
         )
       )
       var p = S.empty()
-      var pnodes: Array<PNode> = []
+      var pnodes: Array<PNode<A>> = []
       x.pith(x => {
         if (x instanceof S.S) {
           p = p.merge(x)
@@ -73,8 +52,8 @@ export function run(spith: S.S<PPith>): S.S<PPatch> {
           pnodes.push(x)
           p = p.merge(
             run(x.piths).map(x =>
-              x instanceof PPatch
-                ? patch(parent => x.v(parent.childNodes[index]))
+              x instanceof Patch
+                ? new Patch(parent => x.v(parent.childNodes[index]))
                 : x
             )
           )
@@ -83,7 +62,7 @@ export function run(spith: S.S<PPith>): S.S<PPatch> {
       return pnodes.length === 0
         ? p
         : p.startWith(
-            patch(parent => {
+            new Patch(parent => {
               const pnodesLength = pnodes.length
               const childNodes = parent.childNodes
               for (var index = 0; index < pnodesLength; index++) {

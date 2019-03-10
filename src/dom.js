@@ -3,75 +3,61 @@ import * as S from './stream'
 import * as P from './pnode'
 import { On } from './on'
 
-type SS<A> = S.S<A> | A
-
-export class DElm {
+export class Elm<A> {
   tag: string
   key: ?string
-  piths: S.S<DPith>
+  piths: S.S<Pith<A>>
   constructor(
-    tag: $PropertyType<DElm, 'tag'>,
-    key: $PropertyType<DElm, 'key'>,
-    piths: $PropertyType<DElm, 'piths'>
+    tag: $PropertyType<Elm<A>, 'tag'>,
+    key: $PropertyType<Elm<A>, 'key'>,
+    piths: $PropertyType<Elm<A>, 'piths'>
   ) {
     this.tag = tag.toUpperCase()
     this.key = key
     this.piths = piths
   }
 }
-export function elm(
-  tag: string,
-  piths: SS<$PropertyType<DPith, 'pith'> | DPith>,
-  key?: ?string
-): DElm {
-  const piths_ = (piths instanceof S.S ? piths : S.at(piths)).map(x =>
-    x instanceof DPith ? x : pith(x)
-  )
-  return new DElm(tag, key, piths_)
-}
 
-export class DStr {
+export class Str {
   texts: S.S<string>
-  constructor(texts: $PropertyType<DStr, 'texts'>) {
+  constructor(texts: $PropertyType<Str, 'texts'>) {
     this.texts = texts
   }
 }
-export function str(x: SS<string>): DStr {
-  return new DStr(x instanceof S.S ? x : S.at(x))
-}
 
-export class DPith {
-  pith: ((DElm | DStr | S.S<P.PPatch>) => void, On) => void
-  constructor(pith: $PropertyType<DPith, 'pith'>) {
+export class Pith<A> {
+  pith: ((Elm<A> | Str | S.S<P.Patch | S.Event<A>>) => void, On) => void
+  constructor(pith: $PropertyType<Pith<A>, 'pith'>) {
     this.pith = pith
   }
 }
-export function pith(pith: $PropertyType<DPith, 'pith'>): DPith {
-  return new DPith(pith)
-}
 
-export function run(piths: SS<DPith>): S.S<P.PPatch> {
-  const ring = (pith: DPith) =>
-    P.pith((o, ns) => {
+export function run<A>(piths: S.S<Pith<A>>): S.S<P.Patch | S.Event<A>> {
+  const ring = (pith: Pith<A>): P.Pith<A> =>
+    new P.Pith((o, ns) => {
       pith.pith(v => {
-        if (v instanceof DStr) {
+        if (v instanceof Str) {
           o(
-            P.node(
+            new P.PNode(
               () => document.createTextNode(''),
               n => n.nodeName === '#text',
-              o =>
-                o(
-                  v.texts.map(text =>
-                    P.patch(n => {
-                      n.textContent = text
-                    })
+              S.at(
+                new P.Pith(o =>
+                  o(
+                    v.texts.map(
+                      text =>
+                        new P.Patch(n => {
+                          n.textContent = text
+                        })
+                    )
                   )
                 )
+              )
             )
           )
-        } else if (v instanceof DElm) {
+        } else if (v instanceof Elm) {
           o(
-            P.node(
+            new P.PNode(
               () => {
                 const elm = document.createElement(v.tag)
                 if (v.key) elm.dataset.key = v.key
@@ -89,5 +75,5 @@ export function run(piths: SS<DPith>): S.S<P.PPatch> {
         }
       }, new On(ns))
     })
-  return P.run(piths instanceof S.S ? piths.map(ring) : S.at(ring(piths)))
+  return P.run(piths.map(ring))
 }
