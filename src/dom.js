@@ -39,14 +39,23 @@ export class RT<A> {
   }
 }
 
+type SS<A> = S.S<A> | A
+
 export const elm = <A>(
   tag: $PropertyType<ElmT<A>, 'tag'>,
-  piths: $PropertyType<ElmT<A>, 'piths'>,
+  piths: SS<$PropertyType<PithT<A>, 'pith'> | PithT<A>>,
   key?: $PropertyType<ElmT<A>, 'key'>
-): ElmT<A> => new ElmT(tag, piths, key)
+): ElmT<A> =>
+  new ElmT(
+    tag,
+    (piths instanceof S.S ? piths : S.at(piths)).map(x =>
+      x instanceof PithT ? x : pith(x)
+    ),
+    key
+  )
 
-export const str = (texts: $PropertyType<StrT, 'texts'>): StrT =>
-  new StrT(texts)
+export const str = (texts: SS<string>): StrT =>
+  new StrT(texts instanceof S.S ? texts : S.at(texts))
 
 export const pith = <A>(pith: $PropertyType<PithT<A>, 'pith'>): PithT<A> =>
   new PithT(pith)
