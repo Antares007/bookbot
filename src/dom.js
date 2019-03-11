@@ -26,54 +26,65 @@ export class Str {
 }
 
 export class Pith<A> {
-  pith: ((Elm<A> | Str | S.S<P.Patch | S.Event<A>>) => void, On) => void
+  pith: ((Elm<A> | Str | S.S<P.Patch | R<A>>) => void, On, S.S<A>) => void
   constructor(pith: $PropertyType<Pith<A>, 'pith'>) {
     this.pith = pith
   }
 }
 
-export function run<A>(piths: S.S<Pith<A>>): S.S<P.Patch | S.Event<A>> {
-  const ring = (pith: Pith<A>): P.Pith<A> =>
+export class R<A> {
+  r: A => A
+  constructor(r: $PropertyType<R<A>, 'r'>) {
+    this.r = r
+  }
+}
+
+export function run<A>(piths: S.S<Pith<A>>): S.S<P.Patch | R<A>> {
+  const ring = (pith: Pith<A>): P.Pith<R<A>> =>
     new P.Pith((o, ns) => {
-      pith.pith(v => {
-        if (v instanceof Str) {
-          o(
-            new P.PNode(
-              () => document.createTextNode(''),
-              n => n.nodeName === '#text',
-              S.at(
-                new P.Pith(o =>
-                  o(
-                    v.texts.map(
-                      text =>
-                        new P.Patch(n => {
-                          n.textContent = text
-                        })
+      pith.pith(
+        v => {
+          if (v instanceof Str) {
+            o(
+              new P.PNode(
+                () => document.createTextNode(''),
+                n => n.nodeName === '#text',
+                S.at(
+                  new P.Pith(o =>
+                    o(
+                      v.texts.map(
+                        text =>
+                          new P.Patch(n => {
+                            n.textContent = text
+                          })
+                      )
                     )
                   )
                 )
               )
             )
-          )
-        } else if (v instanceof Elm) {
-          o(
-            new P.PNode(
-              () => {
-                const elm = document.createElement(v.tag)
-                if (v.key) elm.dataset.key = v.key
-                return elm
-              },
-              n =>
-                n.nodeName === v.tag &&
-                (v.key == null ||
-                  (n instanceof HTMLElement && n.dataset.key === v.key)),
-              v.piths.map(ring)
+          } else if (v instanceof Elm) {
+            o(
+              new P.PNode(
+                () => {
+                  const elm = document.createElement(v.tag)
+                  if (v.key) elm.dataset.key = v.key
+                  return elm
+                },
+                n =>
+                  n.nodeName === v.tag &&
+                  (v.key == null ||
+                    (n instanceof HTMLElement && n.dataset.key === v.key)),
+                v.piths.map(ring)
+              )
             )
-          )
-        } else {
-          o(v)
-        }
-      }, new On(ns))
+          } else {
+            o(v)
+          }
+        },
+        new On(ns),
+        S.s(() => {})
+      )
     })
   return P.run(piths.map(ring))
 }

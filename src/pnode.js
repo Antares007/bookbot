@@ -10,7 +10,7 @@ export class Patch {
 }
 
 export class Pith<A> {
-  pith: ((PNode<A> | S.S<Patch | S.Event<A>>) => void, S.S<Node>) => void
+  pith: ((PNode<A> | S.S<Patch | A>) => void, S.S<Node>) => void
   constructor(pith: $PropertyType<Pith<A>, 'pith'>) {
     this.pith = pith
   }
@@ -31,7 +31,7 @@ export class PNode<A> {
   }
 }
 
-export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | S.Event<A>> {
+export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
   return S.switchLatest(
     spith.map(x => {
       var thisNode: ?Node
