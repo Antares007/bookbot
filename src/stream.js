@@ -95,19 +95,19 @@ export const run = <A>(
   as: S<A>
 ): D.Disposable => {
   var disposables = []
+  var disposed = false
   const disposable = D.disposable(() => {
     var d
+    disposed = true
     while ((d = disposables.shift())) d.dispose()
   })
   var tp = now()
   as.pith(function S$run(e) {
     if (e instanceof Event) o(e)
     else if (e instanceof D.Disposable) {
-      if (tp === now()) disposables.push(e)
-      else {
-        tp = now()
-        disposables = [e]
-      }
+      if (disposed) e.dispose()
+      else if (tp === now()) disposables.push(e)
+      else (tp = now()), (disposables = [e])
     } else {
       if (e instanceof Error) disposable.dispose()
       o(e)
