@@ -3,14 +3,14 @@ import * as S from './stream'
 import * as P from './pnode'
 import { On } from './on'
 
-export class Elm<A> {
+export class ElmT<A> {
   tag: string
+  piths: S.S<PithT<A>>
   key: ?string
-  piths: S.S<Pith<A>>
   constructor(
-    tag: $PropertyType<Elm<A>, 'tag'>,
-    key: $PropertyType<Elm<A>, 'key'>,
-    piths: $PropertyType<Elm<A>, 'piths'>
+    tag: $PropertyType<ElmT<A>, 'tag'>,
+    piths: $PropertyType<ElmT<A>, 'piths'>,
+    key?: $PropertyType<ElmT<A>, 'key'>
   ) {
     this.tag = tag.toUpperCase()
     this.key = key
@@ -18,54 +18,67 @@ export class Elm<A> {
   }
 }
 
-export class Str {
+export class StrT {
   texts: S.S<string>
-  constructor(texts: $PropertyType<Str, 'texts'>) {
+  constructor(texts: $PropertyType<StrT, 'texts'>) {
     this.texts = texts
   }
 }
 
-export class Pith<A> {
-  pith: ((Elm<A> | Str | S.S<P.Patch | R<A>>) => void, On, S.S<A>) => void
-  constructor(pith: $PropertyType<Pith<A>, 'pith'>) {
+export class PithT<A> {
+  pith: ((ElmT<A> | StrT | S.S<P.PatchT | RT<A>>) => void, On, S.S<A>) => void
+  constructor(pith: $PropertyType<PithT<A>, 'pith'>) {
     this.pith = pith
   }
 }
 
-export class R<A> {
+export class RT<A> {
   r: A => A
-  constructor(r: $PropertyType<R<A>, 'r'>) {
+  constructor(r: $PropertyType<RT<A>, 'r'>) {
     this.r = r
   }
 }
 
-export function run<A>(piths: S.S<Pith<A>>): S.S<P.Patch | R<A>> {
-  const ring = (pith: Pith<A>): P.Pith<R<A>> =>
-    new P.Pith((o, ns) => {
+export const elm = <A>(
+  tag: $PropertyType<ElmT<A>, 'tag'>,
+  piths: $PropertyType<ElmT<A>, 'piths'>,
+  key?: $PropertyType<ElmT<A>, 'key'>
+): ElmT<A> => new ElmT(tag, piths, key)
+
+export const str = (texts: $PropertyType<StrT, 'texts'>): StrT =>
+  new StrT(texts)
+
+export const pith = <A>(pith: $PropertyType<PithT<A>, 'pith'>): PithT<A> =>
+  new PithT(pith)
+
+export const r = <A>(r: $PropertyType<RT<A>, 'r'>): RT<A> => new RT(r)
+
+export function run<A>(piths: S.S<PithT<A>>): S.S<P.PatchT | RT<A>> {
+  const ring = (pith: PithT<A>): P.PithT<RT<A>> =>
+    P.pith((o, ns) => {
       pith.pith(
         v => {
-          if (v instanceof Str) {
+          if (v instanceof StrT) {
             o(
-              new P.PNode(
+              P.node(
                 () => document.createTextNode(''),
                 n => n.nodeName === '#text',
                 S.at(
-                  new P.Pith(o =>
+                  P.pith(o =>
                     o(
-                      v.texts.map(
-                        text =>
-                          new P.Patch(n => {
-                            n.textContent = text
-                          })
+                      v.texts.map(text =>
+                        P.patch(n => {
+                          n.textContent = text
+                        })
                       )
                     )
                   )
                 )
               )
             )
-          } else if (v instanceof Elm) {
+          } else if (v instanceof ElmT) {
             o(
-              new P.PNode(
+              P.node(
                 () => {
                   const elm = document.createElement(v.tag)
                   if (v.key) elm.dataset.key = v.key

@@ -13,44 +13,54 @@ import { now, delay } from './scheduler'
 //  new D.Pith((o, on, s) => {})
 //)
 
-const elm = <A>(
-  tag: $PropertyType<D.Elm<A>, 'tag'>,
-  pith: $PropertyType<D.Pith<A>, 'pith'>
-): D.Elm<A> => new D.Elm(tag, null, S.at(new D.Pith(pith)))
-
 const Counter = (d: number) =>
-  elm('div', (o, on) => {
-    o(
-      elm('button', (o, on, s) => {
-        o(new D.Str(S.at('+')))
-        d > 0 && o(Counter(d - 1))
-      })
-    )
-    o(
-      elm('button', (o, on, s) => {
-        o(new D.Str(S.at('-')))
-        d > 0 && o(Counter(d - 1))
-      })
-    )
-    const rez = on
-      .click()
-      .map(e => e.target)
-      .filter2(x => (x instanceof HTMLButtonElement ? x : null))
-      .map(x => x.textContent[0])
-      .map(x => (x === '+' ? 1 : x === '-' ? -1 : 0))
-      .scan((a, b) => a + b, 0)
-      .map(String)
+  D.elm(
+    'div',
+    S.at(
+      D.pith((o, on) => {
+        o(
+          D.elm(
+            'button',
+            S.at(
+              D.pith((o, on, s) => {
+                o(new D.StrT(S.at('+')))
+                d > 0 && o(Counter(d - 1))
+              })
+            )
+          )
+        )
+        o(
+          D.elm(
+            'button',
+            S.at(
+              D.pith((o, on, s) => {
+                o(new D.StrT(S.at('-')))
+                d > 0 && o(Counter(d - 1))
+              })
+            )
+          )
+        )
+        const rez = on
+          .click()
+          .map(e => e.target)
+          .filter2(x => (x instanceof HTMLButtonElement ? x : null))
+          .map(x => x.textContent[0])
+          .map(x => (x === '+' ? 1 : x === '-' ? -1 : 0))
+          .scan((a, b) => a + b, 0)
+          .map(String)
 
-    o(new D.Str(rez))
-  })
+        o(D.str(rez))
+      })
+    )
+  )
 
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
-D.run(S.at(new D.Pith(o => o(Counter(1)))))
+D.run(S.at(D.pith(o => o(Counter(1)))))
   .scan(
     (s, x) => {
-      if (x instanceof P.Patch) {
+      if (x instanceof P.PatchT) {
         x.v(rootNode)
         return s
       }

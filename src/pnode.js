@@ -2,28 +2,28 @@
 import * as S from './stream'
 import * as D from './disposable'
 
-export class Patch {
+export class PatchT {
   v: Node => void
-  constructor(v: $PropertyType<Patch, 'v'>) {
+  constructor(v: $PropertyType<PatchT, 'v'>) {
     this.v = v
   }
 }
 
-export class Pith<A> {
-  pith: ((PNode<A> | S.S<Patch | A>) => void, S.S<Node>) => void
-  constructor(pith: $PropertyType<Pith<A>, 'pith'>) {
+export class PithT<A> {
+  pith: ((NodeT<A> | S.S<PatchT | A>) => void, S.S<Node>) => void
+  constructor(pith: $PropertyType<PithT<A>, 'pith'>) {
     this.pith = pith
   }
 }
 
-export class PNode<A> {
+export class NodeT<A> {
   create: () => Node
   eq: Node => boolean
-  piths: S.S<Pith<A>>
+  piths: S.S<PithT<A>>
   constructor(
-    create: $PropertyType<PNode<A>, 'create'>,
-    eq: $PropertyType<PNode<A>, 'eq'>,
-    piths: $PropertyType<PNode<A>, 'piths'>
+    create: $PropertyType<NodeT<A>, 'create'>,
+    eq: $PropertyType<NodeT<A>, 'eq'>,
+    piths: $PropertyType<NodeT<A>, 'piths'>
   ) {
     this.create = create
     this.eq = eq
@@ -31,7 +31,18 @@ export class PNode<A> {
   }
 }
 
-export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
+export const patch = (v: $PropertyType<PatchT, 'v'>): PatchT => new PatchT(v)
+
+export const pith = <A>(pith: $PropertyType<PithT<A>, 'pith'>): PithT<A> =>
+  new PithT(pith)
+
+export const node = <A>(
+  create: $PropertyType<NodeT<A>, 'create'>,
+  eq: $PropertyType<NodeT<A>, 'eq'>,
+  piths: $PropertyType<NodeT<A>, 'piths'>
+): NodeT<A> => new NodeT(create, eq, piths)
+
+export function run<A>(spith: S.S<PithT<A>>): S.S<PatchT | A> {
   return S.switchLatest(
     spith.map(x => {
       var thisNode: ?Node
@@ -43,7 +54,7 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
         )
       )
       var p = S.empty()
-      var pnodes: Array<PNode<A>> = []
+      var pnodes: Array<NodeT<A>> = []
       x.pith(x => {
         if (x instanceof S.S) {
           p = p.merge(x)
@@ -52,8 +63,8 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
           pnodes.push(x)
           p = p.merge(
             run(x.piths).map(x =>
-              x instanceof Patch
-                ? new Patch(parent => x.v(parent.childNodes[index]))
+              x instanceof PatchT
+                ? patch(parent => x.v(parent.childNodes[index]))
                 : x
             )
           )
@@ -62,7 +73,7 @@ export function run<A>(spith: S.S<Pith<A>>): S.S<Patch | A> {
       return pnodes.length === 0
         ? p
         : p.startWith(
-            new Patch(parent => {
+            patch(parent => {
               const pnodesLength = pnodes.length
               const childNodes = parent.childNodes
               for (var index = 0; index < pnodesLength; index++) {

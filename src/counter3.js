@@ -4,23 +4,22 @@ import * as P from './pnode'
 import { now, delay } from './scheduler'
 
 const elm = (tag: string, xpith) =>
-  new P.PNode(
+  P.node(
     () => document.createElement(tag),
     n => n.nodeName === tag.toUpperCase(),
-    xpith
+    S.at(xpith)
   )
 const text = (stext: S.S<string>) =>
-  new P.PNode(
+  P.node(
     () => document.createTextNode(''),
     n => n.nodeName === '#text',
     S.at(
-      new P.Pith(o =>
+      P.pith(o =>
         o(
-          stext.map(
-            text =>
-              new P.Patch(n => {
-                n.textContent = text
-              })
+          stext.map(text =>
+            P.patch(n => {
+              n.textContent = text
+            })
           )
         )
       )
@@ -30,11 +29,11 @@ const text = (stext: S.S<string>) =>
 const counter = (d: number) =>
   elm(
     'div',
-    new P.Pith(o => {
+    P.pith(o => {
       o(
         elm(
           'button',
-          new P.Pith(o => {
+          P.pith(o => {
             o(text(S.at('+')))
             d > 0 && o(counter(d - 1))
           })
@@ -43,7 +42,7 @@ const counter = (d: number) =>
       o(
         elm(
           'button',
-          new P.Pith(o => {
+          P.pith(o => {
             o(text(S.at('-')))
             d > 0 && o(counter(d - 1))
           })
@@ -55,8 +54,8 @@ const counter = (d: number) =>
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 const patches = []
-P.run(S.at(new P.Pith(o => o(counter(3)))))
-  .filter2(x => (x instanceof P.Patch ? x : null))
+P.run(S.at(P.pith(o => o(counter(3)))))
+  .filter2(x => (x instanceof P.PatchT ? x : null))
   .run(e => {
     if (e instanceof Error) throw e
     else if (e instanceof S.End) {
