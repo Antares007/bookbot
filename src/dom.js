@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import * as S from './stream'
 import * as P from './pnode'
 import { On } from './on'
