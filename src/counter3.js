@@ -48,7 +48,7 @@ P.bark(o => o(counter(3))).run(e => {
       const p = patches.shift()
       if (p) {
         p.value.v(rootNode)
-        delay(run, 300)
+        delay(run, 100)
       }
     }
     delay(run)
