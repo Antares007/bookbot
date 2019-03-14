@@ -3,7 +3,7 @@ import * as S from './stream'
 import * as D from './disposable'
 import * as M from './m'
 
-type N$Pith = ((NodeT | S.S<PatchT>) => void, S.S<Node>) => void
+type N$Pith = ((NodeT | S.S<PatchT>) => void) => void
 
 export class PatchT {
   v: Node => void
@@ -37,14 +37,6 @@ export const node = (
 
 export function bark(pith: N$Pith): S.S<PatchT> {
   return M.bark(o => {
-    var thisNode: ?Node
-    const proxy = S.s(o =>
-      o(
-        S.delay(() => {
-          thisNode && o(S.event(thisNode))
-        }, 1)
-      )
-    )
     const pnodes: Array<NodeT> = []
     o(
       S.at(
@@ -62,7 +54,6 @@ export function bark(pith: N$Pith): S.S<PatchT> {
           }
           for (var i = childNodes.length - 1; i >= pnodesLength; i--)
             parent.removeChild(childNodes[i])
-          thisNode = parent
         })
       )
     )
@@ -70,13 +61,7 @@ export function bark(pith: N$Pith): S.S<PatchT> {
       if (v instanceof S.S) return o(v)
       const index = pnodes.length
       pnodes.push(v)
-      o(
-        v.patches.map(p =>
-          patch(parent => {
-            return p.v(parent.childNodes[index])
-          })
-        )
-      )
-    }, S.empty())
+      o(v.patches.map(p => patch(parent => p.v(parent.childNodes[index]))))
+    })
   })
 }
