@@ -1,4 +1,4 @@
-// @flow
+// flow
 import * as S from './stream'
 import * as P from './pnode'
 import * as D from './dom'

@@ -1,4 +1,4 @@
-// @flow strict-local
+// flow strict-local
 import * as S from './stream'
 import * as P from './pnode'
 import * as M from './m'
