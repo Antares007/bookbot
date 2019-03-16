@@ -19,16 +19,7 @@ export class N {
     this.create = create
     this.eq = eq
     this.patches =
-      pith instanceof S.S
-        ? S.switchLatest(pith.map(pith => bark(ring(pith))))
-        : bark(ring(pith))
-    function ring(pith) {
-      return o => {
-        pith(v => {
-          o(v)
-        })
-      }
-    }
+      pith instanceof S.S ? S.switchLatest(pith.map(bark)) : bark(pith)
   }
   create: () => Node
   eq: Node => ?Node
