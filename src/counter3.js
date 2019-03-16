@@ -1,7 +1,6 @@
 // @flow strict
 import * as S from './stream'
 import * as N from './n'
-import * as M from './m'
 import { now, delay } from './scheduler'
 
 const counter = (d: number) =>
@@ -20,10 +19,11 @@ const counter = (d: number) =>
     )
   })
 
+const rez = counter(3)
+
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 const patches = []
-const rez = counter(3)
 rez.patches.run(e => {
   if (e instanceof Error) throw e
   else if (e instanceof S.End) {
@@ -32,7 +32,7 @@ rez.patches.run(e => {
       const p = patches.shift()
       if (p) {
         p.value.patch(rootNode)
-        delay(run, 100)
+        delay(run, ~~(1000 / 60))
       }
     }
     delay(run)
