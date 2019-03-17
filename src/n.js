@@ -12,35 +12,36 @@ export class Patch {
 
 type SS<A> = S.S<A> | A
 
-export class N {
+export class N<A> {
+  create: () => Node
+  eq: Node => ?Node
+  pith: SS<((N<A> | S.S<Patch | A>) => void) => void>
+
   constructor(
-    create: () => Node,
-    eq: Node => ?Node,
-    pith: SS<((N | S.S<Patch>) => void) => void>
+    create: $PropertyType<N<A>, 'create'>,
+    eq: $PropertyType<N<A>, 'eq'>,
+    pith: $PropertyType<N<A>, 'pith'>
   ) {
     this.create = create
     this.eq = eq
     this.pith = pith
   }
-  create: () => Node
-  eq: Node => ?Node
-  pith: SS<((N | S.S<Patch>) => void) => void>
 }
 
-export function run(node: HTMLElement, n: N): D.Disposable {
+export function run<A>(node: HTMLElement, n: N<A>): S.S<A> {
   const elm = n.eq(node) || node.insertBefore(n.create(), null)
-  const patches = bark(n.pith)
-  return patches.run(e => {
-    if (e instanceof S.Event) {
-      e.value.patch(elm)
-    } else console.log(e)
-  })
+  const patches: S.S<Patch | A> = bark(n.pith)
+  return patches
+    .tap(x => {
+      if (x instanceof Patch) x.patch(elm)
+    })
+    .filter2(x => (x instanceof Patch ? null : x))
 }
 
-export function bark(pith: $PropertyType<N, 'pith'>): S.S<Patch> {
+export function bark<A>(pith: $PropertyType<N<A>, 'pith'>): S.S<Patch | A> {
   const ring = pith =>
     M.bark(o => {
-      const pnodes: Array<N> = []
+      const pnodes: Array<N<A>> = []
       o(
         S.at(
           patch(parent => {
@@ -67,7 +68,11 @@ export function bark(pith: $PropertyType<N, 'pith'>): S.S<Patch> {
           const patches =
             v.pith instanceof S.S ? v.pith.flatMapLatest(ring) : ring(v.pith)
           o(
-            patches.map(p => patch(parent => p.patch(parent.childNodes[index])))
+            patches.map(p =>
+              p instanceof Patch
+                ? patch(parent => p.patch(parent.childNodes[index]))
+                : p
+            )
           )
         }
       })
@@ -78,17 +83,17 @@ export function bark(pith: $PropertyType<N, 'pith'>): S.S<Patch> {
 export const patch = (patch: $PropertyType<Patch, 'patch'>): Patch =>
   new Patch(patch)
 
-export const node = (
-  create: $PropertyType<N, 'create'>,
-  eq: $PropertyType<N, 'eq'>,
-  pith: $PropertyType<N, 'pith'>
-): N => new N(create, eq, pith)
+export const node = <A>(
+  create: $PropertyType<N<A>, 'create'>,
+  eq: $PropertyType<N<A>, 'eq'>,
+  pith: $PropertyType<N<A>, 'pith'>
+): N<A> => new N<A>(create, eq, pith)
 
-export const elm = (
+export const elm = <A>(
   tag: string,
-  pith: $PropertyType<N, 'pith'>,
+  pith: $PropertyType<N<A>, 'pith'>,
   key?: ?string
-): N => {
+): N<A> => {
   const TAG = tag.toUpperCase()
   return node(
     () => document.createElement(tag),
@@ -102,7 +107,7 @@ export const elm = (
   )
 }
 
-export const text = (texts: SS<string>): N =>
+export const text = <A>(texts: SS<string>): N<A> =>
   node(
     () => document.createTextNode(''),
     n => (n instanceof Text ? n : null),

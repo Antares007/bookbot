@@ -5,6 +5,8 @@ import { now, delay } from './scheduler'
 
 const counter = (d: number) =>
   N.elm('div', o => {
+    o(S.at(3, d * 10))
+    o(S.at(true, d * 10))
     o(
       N.elm('button', o => {
         o(N.text('+'))
@@ -25,20 +27,21 @@ const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 const patches = []
 
-// N.run(rootNode, n)
-N.bark(n.pith).run(e => {
-  if (e instanceof Error) throw e
-  else if (e instanceof S.End) {
-    const t0 = now()
-    const run = () => {
-      const p = patches.shift()
-      if (p) {
-        p.value.patch(rootNode)
-        delay(run, ~~(1000 / 60))
-      }
-    }
-    delay(run)
-  } else {
-    patches.push(e)
-  }
-})
+N.run(rootNode, n).run(console.log.bind(console))
+
+// N.bark(n.pith).run(e => {
+//   if (e instanceof Error) throw e
+//   else if (e instanceof S.End) {
+//     const t0 = now()
+//     const run = () => {
+//       const p = patches.shift()
+//       if (p) {
+//         p.value.patch(rootNode)
+//         delay(run, ~~(1000 / 60))
+//       }
+//     }
+//     delay(run)
+//   } else {
+//     patches.push(e)
+//   }
+// })
