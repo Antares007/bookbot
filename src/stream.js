@@ -41,6 +41,9 @@ export class S<A> {
   flatMap<B>(f: A => S<B>): S<B> {
     return flatMap(f, this)
   }
+  flatMapLatest<B>(f: A => S<B>): S<B> {
+    return flatMapLatest(f, this)
+  }
   filter(f: A => boolean): S<A> {
     return filter(f, this)
   }
@@ -115,6 +118,32 @@ export const run = <A>(
   })
   return disposable
 }
+
+export const flatMapLatest = <A, B>(f: A => S<B>, as: S<A>): S<B> =>
+  s(o => {
+    var esd: ?D.Disposable = null
+    var ssd: ?D.Disposable = run(function S$flatMapLatestO(es) {
+      if (es instanceof Event) {
+        esd && esd.dispose()
+        esd = run(function S$flatMapLatestI(e) {
+          if (e instanceof Event) o(e)
+          else if (e instanceof End) {
+            esd = null
+            if (ssd == null) o(end)
+          } else o(e)
+        }, f(es.value))
+      } else if (es instanceof End) {
+        ssd = null
+        if (esd == null) o(end)
+      } else o(es)
+    }, as)
+    o(
+      D.disposable(() => {
+        ssd && ssd.dispose()
+        esd && esd.dispose()
+      })
+    )
+  })
 
 export const switchLatest = <A>(ss: S<S<A>>): S<A> =>
   s(o => {
