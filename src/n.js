@@ -31,11 +31,7 @@ export class N<A> {
 export function run<A>(node: HTMLElement, n: N<A>): S.S<A> {
   const elm = n.eq(node) || node.insertBefore(n.create(), null)
   const patches: S.S<Patch | A> = bark(n.pith)
-  return patches
-    .tap(x => {
-      if (x instanceof Patch) x.patch(elm)
-    })
-    .filter2(x => (x instanceof Patch ? null : x))
+  return patches.filter2(x => (x instanceof Patch ? x.patch(elm) : x))
 }
 
 export function bark<A>(pith: $PropertyType<N<A>, 'pith'>): S.S<Patch | A> {
