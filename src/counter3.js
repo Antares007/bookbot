@@ -7,7 +7,7 @@ const counter = (d: number) =>
   N.elm('div', o => {
     o(
       N.elm('button', o => {
-        o(N.text(S.at('+')))
+        o(N.text('+'))
         d > 0 && o(counter(d - 1))
       })
     )
@@ -19,12 +19,14 @@ const counter = (d: number) =>
     )
   })
 
-const rez = counter(3)
+const n = counter(3)
 
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 const patches = []
-rez.patches.run(e => {
+
+// N.run(rootNode, n)
+N.bark(n.pith).run(e => {
   if (e instanceof Error) throw e
   else if (e instanceof S.End) {
     const t0 = now()

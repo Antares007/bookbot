@@ -12,53 +12,67 @@ export class Patch {
 
 type SS<A> = S.S<A> | A
 
-type N$Pith = ((N | S.S<Patch>) => void) => void
-
 export class N {
-  constructor(create: () => Node, eq: Node => ?Node, pith: SS<N$Pith>) {
+  constructor(
+    create: () => Node,
+    eq: Node => ?Node,
+    pith: SS<((N | S.S<Patch>) => void) => void>
+  ) {
     this.create = create
     this.eq = eq
-    this.patches =
-      pith instanceof S.S ? S.switchLatest(pith.map(bark)) : bark(pith)
+    this.pith = pith
   }
   create: () => Node
   eq: Node => ?Node
-  patches: S.S<Patch>
+  pith: SS<((N | S.S<Patch>) => void) => void>
 }
 
-function bark(pith: N$Pith): S.S<Patch> {
-  return M.bark(o => {
-    const pnodes: Array<N> = []
-    o(
-      S.at(
-        patch(parent => {
-          const pnodesLength = pnodes.length
-          const childNodes = parent.childNodes
-          for (var index = 0; index < pnodesLength; index++) {
-            const pi = pnodes[index]
-            var li: ?Node
-            for (var i = index, l = childNodes.length; i < l; i++)
-              if ((li = pi.eq(parent.childNodes[i]))) break
-            if (li == null) parent.insertBefore(pi.create(), childNodes[index])
-            else if (i !== index) parent.insertBefore(li, childNodes[index])
-          }
-          for (var i = childNodes.length - 1; i >= pnodesLength; i--)
-            parent.removeChild(childNodes[i])
-        })
-      )
-    )
-    pith(v => {
-      if (v instanceof S.S) o(v)
-      else {
-        const index = pnodes.length
-
-        pnodes.push(v)
-        o(
-          v.patches.map(p => patch(parent => p.patch(parent.childNodes[index])))
-        )
-      }
-    })
+export function run(node: HTMLElement, n: N): D.Disposable {
+  const elm = n.eq(node) || node.insertBefore(n.create(), null)
+  const patches = bark(n.pith)
+  return patches.run(e => {
+    if (e instanceof S.Event) {
+      e.value.patch(elm)
+    } else console.log(e)
   })
+}
+
+export function bark(pith: $PropertyType<N, 'pith'>): S.S<Patch> {
+  const ring = pith =>
+    M.bark(o => {
+      const pnodes: Array<N> = []
+      o(
+        S.at(
+          patch(parent => {
+            const pnodesLength = pnodes.length
+            const childNodes = parent.childNodes
+            for (var index = 0; index < pnodesLength; index++) {
+              const n = pnodes[index]
+              var li: ?Node
+              for (var i = index, l = childNodes.length; i < l; i++)
+                if ((li = n.eq(parent.childNodes[i]))) break
+              if (li == null) parent.insertBefore(n.create(), childNodes[index])
+              else if (i !== index) parent.insertBefore(li, childNodes[index])
+            }
+            for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+              parent.removeChild(childNodes[i])
+          })
+        )
+      )
+      pith(v => {
+        if (v instanceof S.S) o(v)
+        else {
+          const index = pnodes.length
+          pnodes.push(v)
+          const patches =
+            v.pith instanceof S.S ? v.pith.flatMapLatest(ring) : ring(v.pith)
+          o(
+            patches.map(p => patch(parent => p.patch(parent.childNodes[index])))
+          )
+        }
+      })
+    })
+  return pith instanceof S.S ? pith.flatMapLatest(ring) : ring(pith)
 }
 
 export const patch = (patch: $PropertyType<Patch, 'patch'>): Patch =>
@@ -67,10 +81,14 @@ export const patch = (patch: $PropertyType<Patch, 'patch'>): Patch =>
 export const node = (
   create: $PropertyType<N, 'create'>,
   eq: $PropertyType<N, 'eq'>,
-  pith: SS<N$Pith>
+  pith: $PropertyType<N, 'pith'>
 ): N => new N(create, eq, pith)
 
-export const elm = (tag: string, pith: SS<N$Pith>, key?: ?string): N => {
+export const elm = (
+  tag: string,
+  pith: $PropertyType<N, 'pith'>,
+  key?: ?string
+): N => {
   const TAG = tag.toUpperCase()
   return node(
     () => document.createElement(tag),
