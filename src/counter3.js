@@ -9,6 +9,12 @@ const counter = (d: number): SN.SN<{ n: number }> =>
     o(
       N.elm('button', o => {
         o(N.text('+'))
+        o(S.at(SN.r(s => ({ ...s, n: s.n + 1 }))))
+        o(
+          SN.elm('div', o => {
+            o(S.at(SN.r(s => ({ ...s, n: s.n + 1 }))))
+          })
+        )
         d > 0 && o(counter(d - 1))
       })
     )
