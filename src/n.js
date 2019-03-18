@@ -2,6 +2,7 @@
 import * as S from './stream'
 import * as D from './disposable'
 import * as M from './m'
+import * as On from './on'
 
 export class Patch {
   patch: Node => void
@@ -60,6 +61,44 @@ export const elm = <A>(
   )
 }
 
+export const onelm = <A>(
+  tag: string,
+  pith: On.On => $PropertyType<N<A>, 'pith'>,
+  key?: ?string
+): N<A> => {
+  const ring = pith => o => {
+    var thisN: Node
+    const p = patch(n => {
+      thisN = n
+    })
+    o(
+      S.s(o =>
+        o(
+          S.delay(() => {
+            o(S.event(p))
+            o(S.delay(() => o(S.end)))
+          })
+        )
+      )
+    )
+    const on = new On.On(
+      S.s(o =>
+        o(
+          S.delay(() => {
+            o(S.event(thisN))
+            o(S.delay(() => o(S.end)))
+          })
+        )
+      )
+    )
+    const p0 = pith(on)
+  }
+  return elm(
+    tag,
+    pith instanceof S.S ? pith.flatMapLatest(ring) : ring(pith),
+    key
+  )
+}
 export const text = <A>(texts: SS<string>): N<A> =>
   node(
     () => document.createTextNode(''),
