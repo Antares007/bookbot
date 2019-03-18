@@ -3,7 +3,9 @@ import * as S from './stream'
 import * as D from './disposable'
 import * as N from './n'
 
-export class R<S> {}
+export class R<S> {
+  r: S => S
+}
 
 export class SN<S> extends N.N<R<S>> {
   constructor(
@@ -15,11 +17,11 @@ export class SN<S> extends N.N<R<S>> {
   }
 }
 
-export const elm = <A>(
+export const elm = <S>(
   tag: string,
-  pith: $PropertyType<SN<A>, 'pith'>,
+  pith: $PropertyType<SN<S>, 'pith'>,
   key?: ?string
-): SN<A> => {
+): SN<S> => {
   const TAG = tag.toUpperCase()
   return new SN(
     () => document.createElement(tag),
@@ -33,6 +35,6 @@ export const elm = <A>(
   )
 }
 
-export function run<A>(node: HTMLElement, n: SN<A>): S.S<R<A>> {
-  return N.run(node, n)
+export function run<S>(node: HTMLElement, s: S, n: SN<S>): S.S<S> {
+  return N.run(node, n).scan((s, r) => r.r(s), s)
 }

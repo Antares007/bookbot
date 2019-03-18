@@ -4,7 +4,7 @@ import * as N from './n'
 import * as SN from './sn'
 import { now, delay } from './scheduler'
 
-const counter = (d: number) =>
+const counter = (d: number): SN.SN<{ n: number }> =>
   SN.elm('div', o => {
     o(
       N.elm('button', o => {
