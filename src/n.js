@@ -33,6 +33,47 @@ export function run<A>(node: HTMLElement, n: N<A>): S.S<A> {
   return patches.filter2(x => (x instanceof Patch ? x.patch(elm) : x))
 }
 
+export const patch = (patch: $PropertyType<Patch, 'patch'>): Patch =>
+  new Patch(patch)
+
+export const node = <A>(
+  create: $PropertyType<N<A>, 'create'>,
+  eq: $PropertyType<N<A>, 'eq'>,
+  pith: $PropertyType<N<A>, 'pith'>
+): N<A> => new N<A>(create, eq, pith)
+
+export const elm = <A>(
+  tag: string,
+  pith: $PropertyType<N<A>, 'pith'>,
+  key?: ?string
+): N<A> => {
+  const TAG = tag.toUpperCase()
+  return node(
+    () => document.createElement(tag),
+    n =>
+      n instanceof HTMLElement &&
+      n.nodeName === TAG &&
+      (key == null || n.dataset.key === key)
+        ? n
+        : null,
+    pith
+  )
+}
+
+export const text = <A>(texts: SS<string>): N<A> =>
+  node(
+    () => document.createTextNode(''),
+    n => (n instanceof Text ? n : null),
+    o =>
+      o(
+        (texts instanceof S.S ? texts : S.at(texts)).map(text =>
+          patch(n => {
+            n.textContent = text
+          })
+        )
+      )
+  )
+
 export function bark<A>(pith: $PropertyType<N<A>, 'pith'>): S.S<Patch | A> {
   const ring = pith =>
     M.bark(o => {
@@ -74,44 +115,3 @@ export function bark<A>(pith: $PropertyType<N<A>, 'pith'>): S.S<Patch | A> {
     })
   return pith instanceof S.S ? pith.flatMapLatest(ring) : ring(pith)
 }
-
-export const patch = (patch: $PropertyType<Patch, 'patch'>): Patch =>
-  new Patch(patch)
-
-export const node = <A>(
-  create: $PropertyType<N<A>, 'create'>,
-  eq: $PropertyType<N<A>, 'eq'>,
-  pith: $PropertyType<N<A>, 'pith'>
-): N<A> => new N<A>(create, eq, pith)
-
-export const elm = <A>(
-  tag: string,
-  pith: $PropertyType<N<A>, 'pith'>,
-  key?: ?string
-): N<A> => {
-  const TAG = tag.toUpperCase()
-  return node(
-    () => document.createElement(tag),
-    n =>
-      n instanceof HTMLElement &&
-      n.nodeName === TAG &&
-      (key == null || n.dataset.key === key)
-        ? n
-        : null,
-    pith
-  )
-}
-
-export const text = <A>(texts: SS<string>): N<A> =>
-  node(
-    () => document.createTextNode(''),
-    n => (n instanceof Text ? n : null),
-    o =>
-      o(
-        (texts instanceof S.S ? texts : S.at(texts)).map(text =>
-          patch(n => {
-            n.textContent = text
-          })
-        )
-      )
-  )

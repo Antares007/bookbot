@@ -2,12 +2,37 @@
 import * as S from './stream'
 import * as N from './n'
 import * as SN from './sn'
+import * as On from './on'
 import { now, delay } from './scheduler'
 
 const counter = (d: number): SN.SN<{ n: number }> =>
   SN.elm('div', o => {
     o(
       N.elm('button', o => {
+        var thisN: Node
+        const p = N.patch(n => {
+          thisN = n
+        })
+        o(
+          S.s(o =>
+            o(
+              delay(() => {
+                o(S.event(p))
+                o(delay(() => o(S.end)))
+              })
+            )
+          )
+        )
+        const on = new On.On(
+          S.s(o =>
+            o(
+              delay(() => {
+                o(S.event(thisN))
+                o(delay(() => o(S.end)))
+              })
+            )
+          )
+        )
         o(N.text('+'))
         o(S.at(SN.r(s => ({ ...s, n: s.n + 1 }))))
         o(
