@@ -1,12 +1,11 @@
 // @flow strict
 import * as S from './stream'
 import * as N from './n'
+import * as SN from './sn'
 import { now, delay } from './scheduler'
 
 const counter = (d: number) =>
-  N.elm('div', o => {
-    o(S.at(3, d * 10))
-    o(S.at(true, d * 10))
+  SN.elm('div', o => {
     o(
       N.elm('button', o => {
         o(N.text('+'))

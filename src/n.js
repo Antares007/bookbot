@@ -27,7 +27,6 @@ export class N<A> {
     this.pith = pith
   }
 }
-
 export function run<A>(node: HTMLElement, n: N<A>): S.S<A> {
   const elm = n.eq(node) || node.insertBefore(n.create(), null)
   const patches: S.S<Patch | A> = bark(n.pith)
