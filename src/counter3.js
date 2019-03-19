@@ -5,6 +5,12 @@ import * as SN from './sn'
 import * as On from './on'
 import { now, delay } from './scheduler'
 
+const ringOn = <A, B>(
+  pith: ((A | S.S<N.Patch | B>) => void, On.On) => void
+): (((A | S.S<N.Patch | B>) => void) => void) => {
+  return o => pith(o, on(o))
+}
+
 const ref = <A>(o: (S.S<N.Patch | A>) => void): S.S<Node> => {
   var node: ?Node
   o(
@@ -27,27 +33,22 @@ const ref = <A>(o: (S.S<N.Patch | A>) => void): S.S<Node> => {
 }
 const on = <A>(o: (S.S<N.Patch | A>) => void): On.On => new On.On(ref(o))
 
-const ring = <A>(
-  pith: On.On => $PropertyType<N.N<A>, 'pith'>
-): $PropertyType<N.N<A>, 'pith'> => o => {
-  const piths = pith(on(o))
-}
-
 const counter = (d: number): SN.SN<{ n: number }> =>
   SN.elm('div', o => {
     o(
-      on(o)
-        .click()
-        .map(e => SN.r(s => s))
-        .take(3)
-    )
-
-    o(
-      N.elm('button', o => {
-        o(N.text('+'))
-        o(S.at(SN.r(s => ({ ...s, n: s.n + 1 }))))
-        d > 0 && o(counter(d - 1))
-      })
+      N.elm(
+        'button',
+        N.pmap(ringOn, (o, on) => {
+          o(N.text('+'))
+          o(
+            on
+              .click()
+              .take(3)
+              .map(e => SN.r(s => ({ ...s, n: s.n + 1 })))
+          )
+          d > 0 && o(counter(d - 1))
+        })
+      )
     )
     o(
       N.elm('button', o => {
