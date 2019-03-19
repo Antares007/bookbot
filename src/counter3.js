@@ -26,6 +26,13 @@ const ref = <A>(o: (S.S<N.Patch | A>) => void): S.S<Node> => {
   })
 }
 const on = <A>(o: (S.S<N.Patch | A>) => void): On.On => new On.On(ref(o))
+
+const ring = <A>(
+  pith: On.On => $PropertyType<N.N<A>, 'pith'>
+): $PropertyType<N.N<A>, 'pith'> => o => {
+  const piths = pith(on(o))
+}
+
 const counter = (d: number): SN.SN<{ n: number }> =>
   SN.elm('div', o => {
     o(

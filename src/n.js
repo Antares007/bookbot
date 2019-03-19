@@ -13,21 +13,37 @@ export class Patch {
 
 type SS<A> = S.S<A> | A
 
-export class N<A> {
+export const pmap = <Oi, Ai, Bi, Oo, Ao, Bo>(
+  f: (((Oi) => void, Ai) => Bi) => ((Oo) => void, Ao) => Bo,
+  pith: SS<((Oi) => void, Ai) => Bi>
+): SS<((Oo) => void, Ao) => Bo> => (pith instanceof S.S ? pith.map(f) : f(pith))
+
+export class Pith<O> {
+  pith: SS<((O) => void) => void>
+
+  constructor(pith: $PropertyType<Pith<O>, 'pith'>) {
+    this.pith = pith
+  }
+
+  ring<O1>(f: (((O) => void) => void) => ((O1) => void) => void): Pith<O1> {
+    return new Pith(this.pith instanceof S.S ? this.pith.map(f) : f(this.pith))
+  }
+}
+
+export class N<A> extends Pith<N<A> | S.S<Patch | A>> {
   create: () => Node
   eq: Node => ?Node
-  pith: SS<((N<A> | S.S<Patch | A>) => void) => void>
-
   constructor(
     create: $PropertyType<N<A>, 'create'>,
     eq: $PropertyType<N<A>, 'eq'>,
     pith: $PropertyType<N<A>, 'pith'>
   ) {
+    super(pith)
     this.create = create
     this.eq = eq
-    this.pith = pith
   }
 }
+
 export function run<A>(node: HTMLElement, n: N<A>): S.S<A> {
   const elm = n.eq(node) || node.insertBefore(n.create(), null)
   const patches: S.S<Patch | A> = bark(n.pith)
