@@ -10,7 +10,7 @@ export class R<S> {
   }
 }
 
-export class SN<S> extends N.N<R<S>> {
+export class SN<S> extends N.N<void, void, R<S>> {
   constructor(
     create: $PropertyType<SN<S>, 'create'>,
     eq: $PropertyType<SN<S>, 'eq'>,

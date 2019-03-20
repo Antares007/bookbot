@@ -1,5 +1,6 @@
 // @flow strict
 import * as S from './stream'
+import * as SPith from './SPith'
 import * as N from './n'
 import * as SN from './sn'
 import * as On from './on'
@@ -38,7 +39,7 @@ const counter = (d: number): SN.SN<{ n: number }> =>
     o(
       N.elm(
         'button',
-        N.pmap(ringOn, (o, on) => {
+        SPith.pmap(ringOn, (o, on) => {
           o(N.text('+'))
           o(
             on

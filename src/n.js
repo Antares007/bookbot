@@ -1,5 +1,6 @@
 // @flow strict
 import * as S from './stream'
+import * as SPith from './SPith'
 import * as D from './disposable'
 import * as M from './m'
 import * as On from './on'
@@ -13,30 +14,17 @@ export class Patch {
 
 type SS<A> = S.S<A> | A
 
-export const pmap = <Oi, Ai, Bi, Oo, Ao, Bo>(
-  f: (((Oi) => void, Ai) => Bi) => ((Oo) => void, Ao) => Bo,
-  pith: SS<((Oi) => void, Ai) => Bi>
-): SS<((Oo) => void, Ao) => Bo> => (pith instanceof S.S ? pith.map(f) : f(pith))
-
-export class Pith<O> {
-  pith: SS<((O) => void) => void>
-
-  constructor(pith: $PropertyType<Pith<O>, 'pith'>) {
-    this.pith = pith
-  }
-
-  ring<O1>(f: (((O) => void) => void) => ((O1) => void) => void): Pith<O1> {
-    return new Pith(this.pith instanceof S.S ? this.pith.map(f) : f(this.pith))
-  }
-}
-
-export class N<A> extends Pith<N<A> | S.S<Patch | A>> {
+export class N<A, B, O> extends SPith.T<
+  void,
+  void,
+  N<A, B, O> | S.S<Patch | O>
+> {
   create: () => Node
   eq: Node => ?Node
   constructor(
-    create: $PropertyType<N<A>, 'create'>,
-    eq: $PropertyType<N<A>, 'eq'>,
-    pith: $PropertyType<N<A>, 'pith'>
+    create: $PropertyType<N<A, B, O>, 'create'>,
+    eq: $PropertyType<N<A, B, O>, 'eq'>,
+    pith: $PropertyType<N<A, B, O>, 'pith'>
   ) {
     super(pith)
     this.create = create
@@ -44,26 +32,26 @@ export class N<A> extends Pith<N<A> | S.S<Patch | A>> {
   }
 }
 
-export function run<A>(node: HTMLElement, n: N<A>): S.S<A> {
+export function run<O>(node: HTMLElement, n: N<void, void, O>): S.S<O> {
   const elm = n.eq(node) || node.insertBefore(n.create(), null)
-  const patches: S.S<Patch | A> = bark(n.pith)
+  const patches: S.S<Patch | O> = bark(n.pith)
   return patches.filter2(x => (x instanceof Patch ? x.patch(elm) : x))
 }
 
 export const patch = (patch: $PropertyType<Patch, 'patch'>): Patch =>
   new Patch(patch)
 
-export const node = <A>(
-  create: $PropertyType<N<A>, 'create'>,
-  eq: $PropertyType<N<A>, 'eq'>,
-  pith: $PropertyType<N<A>, 'pith'>
-): N<A> => new N<A>(create, eq, pith)
+export const node = <A, B, O>(
+  create: $PropertyType<N<A, B, O>, 'create'>,
+  eq: $PropertyType<N<A, B, O>, 'eq'>,
+  pith: $PropertyType<N<A, B, O>, 'pith'>
+): N<A, B, O> => new N<A, B, O>(create, eq, pith)
 
-export const elm = <A>(
+export const elm = <A, B, O>(
   tag: string,
-  pith: $PropertyType<N<A>, 'pith'>,
+  pith: $PropertyType<N<A, B, O>, 'pith'>,
   key?: ?string
-): N<A> => {
+): N<A, B, O> => {
   const TAG = tag.toUpperCase()
   return node(
     () => document.createElement(tag),
@@ -77,11 +65,11 @@ export const elm = <A>(
   )
 }
 
-export const onelm = <A>(
+export const onelm = <A, B, O>(
   tag: string,
-  pith: On.On => $PropertyType<N<A>, 'pith'>,
+  pith: On.On => $PropertyType<N<A, B, O>, 'pith'>,
   key?: ?string
-): N<A> => {
+): N<A, B, O> => {
   const ring = pith => o => {
     var thisN: Node
     const p = patch(n => {
@@ -115,7 +103,7 @@ export const onelm = <A>(
     key
   )
 }
-export const text = <A>(texts: SS<string>): N<A> =>
+export const text = <A, B, O>(texts: SS<string>): N<A, B, O> =>
   node(
     () => document.createTextNode(''),
     n => (n instanceof Text ? n : null),
@@ -129,10 +117,12 @@ export const text = <A>(texts: SS<string>): N<A> =>
       )
   )
 
-export function bark<A>(pith: $PropertyType<N<A>, 'pith'>): S.S<Patch | A> {
+export function bark<A, B, O>(
+  pith: $PropertyType<N<A, B, O>, 'pith'>
+): S.S<Patch | O> {
   const ring = pith =>
     M.bark(o => {
-      const pnodes: Array<N<A>> = []
+      const pnodes: Array<N<A, B, O>> = []
       o(
         S.at(
           patch(parent => {
