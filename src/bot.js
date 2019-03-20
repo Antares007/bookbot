@@ -47,6 +47,7 @@ const psid = postJson(url, {
 
 function postJson<A, B>(url: string, message: A): void {
   const data = JSON.stringify(message)
+  if (!data) throw new Error('cant stringify message')
   const { hostname, pathname, search } = new URL(url)
   const options = {
     hostname,
