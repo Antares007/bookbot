@@ -1,7 +1,7 @@
 // @flow strict
-import * as S from './stream'
+import * as S from './S'
 import * as D from './disposable'
-import * as N from './n'
+import * as N from './N'
 
 export class R<S> {
   r: S => S
@@ -10,11 +10,11 @@ export class R<S> {
   }
 }
 
-export class SN<S> extends N.N<void, void, R<S>> {
+export class T<S> extends N.T<void, void, R<S>> {
   constructor(
-    create: $PropertyType<SN<S>, 'create'>,
-    eq: $PropertyType<SN<S>, 'eq'>,
-    pith: $PropertyType<SN<S>, 'pith'>
+    create: $PropertyType<T<S>, 'create'>,
+    eq: $PropertyType<T<S>, 'eq'>,
+    pith: $PropertyType<T<S>, 'pith'>
   ) {
     super(create, eq, pith)
   }
@@ -22,11 +22,11 @@ export class SN<S> extends N.N<void, void, R<S>> {
 
 export const elm = <S>(
   tag: string,
-  pith: $PropertyType<SN<S>, 'pith'>,
+  pith: $PropertyType<T<S>, 'pith'>,
   key?: ?string
-): SN<S> => {
+): T<S> => {
   const TAG = tag.toUpperCase()
-  return new SN(
+  return new T(
     () => document.createElement(tag),
     n =>
       n instanceof HTMLElement &&
@@ -38,7 +38,7 @@ export const elm = <S>(
   )
 }
 
-export function run<S>(node: HTMLElement, s: S, n: SN<S>): S.S<S> {
+export function run<S>(node: HTMLElement, s: S, n: T<S>): S.S<S> {
   return N.run(node, n).scan((s, r) => r.r(s), s)
 }
 

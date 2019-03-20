@@ -1,5 +1,5 @@
 // @flow strict
-import * as S from './stream'
+import * as S from './S'
 import * as D from './disposable'
 
 export class On {

@@ -1,8 +1,8 @@
 // @flow strict
-import * as S from './stream'
+import * as S from './S'
 import * as SPith from './SPith'
-import * as N from './n'
-import * as SN from './sn'
+import * as N from './N'
+import * as SN from './SN'
 import * as On from './on'
 import { now, delay } from './scheduler'
 
@@ -34,7 +34,7 @@ const ref = <A>(o: (S.S<N.Patch | A>) => void): S.S<Node> => {
 }
 const on = <A>(o: (S.S<N.Patch | A>) => void): On.On => new On.On(ref(o))
 
-const counter = (d: number): SN.SN<{ n: number }> =>
+const counter = (d: number): SN.T<{ n: number }> =>
   SN.elm('div', o => {
     o(
       N.elm(

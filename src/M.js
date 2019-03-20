@@ -1,5 +1,5 @@
 // @flow strict
-import * as S from './stream'
+import * as S from './S'
 
 type M$Pith<A> = ((S.S<A>) => void) => void
 
