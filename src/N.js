@@ -65,44 +65,24 @@ export const elm = <A, B, O>(
   )
 }
 
-export const onelm = <A, B, O>(
-  tag: string,
-  pith: On.On => $PropertyType<T<A, B, O>, 'pith'>,
-  key?: ?string
-): T<A, B, O> => {
-  const ring = pith => o => {
-    var thisN: Node
-    const p = patch(n => {
-      thisN = n
-    })
-    o(
-      S.s(o =>
-        o(
-          S.delay(() => {
-            o(S.event(p))
-            o(S.delay(() => o(S.end)))
-          })
-        )
-      )
+export const ringOn = <A, B>(
+  pith: ((A | S.S<Patch | B>) => void, { on: On.On, ref: S.S<Node> }) => void
+): (((A | S.S<Patch | B>) => void) => void) => o => {
+  var node: ?Node
+  o(S.at(patch(n => ((node = n), void 0))))
+  const ref = S.s(os => {
+    os(
+      S.delay(function rec() {
+        if (node) {
+          os(S.event(node))
+          os(S.delay(() => os(S.end)))
+        } else os(S.delay(rec))
+      })
     )
-    const on = new On.On(
-      S.s(o =>
-        o(
-          S.delay(() => {
-            o(S.event(thisN))
-            o(S.delay(() => o(S.end)))
-          })
-        )
-      )
-    )
-    const p0 = pith(on)
-  }
-  return elm(
-    tag,
-    pith instanceof S.S ? pith.flatMapLatest(ring) : ring(pith),
-    key
-  )
+  })
+  pith(o, { on: new On.On(ref), ref })
 }
+
 export const text = <A, B, O>(texts: SS<string>): T<A, B, O> =>
   node(
     () => document.createTextNode(''),
