@@ -1,8 +1,8 @@
 // @flow strict
 import * as S from './S'
-import * as D from './disposable'
+import * as D from './Disposable'
 
-export class On {
+export class T {
   ets: S.T<Node>
   constructor(ets: S.T<Node>) {
     this.ets = ets
@@ -12,7 +12,7 @@ export class On {
       S.s(o => {
         const handler = (e: Event) => o(S.event(e))
         et.addEventListener(name, handler)
-        o(D.disposable(() => et.removeEventListener(name, handler)))
+        o(D.create(() => et.removeEventListener(name, handler)))
       })
     )
   }
@@ -21,7 +21,7 @@ export class On {
       S.s(o => {
         const handler = (e: MouseEvent) => o(S.event(e))
         et.addEventListener('click', handler)
-        o(D.disposable(() => et.removeEventListener('click', handler)))
+        o(D.create(() => et.removeEventListener('click', handler)))
       })
     )
   }

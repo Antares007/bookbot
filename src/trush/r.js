@@ -1,5 +1,5 @@
 // @flow strict
-import * as S from './S'
+import * as S from '../S'
 
 type SS<A> = S.T<A> | A
 

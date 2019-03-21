@@ -1,6 +1,6 @@
 // @flow strict
 import * as S from './S'
-import * as D from './disposable'
+import * as D from './Disposable'
 import * as N from './N'
 
 export class R<S> {

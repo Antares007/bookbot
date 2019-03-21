@@ -1,9 +1,9 @@
 // @flow strict
 import * as S from './S'
 import * as SPith from './SPith'
-import * as D from './disposable'
+import * as D from './Disposable'
 import * as M from './M'
-import * as On from './on'
+import * as On from './On'
 
 export class Patch {
   patch: Node => void
@@ -66,7 +66,7 @@ export const elm = <A, B, O>(
 }
 
 export const ringOn = <A, B>(
-  pith: ((A | S.T<Patch | B>) => void, { on: On.On, ref: S.T<Node> }) => void
+  pith: ((A | S.T<Patch | B>) => void, { on: On.T, ref: S.T<Node> }) => void
 ): (((A | S.T<Patch | B>) => void) => void) => o => {
   var node: ?Node
   o(S.at(patch(n => ((node = n), void 0))))
@@ -80,7 +80,7 @@ export const ringOn = <A, B>(
       })
     )
   })
-  pith(o, { on: new On.On(ref), ref })
+  pith(o, { on: new On.T(ref), ref })
 }
 
 export const text = <A, B, O>(texts: SS<string>): T<A, B, O> =>
