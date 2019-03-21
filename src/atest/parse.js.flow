@@ -1,8 +1,0 @@
-// @flow strict
-declare export function parse(
-  code: string,
-  options?: {
-    sourceType: string,
-    plugins: Array<string>
-  }
-): Array<{ name: string, plan: number }>
