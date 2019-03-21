@@ -3,7 +3,6 @@ import * as S from './S'
 import * as SPith from './SPith'
 import * as N from './N'
 import * as SN from './SN'
-import * as On from './on'
 
 const counter = (d: number): SN.T<{ n: number }> =>
   SN.elm('div', o => {
@@ -38,6 +37,7 @@ if (!rootNode) throw new Error('cant find root-node')
 N.run(rootNode, napp).run(console.log.bind(console))
 
 const patches = []
+
 // N.bark(n.pith).run(e => {
 //   if (e instanceof Error) throw e
 //   else if (e instanceof S.End) {

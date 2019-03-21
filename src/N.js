@@ -12,12 +12,12 @@ export class Patch {
   }
 }
 
-type SS<A> = S.S<A> | A
+type SS<A> = S.T<A> | A
 
 export class T<A, B, O> extends SPith.T<
   void,
   void,
-  T<A, B, O> | S.S<Patch | O>
+  T<A, B, O> | S.T<Patch | O>
 > {
   create: () => Node
   eq: Node => ?Node
@@ -32,9 +32,9 @@ export class T<A, B, O> extends SPith.T<
   }
 }
 
-export function run<O>(node: HTMLElement, n: T<void, void, O>): S.S<O> {
+export function run<O>(node: HTMLElement, n: T<void, void, O>): S.T<O> {
   const elm = n.eq(node) || node.insertBefore(n.create(), null)
-  const patches: S.S<Patch | O> = bark(n.pith)
+  const patches: S.T<Patch | O> = bark(n.pith)
   return patches.filter2(x => (x instanceof Patch ? x.patch(elm) : x))
 }
 
@@ -66,8 +66,8 @@ export const elm = <A, B, O>(
 }
 
 export const ringOn = <A, B>(
-  pith: ((A | S.S<Patch | B>) => void, { on: On.On, ref: S.S<Node> }) => void
-): (((A | S.S<Patch | B>) => void) => void) => o => {
+  pith: ((A | S.T<Patch | B>) => void, { on: On.On, ref: S.T<Node> }) => void
+): (((A | S.T<Patch | B>) => void) => void) => o => {
   var node: ?Node
   o(S.at(patch(n => ((node = n), void 0))))
   const ref = S.s(os => {
@@ -89,7 +89,7 @@ export const text = <A, B, O>(texts: SS<string>): T<A, B, O> =>
     n => (n instanceof Text ? n : null),
     o =>
       o(
-        (texts instanceof S.S ? texts : S.at(texts)).map(text =>
+        (texts instanceof S.T ? texts : S.at(texts)).map(text =>
           patch(n => {
             n.textContent = text
           })
@@ -99,7 +99,7 @@ export const text = <A, B, O>(texts: SS<string>): T<A, B, O> =>
 
 export function bark<A, B, O>(
   pith: $PropertyType<T<A, B, O>, 'pith'>
-): S.S<Patch | O> {
+): S.T<Patch | O> {
   const ring = pith =>
     M.bark(o => {
       const pnodes: Array<T<A, B, O>> = []
@@ -122,12 +122,12 @@ export function bark<A, B, O>(
         )
       )
       pith(v => {
-        if (v instanceof S.S) o(v)
+        if (v instanceof S.T) o(v)
         else {
           const index = pnodes.length
           pnodes.push(v)
           const patches =
-            v.pith instanceof S.S ? v.pith.flatMapLatest(ring) : ring(v.pith)
+            v.pith instanceof S.T ? v.pith.flatMapLatest(ring) : ring(v.pith)
           o(
             patches.map(p =>
               p instanceof Patch
@@ -138,5 +138,5 @@ export function bark<A, B, O>(
         }
       })
     })
-  return pith instanceof S.S ? pith.flatMapLatest(ring) : ring(pith)
+  return pith instanceof S.T ? pith.flatMapLatest(ring) : ring(pith)
 }

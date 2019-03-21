@@ -37,7 +37,7 @@ function tree(s: S<Buffer>): O {
   return { type: 'blob', s }
 }
 
-// function run(jsgit: any, v: O): S<Sha1> {
+// function run(jsgit: any, v: O): S.Tha1> {
 //   if (v.type === 'blob') {
 //     return s.flatMap(buffer => s.empty, v.s)
 //   } else if (v.type === 'tree') {

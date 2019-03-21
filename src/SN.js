@@ -38,7 +38,7 @@ export const elm = <S>(
   )
 }
 
-export function run<S>(node: HTMLElement, s: S, n: T<S>): S.S<S> {
+export function run<S>(node: HTMLElement, s: S, n: T<S>): S.T<S> {
   return N.run(node, n).scan((s, r) => r.r(s), s)
 }
 

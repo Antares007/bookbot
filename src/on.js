@@ -3,11 +3,11 @@ import * as S from './S'
 import * as D from './disposable'
 
 export class On {
-  ets: S.S<Node>
-  constructor(ets: S.S<Node>) {
+  ets: S.T<Node>
+  constructor(ets: S.T<Node>) {
     this.ets = ets
   }
-  event(name: string): S.S<Event> {
+  event(name: string): S.T<Event> {
     return this.ets.flatMap(et =>
       S.s(o => {
         const handler = (e: Event) => o(S.event(e))
@@ -16,7 +16,7 @@ export class On {
       })
     )
   }
-  click(): S.S<MouseEvent> {
+  click(): S.T<MouseEvent> {
     return this.ets.flatMap(et =>
       S.s(o => {
         const handler = (e: MouseEvent) => o(S.event(e))

@@ -12,7 +12,7 @@ const pmap = <A: any, B: any>(
   D.pith((o, on, s) =>
     pith.pith(
       v => {
-        if (v instanceof S.S)
+        if (v instanceof S.T)
           o(
             v.map(x =>
               x instanceof D.RT

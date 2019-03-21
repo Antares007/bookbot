@@ -1,7 +1,7 @@
 // @flow strict
 import * as S from './S'
 
-type SS<A> = S.S<A> | A
+type SS<A> = S.T<A> | A
 
 export class RString {
   r: (?string) => string
@@ -54,7 +54,7 @@ export function Boolean(r: $PropertyType<RBoolean, 'r'>): RBoolean {
 //}
 //
 //export class RArray {
-//  pith: S.S<RPith<number, mixed>>
+//  pith: S.T<RPith<number, mixed>>
 //  constructor(pith: $PropertyType<RArray, 'pith'>) {
 //    this.pith = pith
 //  }
@@ -85,7 +85,7 @@ Pith(o => {
 
 export class RKV<K: string | number, V> {
   k: K
-  v: S.S<V>
+  v: S.T<V>
   constructor(
     k: $PropertyType<RKV<K, V>, 'k'>,
     v: $PropertyType<RKV<K, V>, 'v'>
