@@ -1,9 +1,8 @@
 // @flow strict
 import * as S from './S'
 import * as SPith from './SPith'
-import * as D from './Disposable'
 import * as M from './M'
-import * as On from './On'
+import * as On from './S/On'
 
 export class Patch {
   patch: Node => void

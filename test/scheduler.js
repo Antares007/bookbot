@@ -1,6 +1,6 @@
 //@flow strict
 import type { A } from '../src/atest'
-import { now as tf, delay } from '../src/scheduler'
+import { now as tf, delay } from '../src/S/scheduler'
 
 export function can_execute_in_expected_order(assert: Array<A>): void {
   const offset = 30 - tf()
