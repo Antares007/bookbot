@@ -4,12 +4,14 @@ import * as SPith from './SPith'
 import * as N from './N'
 import * as SN from './SN'
 
+const addOn = pith => SPith.pmap(N.ringOn, pith)
+
 const counter = (d: number): SN.T<{ n: number }> =>
   SN.elm('div', o => {
     o(
       N.elm(
         'button',
-        SPith.pmap(N.ringOn, (o, { on }) => {
+        addOn((o, { on }) => {
           o(N.text('+'))
           o(
             on
