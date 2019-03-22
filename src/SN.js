@@ -9,23 +9,62 @@ export class R<S> {
   }
 }
 
-export class T<S> extends N.T<void, R<S>> {
+export class SN<State> extends N.N<{ states: S.S<State> }, R<State>> {
   constructor(
-    create: $PropertyType<T<S>, 'create'>,
-    eq: $PropertyType<T<S>, 'eq'>,
-    pith: $PropertyType<T<S>, 'pith'>
+    create: $PropertyType<SN<State>, 'create'>,
+    eq: $PropertyType<SN<State>, 'eq'>,
+    pith: $PropertyType<SN<State>, 'pith'>
   ) {
     super(create, eq, pith)
   }
 }
 
-export const elm = <S>(
+export function run<State>(
+  node: HTMLElement,
+  s: State,
+  n: SN<State>
+): S.S<State> {
+  var proxyO
+  const states = S.s(o => ((proxyO = o), void 0)).multicast()
+  const nn = n.pmap(function map(pith) {
+    return o =>
+      pith(
+        v => {
+          if (v instanceof N.N) {
+            o(v.pmap(map))
+          } else {
+            o(v)
+          }
+        },
+        { states }
+      )
+  })
+  return S.s(o =>
+    o(
+      N.run(node, nn)
+        .scan((s, r) => r.r(s), s)
+        .run(e => {
+          if (e instanceof S.Event)
+            o(
+              S.delay(() => {
+                proxyO(e)
+              }, 1)
+            )
+          o(e)
+        })
+    )
+  )
+}
+
+export const r = <State>(f: State => State): R<State> => new R(f)
+
+export const elm = <State>(
   tag: string,
-  pith: $PropertyType<T<S>, 'pith'>,
+  pith: $PropertyType<SN<State>, 'pith'>,
   key?: ?string
-): T<S> => {
+): SN<State> => {
   const TAG = tag.toUpperCase()
-  return new T(
+  return new SN(
     () => document.createElement(tag),
     n =>
       n instanceof HTMLElement &&
@@ -36,9 +75,3 @@ export const elm = <S>(
     pith
   )
 }
-
-export function run<S>(node: HTMLElement, s: S, n: T<S>): S.T<S> {
-  return N.run(node, n).scan((s, r) => r.r(s), s)
-}
-
-export const r = <S>(f: S => S): R<S> => new R(f)

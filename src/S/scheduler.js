@@ -1,18 +1,18 @@
 // @flow strict
-import * as Disposable from './Disposable'
+import * as D from './Disposable'
 
 export opaque type TimePoint: number = number
 
 const nowf = () => Date.now()
 const delayf = (f: () => void, d = 0) => {
   const timeoutID = setTimeout(f, d)
-  return Disposable.create(() => clearTimeout(timeoutID))
+  return D.create(() => clearTimeout(timeoutID))
 }
 
 var line: Array<[number, Array<?(TimePoint) => void>]> = []
 var nowT = -Infinity
 var nexT = +Infinity
-var d: ?Disposable.T = null
+var d: ?D.Disposable = null
 
 export const now = (): TimePoint => {
   if (nowT !== nexT) {
@@ -26,7 +26,7 @@ export const now = (): TimePoint => {
   return nowT
 }
 
-export const delay = (f: () => void, delay: number = 0): Disposable.T => {
+export const delay = (f: () => void, delay: number = 0): D.Disposable => {
   const at = delay < 0 ? now() : now() + delay
   const ap = findAppendPosition(at, line)
   var li = line[ap]
@@ -35,7 +35,7 @@ export const delay = (f: () => void, delay: number = 0): Disposable.T => {
     line.splice(ap + 1, 0, li)
   }
   const index = li[1].push(f) - 1
-  return Disposable.create(() => {
+  return D.create(() => {
     li[1][index] = null
   })
 }

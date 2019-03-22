@@ -1,6 +1,6 @@
 // @flow strict
 import { delay, now } from './scheduler'
-import * as Disposable from './Disposable'
+import * as D from './Disposable'
 
 export { delay, now }
 
@@ -15,64 +15,64 @@ export class Event<+A> {
 }
 export const event = <A>(a: A): Event<A> => new Event(a)
 
-export class T<A> {
-  pith: ((Event<A> | Error | End | Disposable.T) => void) => void
-  constructor(pith: $PropertyType<T<A>, 'pith'>) {
+export class S<A> {
+  pith: ((Event<A> | Error | End | D.Disposable) => void) => void
+  constructor(pith: $PropertyType<S<A>, 'pith'>) {
     this.pith = pith
   }
   run(o: (Event<A> | End | Error) => void) {
     return run(o, this)
   }
-  merge<B>(sb: T<B>): T<A | B> {
+  merge<B>(sb: S<B>): S<A | B> {
     return merge(this, sb)
   }
-  startWith(a: A): T<A> {
+  startWith(a: A): S<A> {
     return startWith(a, this)
   }
-  tryCatch(): T<A> {
+  tryCatch(): S<A> {
     return tryCatch(this)
   }
-  map<B>(f: A => B): T<B> {
+  map<B>(f: A => B): S<B> {
     return map(f, this)
   }
-  tap(f: A => void): T<A> {
+  tap(f: A => void): S<A> {
     return tap(f, this)
   }
-  flatMap<B>(f: A => T<B>): T<B> {
+  flatMap<B>(f: A => S<B>): S<B> {
     return flatMap(f, this)
   }
-  flatMapLatest<B>(f: A => T<B>): T<B> {
+  flatMapLatest<B>(f: A => S<B>): S<B> {
     return flatMapLatest(f, this)
   }
-  filter(f: A => boolean): T<A> {
+  filter(f: A => boolean): S<A> {
     return filter(f, this)
   }
-  filter2<B>(f: A => ?B): T<B> {
+  filter2<B>(f: A => ?B): S<B> {
     return filter2(f, this)
   }
-  take(n: number): T<A> {
+  take(n: number): S<A> {
     return take(n, this)
   }
-  skip(n: number): T<A> {
+  skip(n: number): S<A> {
     return skip(n, this)
   }
-  scan<B>(f: (B, A) => B, b: B): T<B> {
+  scan<B>(f: (B, A) => B, b: B): S<B> {
     return scan(f, b, this)
   }
-  multicast(): T<A> {
+  multicast(): S<A> {
     return multicast(this)
   }
-  skipEquals(): T<A> {
+  skipEquals(): S<A> {
     return skipEquals(this)
   }
 }
-export function s<A>(pith: $PropertyType<T<A>, 'pith'>): T<A> {
-  return new T(pith)
+export function s<A>(pith: $PropertyType<S<A>, 'pith'>): S<A> {
+  return new S(pith)
 }
 
-export const empty = <A>(): T<A> => s(o => o(delay(() => o(end))))
+export const empty = <A>(): S<A> => s(o => o(delay(() => o(end))))
 
-export const at = <A>(a: A, dly: number = 0): T<A> =>
+export const at = <A>(a: A, dly: number = 0): S<A> =>
   s(o => {
     o(
       delay(() => {
@@ -82,7 +82,7 @@ export const at = <A>(a: A, dly: number = 0): T<A> =>
     )
   })
 
-export const periodic = (period: number): T<number> =>
+export const periodic = (period: number): S<number> =>
   s(o => {
     var i = 0
     o(
@@ -95,11 +95,11 @@ export const periodic = (period: number): T<number> =>
 
 export const run = <A>(
   o: (Event<A> | Error | End) => void,
-  as: T<A>
-): Disposable.T => {
+  as: S<A>
+): D.Disposable => {
   var disposables = []
   var disposed = false
-  const disposable = Disposable.create(() => {
+  const disposable = D.create(() => {
     var d
     disposed = true
     while ((d = disposables.shift())) d.dispose()
@@ -107,7 +107,7 @@ export const run = <A>(
   var tp = now()
   as.pith(function S$run(e) {
     if (e instanceof Event) o(e)
-    else if (e instanceof Disposable.T) {
+    else if (e instanceof D.Disposable) {
       if (disposed) e.dispose()
       else if (tp === now()) disposables.push(e)
       else (tp = now()), (disposables = [e])
@@ -119,10 +119,10 @@ export const run = <A>(
   return disposable
 }
 
-export const flatMapLatest = <A, B>(f: A => T<B>, as: T<A>): T<B> =>
+export const flatMapLatest = <A, B>(f: A => S<B>, as: S<A>): S<B> =>
   s(o => {
-    var esd: ?Disposable.T = null
-    var ssd: ?Disposable.T = run(function S$flatMapLatestO(es) {
+    var esd: ?D.Disposable = null
+    var ssd: ?D.Disposable = run(function S$flatMapLatestO(es) {
       if (es instanceof Event) {
         esd && esd.dispose()
         esd = run(function S$flatMapLatestI(e) {
@@ -138,17 +138,17 @@ export const flatMapLatest = <A, B>(f: A => T<B>, as: T<A>): T<B> =>
       } else o(es)
     }, as)
     o(
-      Disposable.create(() => {
+      D.create(() => {
         ssd && ssd.dispose()
         esd && esd.dispose()
       })
     )
   })
 
-export const switchLatest = <A>(ss: T<T<A>>): T<A> =>
+export const switchLatest = <A>(ss: S<S<A>>): S<A> =>
   s(o => {
-    var esd: ?Disposable.T = null
-    var ssd: ?Disposable.T = run(function S$switchLatestO(es) {
+    var esd: ?D.Disposable = null
+    var ssd: ?D.Disposable = run(function S$switchLatestO(es) {
       if (es instanceof Event) {
         esd && esd.dispose()
         esd = run(function S$switchLatestI(e) {
@@ -164,18 +164,18 @@ export const switchLatest = <A>(ss: T<T<A>>): T<A> =>
       } else o(es)
     }, ss)
     o(
-      Disposable.create(() => {
+      D.create(() => {
         ssd && ssd.dispose()
         esd && esd.dispose()
       })
     )
   })
 
-export const flatMap = <A, B>(f: A => T<B>, as: T<A>): T<B> =>
+export const flatMap = <A, B>(f: A => S<B>, as: S<A>): S<B> =>
   s(o => {
     const dmap = new Map()
     o(
-      Disposable.create(() => {
+      D.create(() => {
         for (var e of dmap.entries()) e[1].dispose()
       })
     )
@@ -204,7 +204,7 @@ export const flatMap = <A, B>(f: A => T<B>, as: T<A>): T<B> =>
     )
   })
 
-export const combine = <A, B>(f: (Array<A>) => B, array: Array<T<A>>): T<B> =>
+export const combine = <A, B>(f: (Array<A>) => B, array: Array<S<A>>): S<B> =>
   s(o => {
     const dmap = new Map()
     const mas: Array<?Event<A>> = []
@@ -213,7 +213,7 @@ export const combine = <A, B>(f: (Array<A>) => B, array: Array<T<A>>): T<B> =>
       dmap.set(i, run(S$combine(i), array[i]))
     }
     o(
-      Disposable.create(() => {
+      D.create(() => {
         for (var e of dmap.entries()) e[1].dispose()
       })
     )
@@ -235,13 +235,13 @@ export const combine = <A, B>(f: (Array<A>) => B, array: Array<T<A>>): T<B> =>
     }
   })
 
-export const merge = <A, B>(sa: T<A>, sb: T<B>): T<A | B> =>
+export const merge = <A, B>(sa: S<A>, sb: S<B>): S<A | B> =>
   s(o => {
     var i = 2
     const sad = run(S$merge, sa)
     const sbd = run(S$merge, sb)
     o(
-      Disposable.create(() => {
+      D.create(() => {
         sad.dispose()
         sbd.dispose()
       })
@@ -253,10 +253,10 @@ export const merge = <A, B>(sa: T<A>, sb: T<B>): T<A | B> =>
     }
   })
 
-export const startWith = <A>(a: A, as: T<A>): T<A> =>
+export const startWith = <A>(a: A, as: S<A>): S<A> =>
   s(o => o(delay(() => o(event(a)), o(run(o, as)))))
 
-export const tryCatch = <A>(as: T<A>): T<A> =>
+export const tryCatch = <A>(as: S<A>): S<A> =>
   s(o =>
     as.pith(function S$tryCatch(e) {
       if (e instanceof Error) o(e)
@@ -269,7 +269,7 @@ export const tryCatch = <A>(as: T<A>): T<A> =>
     })
   )
 
-export const map = <A, B>(f: A => B, as: T<A>): T<B> =>
+export const map = <A, B>(f: A => B, as: S<A>): S<B> =>
   s(o =>
     as.pith(function S$map(e) {
       if (e instanceof Event) o(event(f(e.value)))
@@ -277,7 +277,7 @@ export const map = <A, B>(f: A => B, as: T<A>): T<B> =>
     })
   )
 
-export const tap = <A>(f: A => void, as: T<A>): T<A> =>
+export const tap = <A>(f: A => void, as: S<A>): S<A> =>
   s(o =>
     as.pith(function S$tap(e) {
       if (e instanceof Event) f(e.value), o(e)
@@ -285,7 +285,7 @@ export const tap = <A>(f: A => void, as: T<A>): T<A> =>
     })
   )
 
-export const filter = <A>(f: A => boolean, as: T<A>): T<A> =>
+export const filter = <A>(f: A => boolean, as: S<A>): S<A> =>
   s(o =>
     as.pith(function S$filter(e) {
       if (e instanceof Event) f(e.value) && o(e)
@@ -293,7 +293,7 @@ export const filter = <A>(f: A => boolean, as: T<A>): T<A> =>
     })
   )
 
-export const filter2 = <A, B>(f: A => ?B, as: T<A>): T<B> =>
+export const filter2 = <A, B>(f: A => ?B, as: S<A>): S<B> =>
   s(o =>
     as.pith(function S$filter(e) {
       if (e instanceof Event) {
@@ -303,7 +303,7 @@ export const filter2 = <A, B>(f: A => ?B, as: T<A>): T<B> =>
     })
   )
 
-export const take = <A>(n: number, as: T<A>): T<A> => {
+export const take = <A>(n: number, as: S<A>): S<A> => {
   if (n <= 0) return empty()
   return s(o => {
     var i = 0
@@ -320,7 +320,7 @@ export const take = <A>(n: number, as: T<A>): T<A> => {
   })
 }
 
-export const skip = <A>(n: number, as: T<A>): T<A> => {
+export const skip = <A>(n: number, as: S<A>): S<A> => {
   if (n <= 0) return as
   return s(o => {
     var i = 0
@@ -334,7 +334,7 @@ export const skip = <A>(n: number, as: T<A>): T<A> => {
   })
 }
 
-export const scan = <A, B>(f: (B, A) => B, b: B, as: T<A>): T<B> => {
+export const scan = <A, B>(f: (B, A) => B, b: B, as: S<A>): S<B> => {
   return s(o => {
     o(
       delay(t => {
@@ -351,9 +351,9 @@ export const scan = <A, B>(f: (B, A) => B, b: B, as: T<A>): T<B> => {
   })
 }
 
-export const multicast = <A>(as: T<A>): T<A> => {
+export const multicast = <A>(as: S<A>): S<A> => {
   const os = []
-  var d: ?Disposable.T
+  var d: ?D.Disposable
   return s(o => {
     if (d == null)
       d = run(e => {
@@ -361,7 +361,7 @@ export const multicast = <A>(as: T<A>): T<A> => {
       }, as)
     os.push(o)
     o(
-      Disposable.create(() => {
+      D.create(() => {
         var index = os.indexOf(o)
         if (index < 0) return
         os.splice(index, 1)
@@ -371,7 +371,7 @@ export const multicast = <A>(as: T<A>): T<A> => {
   })
 }
 
-export const skipEquals = <A>(as: T<A>): T<A> => {
+export const skipEquals = <A>(as: S<A>): S<A> => {
   var last: A
   return s(o => {
     as.pith(e => {
