@@ -13,17 +13,13 @@ export class Patch {
 
 type SS<A> = S.T<A> | A
 
-export class T<A, B, O> extends SPith.T<
-  void,
-  void,
-  T<A, B, O> | S.T<Patch | O>
-> {
+export class T<A, O> extends SPith.T<void, void, T<A, O> | S.T<Patch | O>> {
   create: () => Node
   eq: Node => ?Node
   constructor(
-    create: $PropertyType<T<A, B, O>, 'create'>,
-    eq: $PropertyType<T<A, B, O>, 'eq'>,
-    pith: $PropertyType<T<A, B, O>, 'pith'>
+    create: $PropertyType<T<A, O>, 'create'>,
+    eq: $PropertyType<T<A, O>, 'eq'>,
+    pith: $PropertyType<T<A, O>, 'pith'>
   ) {
     super(pith)
     this.create = create
@@ -31,7 +27,7 @@ export class T<A, B, O> extends SPith.T<
   }
 }
 
-export function run<O>(node: HTMLElement, n: T<void, void, O>): S.T<O> {
+export function run<O>(node: HTMLElement, n: T<void, O>): S.T<O> {
   const elm = n.eq(node) || node.insertBefore(n.create(), null)
   const patches: S.T<Patch | O> = bark(n.pith)
   return patches.filter2(x => (x instanceof Patch ? x.patch(elm) : x))
@@ -40,17 +36,17 @@ export function run<O>(node: HTMLElement, n: T<void, void, O>): S.T<O> {
 export const patch = (patch: $PropertyType<Patch, 'patch'>): Patch =>
   new Patch(patch)
 
-export const node = <A, B, O>(
-  create: $PropertyType<T<A, B, O>, 'create'>,
-  eq: $PropertyType<T<A, B, O>, 'eq'>,
-  pith: $PropertyType<T<A, B, O>, 'pith'>
-): T<A, B, O> => new T<A, B, O>(create, eq, pith)
+export const node = <A, O>(
+  create: $PropertyType<T<A, O>, 'create'>,
+  eq: $PropertyType<T<A, O>, 'eq'>,
+  pith: $PropertyType<T<A, O>, 'pith'>
+): T<A, O> => new T<A, O>(create, eq, pith)
 
-export const elm = <A, B, O>(
+export const elm = <A, O>(
   tag: string,
-  pith: $PropertyType<T<A, B, O>, 'pith'>,
+  pith: $PropertyType<T<A, O>, 'pith'>,
   key?: ?string
-): T<A, B, O> => {
+): T<A, O> => {
   const TAG = tag.toUpperCase()
   return node(
     () => document.createElement(tag),
@@ -82,7 +78,7 @@ export const ringOn = <A, B>(
   pith(o, { on: new On.T(ref), ref })
 }
 
-export const text = <A, B, O>(texts: SS<string>): T<A, B, O> =>
+export const text = <A, O>(texts: SS<string>): T<A, O> =>
   node(
     () => document.createTextNode(''),
     n => (n instanceof Text ? n : null),
@@ -96,12 +92,12 @@ export const text = <A, B, O>(texts: SS<string>): T<A, B, O> =>
       )
   )
 
-export function bark<A, B, O>(
-  pith: $PropertyType<T<A, B, O>, 'pith'>
+export function bark<O>(
+  pith: $PropertyType<T<void, O>, 'pith'>
 ): S.T<Patch | O> {
   const ring = pith =>
     M.bark(o => {
-      const pnodes: Array<T<A, B, O>> = []
+      const pnodes: Array<T<void, O>> = []
       o(
         S.at(
           patch(parent => {
