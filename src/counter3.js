@@ -4,35 +4,6 @@ import type { NPith } from './N'
 import * as N from './N'
 import * as SN from './SN'
 
-const ringState = <A: any, B: any>(
-  key: string,
-  b: B
-): ((
-  NPith<{ states: S.S<B> }, SN.R<B>>
-) => NPith<{ states: S.S<A> }, SN.R<A>>) =>
-  function map(pith) {
-    return (o, i) =>
-      pith(
-        v => {
-          if (v instanceof S.S)
-            o(
-              v.map(x =>
-                x instanceof SN.R
-                  ? SN.r((a: A) => ({ ...a, [key]: x.r(a[key] || b) }))
-                  : x
-              )
-            )
-          else o(v.pmap(map))
-        },
-        {
-          states: i.states.map(s => {
-            if (typeof s[key] === 'object') return s[key]
-            return b
-          })
-        }
-      )
-  }
-
 const counter = (d: number): SN.SN<{ n: number }> =>
   SN.elm(
     'div',
@@ -46,7 +17,7 @@ const counter = (d: number): SN.SN<{ n: number }> =>
               i.on
                 .click()
                 .map(e => SN.r(s => s + 1))
-                .map(r => SN.r(s => ({ ...s, n: r.r(s.n) })))
+                .map(select('n'))
             )
             d > 0 && o(counter(d - 1).pmap(ringState('+', { n: 0 })))
           }).map(N.ringOn)
@@ -61,7 +32,7 @@ const counter = (d: number): SN.SN<{ n: number }> =>
               i.on
                 .click()
                 .map(e => SN.r(s => s - 1))
-                .map(r => SN.r(s => ({ ...s, n: r.r(s.n) })))
+                .map(select('n'))
             )
             d > 0 && o(counter(d - 1).pmap(ringState('-', { n: 0 })))
           }).map(N.ringOn)
@@ -99,3 +70,37 @@ const patches = []
 //     patches.push(e)
 //   }
 // })
+
+function select<A: any, B: any>(key: string): (SN.R<B>) => SN.R<A> {
+  return function(rb) {
+    return SN.r((a: A) => ({ ...a, [key]: rb.r(a[key]) }))
+  }
+}
+
+function ringState<A: any, B: any>(
+  key: string,
+  b: B
+): (NPith<{ states: S.S<B> }, SN.R<B>>) => NPith<{ states: S.S<A> }, SN.R<A>> {
+  return function map(pith) {
+    return (o, i) =>
+      pith(
+        v => {
+          if (v instanceof S.S)
+            o(
+              v.map(x =>
+                x instanceof SN.R
+                  ? SN.r((a: A) => ({ ...a, [key]: x.r(a[key] || b) }))
+                  : x
+              )
+            )
+          else o(v.pmap(map))
+        },
+        {
+          states: i.states.map(s => {
+            if (typeof s[key] === 'object') return s[key]
+            return b
+          })
+        }
+      )
+  }
+}
