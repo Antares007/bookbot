@@ -7,11 +7,11 @@ import * as SN from './SN'
 const counter = (d: number): SN.SN<{ n: number }> =>
   SN.elm(
     'div',
-    S.at((o, i) => {
+    S.d((o, i) => {
       o(
         N.elm(
           'button',
-          S.at((o, i) => {
+          S.d((o, i) => {
             o(N.text('+'))
             o(
               i.on
@@ -26,8 +26,8 @@ const counter = (d: number): SN.SN<{ n: number }> =>
       o(
         N.elm(
           'button',
-          S.at((o, i) => {
-            o(N.text(S.at('-')))
+          S.d((o, i) => {
+            o(N.text(S.d('-')))
             o(
               i.on
                 .click()

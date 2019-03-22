@@ -72,7 +72,7 @@ export function s<A>(pith: $PropertyType<S<A>, 'pith'>): S<A> {
 
 export const empty = <A>(): S<A> => s(o => o(delay(() => o(end))))
 
-export const at = <A>(a: A, dly: number = 0): S<A> =>
+export const d = <A>(a: A, dly: number = 0): S<A> =>
   s(o => {
     o(
       delay(() => {

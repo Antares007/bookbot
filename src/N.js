@@ -43,7 +43,7 @@ export function bark<O>(
     M.bark(o => {
       const pnodes: Array<N<void, O>> = []
       o(
-        S.at(
+        S.d(
           patch(parent => {
             const pnodesLength = pnodes.length
             const childNodes = parent.childNodes
@@ -112,7 +112,7 @@ export const ringOn = <I, N, O>(
   ) => void
 ): (((N | S.S<Patch | O>) => void, I) => void) => (o, i) => {
   var node: ?Node
-  o(S.at(patch(n => ((node = n), void 0))))
+  o(S.d(patch(n => ((node = n), void 0))))
   const ref = S.s(os => {
     os(
       S.delay(function rec() {
@@ -132,9 +132,9 @@ export const text = <I, O>(texts: SS<string>): N<I, O> =>
   node(
     () => document.createTextNode(''),
     n => (n instanceof Text ? n : null),
-    S.at(o =>
+    S.d(o =>
       o(
-        (texts instanceof S.S ? texts : S.at(texts)).map(text =>
+        (texts instanceof S.S ? texts : S.d(texts)).map(text =>
           patch(n => {
             n.textContent = text
           })
