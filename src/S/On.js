@@ -1,4 +1,3 @@
-// @flow strict
 import * as S from './S'
 import * as D from './Disposable'
 
@@ -7,7 +6,7 @@ export class On {
   constructor(ets: S.S<Node>) {
     this.ets = ets
   }
-  event(name: string): S.S<Event> {
+  event(name) {
     return this.ets.flatMap(et =>
       S.s(o => {
         const handler = (e: Event) => o(S.next(e))
@@ -16,22 +15,10 @@ export class On {
       })
     )
   }
-  click(): S.S<MouseEvent> {
-    return this.ets.flatMap(et =>
-      S.s(o => {
-        const handler = (e: MouseEvent) => o(S.next(e))
-        et.addEventListener('click', handler)
-        o(D.create(() => et.removeEventListener('click', handler)))
-      })
-    )
+  click() {
+    return this.event('click')
   }
-  input(): S.S<InputEvent> {
-    return this.ets.flatMap(et =>
-      S.s(o => {
-        const handler = (e: InputEvent) => o(S.next(e))
-        et.addEventListener('input', handler)
-        o(D.create(() => et.removeEventListener('input', handler)))
-      })
-    )
+  input() {
+    return this.event('input')
   }
 }
