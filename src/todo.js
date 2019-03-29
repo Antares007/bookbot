@@ -5,11 +5,7 @@ import * as N from './N'
 
 const initState = {
   inputText: '',
-  todos: [
-    { name: 'a', completed: false },
-    { name: 'b', completed: true },
-    { name: 'c', completed: false }
-  ]
+  todos: []
 }
 
 type Model = typeof initState
@@ -52,7 +48,8 @@ const todoApp = N.elm<Model>('div', (o, i) => {
             i.states.map(m =>
               N.patch(n => {
                 if (n instanceof HTMLElement)
-                  if (m.inputText.length > 0) n.removeAttribute('disabled')
+                  if (m.inputText.trim().length > 0)
+                    n.removeAttribute('disabled')
                   else n.setAttribute('disabled', '')
               })
             )
@@ -65,7 +62,8 @@ const todoApp = N.elm<Model>('div', (o, i) => {
     N.elm(
       'ul',
       i.states.map(m => (o, i) => {
-        for (let todo of m.todos) o(N.elm('li', o => o(N.text(todo.name))))
+        for (let todo of m.todos)
+          o(N.elm('li', o => o(N.text(todo.name)), todo.name))
       })
     )
   )
