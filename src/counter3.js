@@ -4,8 +4,8 @@ import type { NPith } from './N'
 import * as N from './N'
 import * as SN from './SN'
 
-const counter = (d: number): SN.SN<{ n: number }> =>
-  SN.elm(
+const counter = (d: number) =>
+  N.elm(
     'div',
     S.d((o, i) => {
       o(

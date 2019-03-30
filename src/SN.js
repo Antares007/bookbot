@@ -9,20 +9,10 @@ export class R<S> {
   }
 }
 
-export class SN<State> extends N.N<{ states: S.S<State> }, R<State>> {
-  constructor(
-    create: $PropertyType<SN<State>, 'create'>,
-    eq: $PropertyType<SN<State>, 'eq'>,
-    pith: $PropertyType<SN<State>, 'pith'>
-  ) {
-    super(create, eq, pith)
-  }
-}
-
 export function run<State>(
   node: HTMLElement,
   s: State,
-  n: SN<State>
+  n: N.N<{ states: S.S<State> }, R<State>>
 ): S.S<State> {
   var proxyO
   const states = S.s(o => ((proxyO = o), void 0)).multicast()
@@ -57,21 +47,3 @@ export function run<State>(
 }
 
 export const r = <State>(f: State => State): R<State> => new R(f)
-
-export const elm = <State>(
-  tag: string,
-  pith: $PropertyType<SN<State>, 'pith'>,
-  key?: ?string
-): SN<State> => {
-  const TAG = tag.toUpperCase()
-  return new SN(
-    () => document.createElement(tag),
-    n =>
-      n instanceof HTMLElement &&
-      n.nodeName === TAG &&
-      (key == null || n.dataset.key === key)
-        ? n
-        : null,
-    pith
-  )
-}
