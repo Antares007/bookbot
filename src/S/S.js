@@ -2,6 +2,8 @@
 import { delay, now } from './scheduler'
 import * as D from './Disposable'
 
+type StreamF<A> = ((Event<A> | Error | End | D.Disposable) => void) => void
+
 export { delay, now }
 
 export class End {}
@@ -16,7 +18,7 @@ export class Event<+A> {
 export const event = <A>(a: A): Event<A> => new Event(a)
 
 export class S<A> {
-  pith: ((Event<A> | Error | End | D.Disposable) => void) => void
+  pith: StreamF<A>
   constructor(pith: $PropertyType<S<A>, 'pith'>) {
     this.pith = pith
   }
