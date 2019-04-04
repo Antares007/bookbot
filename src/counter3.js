@@ -45,7 +45,7 @@ if (!rootNode) throw new Error('cant find root-node')
 
 SN.run(rootNode, JSON.parse(localStorage.getItem('s') || '{"n":0}'), napp).run(
   e => {
-    if (e instanceof S.Event) {
+    if (e instanceof S.Next) {
       const ns = JSON.stringify(e.value, null, '  ')
       localStorage.setItem('s', ns)
       console.log(ns)

@@ -10,7 +10,7 @@ export class On {
   event(name: string): S.S<Event> {
     return this.ets.flatMap(et =>
       S.s(o => {
-        const handler = (e: Event) => o(S.event(e))
+        const handler = (e: Event) => o(S.next(e))
         et.addEventListener(name, handler)
         o(D.create(() => et.removeEventListener(name, handler)))
       })
@@ -19,7 +19,7 @@ export class On {
   click(): S.S<MouseEvent> {
     return this.ets.flatMap(et =>
       S.s(o => {
-        const handler = (e: MouseEvent) => o(S.event(e))
+        const handler = (e: MouseEvent) => o(S.next(e))
         et.addEventListener('click', handler)
         o(D.create(() => et.removeEventListener('click', handler)))
       })

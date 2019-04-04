@@ -34,7 +34,7 @@ export function run<State>(
       N.run(node, nn)
         .scan((s, r) => r.r(s), s)
         .run(e => {
-          if (e instanceof S.Event)
+          if (e instanceof S.Next)
             o(
               S.delay(() => {
                 proxyO(e)

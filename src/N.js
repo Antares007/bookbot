@@ -117,7 +117,7 @@ export const ringOn = <I, N, O>(
     os(
       S.delay(function rec() {
         if (node) {
-          os(S.event(node))
+          os(S.next(node))
           os(S.delay(() => os(S.end)))
         } else os(S.delay(rec))
       })
