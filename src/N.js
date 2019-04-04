@@ -89,7 +89,7 @@ export const node = <I, O>(
 
 export const elm = <I, O>(
   tag: string,
-  pith: $PropertyType<N<I, O>, 'pith'>,
+  pith: SS<NPith<I, O>>,
   key?: ?string
 ): N<I, O> => {
   const TAG = tag.toUpperCase()
@@ -101,7 +101,7 @@ export const elm = <I, O>(
       (key == null || n.dataset.key === key)
         ? n
         : null,
-    pith
+    pith instanceof S.S ? pith : S.d(pith)
   )
 }
 
