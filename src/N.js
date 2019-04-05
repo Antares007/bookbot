@@ -9,39 +9,73 @@ export class Patch {
     this.patch = patch
   }
 }
+export const r = <State>(f: State => State): R<State> => new R(f)
 
-export type NPith<I, O> = ((N<I, O> | S.S<Patch | O>) => void, I) => void
+export class R<S> {
+  r: S => S
+  constructor(r: S => S) {
+    this.r = r
+  }
+}
 
-export class N<I, O> {
+export type NPith<S> = (
+  (N<S> | S.S<Patch | R<S>>) => void,
+  { on: On.On, states: S.S<S>, ref: S.S<Node> }
+) => void
+
+export class N<S> {
   create: () => Node
   eq: Node => ?Node
-  pith: S.S<NPith<I, O>>
+  pith: S.S<NPith<S>>
   constructor(
-    create: $PropertyType<N<I, O>, 'create'>,
-    eq: $PropertyType<N<I, O>, 'eq'>,
-    pith: $PropertyType<N<I, O>, 'pith'>
+    create: $PropertyType<N<S>, 'create'>,
+    eq: $PropertyType<N<S>, 'eq'>,
+    pith: $PropertyType<N<S>, 'pith'>
   ) {
     this.create = create
     this.eq = eq
     this.pith = pith
   }
-  pmap<Io, Oo>(f: (NPith<I, O>) => NPith<Io, Oo>): N<Io, Oo> {
+  pmap<Sb>(f: (NPith<S>) => NPith<Sb>): N<Sb> {
     return new N(this.create, this.eq, this.pith.map(f))
   }
 }
 
-export function run<O>(node: HTMLElement, n: N<void, O>): S.S<O> {
+export function run<State>(
+  node: HTMLElement,
+  s: State,
+  n: N<State>
+): S.S<State> {
+  var proxyO
+  const states = S.s(o => ((proxyO = o), void 0)).multicast()
   const elm = n.eq(node) || node.insertBefore(n.create(), null)
-  const patches: S.S<Patch | O> = bark(n.pith)
-  return patches.filter2(x => (x instanceof Patch ? x.patch(elm) : x))
+  const patches: S.S<Patch | R<State>> = bark(states, n.pith)
+  const rs = patches.filter2(x => (x instanceof Patch ? x.patch(elm) : x))
+  return S.s(o =>
+    o(
+      rs
+        .scan((s, r) => r.r(s), s)
+        .run(e => {
+          if (e instanceof S.Next)
+            o(
+              S.delay(() => {
+                proxyO(e)
+              }, 1)
+            )
+          o(e)
+        })
+    )
+  )
 }
 
-export function bark<O>(
-  pith: $PropertyType<N<void, O>, 'pith'>
-): S.S<Patch | O> {
+export function bark<State>(
+  states: S.S<State>,
+  pith: $PropertyType<N<State>, 'pith'>
+): S.S<Patch | R<State>> {
   const ring = pith =>
     M.bark(o => {
-      const pnodes: Array<N<void, O>> = []
+      const pnodes: Array<N<State>> = []
+      var node: ?Node
       o(
         S.d(
           patch(parent => {
@@ -57,23 +91,37 @@ export function bark<O>(
             }
             for (var i = childNodes.length - 1; i >= pnodesLength; i--)
               parent.removeChild(childNodes[i])
+            node = parent
           })
         )
       )
-      pith(v => {
-        if (v instanceof S.S) o(v)
-        else {
-          const index = pnodes.length
-          pnodes.push(v)
-          o(
-            bark(v.pith).map(p =>
-              p instanceof Patch
-                ? patch(parent => p.patch(parent.childNodes[index]))
-                : p
-            )
-          )
-        }
+      const ref = S.s(os => {
+        os(
+          S.delay(function rec() {
+            if (node) {
+              os(S.next(node))
+              os(S.delay(() => os(S.end)))
+            } else os(S.delay(rec))
+          })
+        )
       })
+      pith(
+        v => {
+          if (v instanceof S.S) o(v)
+          else {
+            const index = pnodes.length
+            pnodes.push(v)
+            o(
+              bark(states, v.pith).map(p =>
+                p instanceof Patch
+                  ? patch(parent => p.patch(parent.childNodes[index]))
+                  : p
+              )
+            )
+          }
+        },
+        { on: new On.On(ref), ref, states }
+      )
     })
   return pith.flatMap(ring)
 }
@@ -81,17 +129,17 @@ export function bark<O>(
 export const patch = (patch: $PropertyType<Patch, 'patch'>): Patch =>
   new Patch(patch)
 
-export const node = <I, O>(
-  create: $PropertyType<N<I, O>, 'create'>,
-  eq: $PropertyType<N<I, O>, 'eq'>,
-  pith: $PropertyType<N<I, O>, 'pith'>
-): N<I, O> => new N<I, O>(create, eq, pith)
+export const node = <State>(
+  create: $PropertyType<N<State>, 'create'>,
+  eq: $PropertyType<N<State>, 'eq'>,
+  pith: $PropertyType<N<State>, 'pith'>
+): N<State> => new N<State>(create, eq, pith)
 
-export const elm = <I, O>(
+export const elm = <State>(
   tag: string,
-  pith: SS<NPith<I, O>>,
+  pith: SS<NPith<State>>,
   key?: ?string
-): N<I, O> => {
+): N<State> => {
   const TAG = tag.toUpperCase()
   return node(
     () => document.createElement(tag),
@@ -128,7 +176,7 @@ export const ringOn = <I, N, O>(
 
 type SS<A> = S.S<A> | A
 
-export const text = <I, O>(texts: SS<string>): N<I, O> =>
+export const text = <State>(texts: SS<string>): N<State> =>
   node(
     () => document.createTextNode(''),
     n => (n instanceof Text ? n : null),
