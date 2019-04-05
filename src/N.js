@@ -3,13 +3,17 @@ import * as S from './S'
 import * as M from './M'
 import * as On from './S/On'
 
+export type NPith<S> = (
+  (N<S> | S.S<Patch | R<S>>) => void,
+  { on: On.On, states: S.S<S>, ref: S.S<Node> }
+) => void
+
 export class Patch {
   patch: Node => void
   constructor(patch: $PropertyType<Patch, 'patch'>) {
     this.patch = patch
   }
 }
-export const r = <State>(f: State => State): R<State> => new R(f)
 
 export class R<S> {
   r: S => S
@@ -17,11 +21,6 @@ export class R<S> {
     this.r = r
   }
 }
-
-export type NPith<S> = (
-  (N<S> | S.S<Patch | R<S>>) => void,
-  { on: On.On, states: S.S<S>, ref: S.S<Node> }
-) => void
 
 export class N<S> {
   create: () => Node
@@ -126,8 +125,12 @@ export function bark<State>(
   return pith.flatMap(ring)
 }
 
+type SS<A> = S.S<A> | A
+
 export const patch = (patch: $PropertyType<Patch, 'patch'>): Patch =>
   new Patch(patch)
+
+export const r = <State>(f: State => State): R<State> => new R(f)
 
 export const node = <State>(
   create: $PropertyType<N<State>, 'create'>,
@@ -152,29 +155,6 @@ export const elm = <State>(
     pith instanceof S.S ? pith : S.d(pith)
   )
 }
-
-export const ringOn = <I, N, O>(
-  pith: (
-    (N | S.S<Patch | O>) => void,
-    { i: I, on: On.On, ref: S.S<Node> }
-  ) => void
-): (((N | S.S<Patch | O>) => void, I) => void) => (o, i) => {
-  var node: ?Node
-  o(S.d(patch(n => ((node = n), void 0))))
-  const ref = S.s(os => {
-    os(
-      S.delay(function rec() {
-        if (node) {
-          os(S.next(node))
-          os(S.delay(() => os(S.end)))
-        } else os(S.delay(rec))
-      })
-    )
-  })
-  pith(o, { ...i, on: new On.On(ref), ref })
-}
-
-type SS<A> = S.S<A> | A
 
 export const text = <State>(texts: SS<string>): N<State> =>
   node(

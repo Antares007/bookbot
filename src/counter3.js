@@ -19,7 +19,7 @@ const counter = (d: number) =>
     )
     o(
       N.elm('button', (o, i) => {
-        o(N.text('+'))
+        o(N.text('-'))
         o(
           i.on
             .click()
