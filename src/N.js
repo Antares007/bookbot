@@ -1,4 +1,4 @@
-// @flow strict
+// @flow
 import * as S from './S'
 import * as M from './M'
 import * as On from './S/On'
@@ -170,3 +170,38 @@ export const text = <State>(texts: SS<string>): N<State> =>
       )
     )
   )
+
+export function select<A: any, B: any>(key: string): (R<B>) => R<A> {
+  return function(rb) {
+    return r((a: A) => ({ ...a, [key]: rb.r(a[key]) }))
+  }
+}
+
+export function ringState<A: any, B: any>(
+  key: string,
+  b: B
+): (NPith<B>) => NPith<A> {
+  return function map(pith) {
+    return (o, i) =>
+      pith(
+        v => {
+          if (v instanceof S.S)
+            o(
+              v.map(x =>
+                x instanceof R
+                  ? r((a: A) => ({ ...a, [key]: x.r(a[key] || b) }))
+                  : x
+              )
+            )
+          else o(v.pmap(map))
+        },
+        {
+          ...i,
+          states: i.states.map(s => {
+            if (typeof s[key] === 'object') return s[key]
+            return b
+          })
+        }
+      )
+  }
+}
