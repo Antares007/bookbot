@@ -25,4 +25,13 @@ export class On {
       })
     )
   }
+  input(): S.S<InputEvent> {
+    return this.ets.flatMap(et =>
+      S.s(o => {
+        const handler = (e: InputEvent) => o(S.next(e))
+        et.addEventListener('input', handler)
+        o(D.create(() => et.removeEventListener('input', handler)))
+      })
+    )
+  }
 }
