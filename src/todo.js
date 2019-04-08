@@ -61,35 +61,38 @@ const todoApp = N.elm<Model>('div', (o, i) => {
   o(
     N.elm(
       'ul',
-      i.states.map(m => (o, i) => {
-        for (let todo of m.todos)
-          o(
-            N.elm(
-              'li',
-              o => {
-                o(
-                  N.elm('div', o => {
-                    o(N.text(todo.name))
-                    o(
-                      N.elm('button', (o, i) => {
-                        o(N.text('-'))
-                        o(
-                          i.on.click().map(_ =>
-                            N.r(s => ({
-                              ...s,
-                              todos: s.todos.filter(x => x !== todo)
-                            }))
+      i.states
+        .map(m => m.todos)
+        .skipEquals()
+        .map(todos => (o, i) => {
+          for (let todo of todos)
+            o(
+              N.elm(
+                'li',
+                o => {
+                  o(
+                    N.elm('div', o => {
+                      o(N.text(todo.name))
+                      o(
+                        N.elm('button', (o, i) => {
+                          o(N.text('-'))
+                          o(
+                            i.on.click().map(_ =>
+                              N.r(s => ({
+                                ...s,
+                                todos: s.todos.filter(x => x !== todo)
+                              }))
+                            )
                           )
-                        )
-                      })
-                    )
-                  })
-                )
-              },
-              todo.name
+                        })
+                      )
+                    })
+                  )
+                },
+                todo.name
+              )
             )
-          )
-      })
+        })
     )
   )
 })
