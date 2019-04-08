@@ -82,11 +82,21 @@ export function bark<State>(
             const childNodes = parent.childNodes
             for (var index = 0; index < pnodesLength; index++) {
               const n = pnodes[index]
-              var li: ?Node
+              var li: ?Node = null
               for (var i = index, l = childNodes.length; i < l; i++)
                 if ((li = n.eq(parent.childNodes[i]))) break
-              if (li == null) parent.insertBefore(n.create(), childNodes[index])
-              else if (i !== index) parent.insertBefore(li, childNodes[index])
+              if (li == null) {
+                li = n.create()
+                console.log('+', li)
+                parent.insertBefore(li, childNodes[index])
+              } else {
+                if (i !== index) {
+                  console.log('~', li)
+                  parent.insertBefore(li, childNodes[index])
+                } else {
+                  console.log('=', li)
+                }
+              }
             }
             for (var i = childNodes.length - 1; i >= pnodesLength; i--)
               parent.removeChild(childNodes[i])
@@ -100,7 +110,7 @@ export function bark<State>(
             if (node) {
               os(S.next(node))
               os(S.delay(() => os(S.end)))
-            } else os(S.delay(rec))
+            } else throw new Error('never')
           })
         )
       })
@@ -122,7 +132,7 @@ export function bark<State>(
         { on: new On.On(ref), ref, states }
       )
     })
-  return pith.flatMap(ring)
+  return pith.flatMapLatest(ring)
 }
 
 type SS<A> = S.S<A> | A
@@ -145,7 +155,11 @@ export const elm = <State>(
 ): N<State> => {
   const TAG = tag.toUpperCase()
   return node(
-    () => document.createElement(tag),
+    () => {
+      const elm = document.createElement(tag)
+      if (key) elm.dataset.key = key
+      return elm
+    },
     n =>
       n instanceof HTMLElement &&
       n.nodeName === TAG &&
