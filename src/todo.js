@@ -18,7 +18,8 @@ const todoApp = N.elm<Model>('div', (o, i) => {
           o(
             i.states.map(m =>
               N.patch(n => {
-                if (n instanceof HTMLInputElement) n.value = m.inputText
+                if (n instanceof HTMLInputElement && n.value !== m.inputText)
+                  n.value = m.inputText
               })
             )
           )

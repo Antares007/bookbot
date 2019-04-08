@@ -178,7 +178,7 @@ export const text = <State>(texts: SS<string>): N<State> =>
       o(
         (texts instanceof S.S ? texts : S.d(texts)).map(text =>
           patch(n => {
-            n.textContent = text
+            if (n.textContent !== text) n.textContent = text
           })
         )
       )
