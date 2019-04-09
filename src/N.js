@@ -80,23 +80,14 @@ export function bark<State>(
           patch(parent => {
             const pnodesLength = pnodes.length
             const childNodes = parent.childNodes
+            var li: ?Node
             for (var index = 0; index < pnodesLength; index++) {
               const n = pnodes[index]
-              var li: ?Node = null
+              li = null
               for (var i = index, l = childNodes.length; i < l; i++)
                 if ((li = n.eq(parent.childNodes[i]))) break
-              if (li == null) {
-                li = n.create()
-                console.log('+', li)
-                parent.insertBefore(li, childNodes[index])
-              } else {
-                if (i !== index) {
-                  console.log('~', li)
-                  parent.insertBefore(li, childNodes[index])
-                } else {
-                  console.log('=', li)
-                }
-              }
+              if (li == null) parent.insertBefore(n.create(), childNodes[index])
+              else if (i !== index) parent.insertBefore(li, childNodes[index])
             }
             for (var i = childNodes.length - 1; i >= pnodesLength; i--)
               parent.removeChild(childNodes[i])
