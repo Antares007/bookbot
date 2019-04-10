@@ -1,4 +1,4 @@
-// @flow
+// flow
 import * as S from './S'
 import type { NPith } from './N'
 import * as N from './N'

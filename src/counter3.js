@@ -1,9 +1,12 @@
-// @flow
+// flow
 import * as S from './S'
 import * as N from './N'
 
 const counter = (d: number) =>
-  N.elm<{ n: number }>('div', (o, i) => {
+  N.elm <
+  { n: number } >
+  ('div',
+  (o, i) => {
     o(
       N.elm('button', (o, i) => {
         o(N.text('+'))
