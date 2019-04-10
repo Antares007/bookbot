@@ -1,6 +1,6 @@
 // @flow strict
-import * as S from './S'
-import * as M from './M'
+import * as S from '../S'
+import * as M from '../M'
 
 export type NPith<I, O> = ((N<I, O> | S.S<Patch | O>) => void, I) => void
 
@@ -78,44 +78,6 @@ export function bark<I, O>(i: I, pith: S.S<NPith<I, O>>): S.S<Patch | O> {
   return pith.flatMapLatest(ring)
 }
 
-//
-//export const elm = <State>(
-//  tag: string,
-//  pith: SS<NPith<State>>,
-//  key?: ?string
-//): N<State> => {
-//  const TAG = tag.toUpperCase()
-//  return node(
-//    () => {
-//      const elm = document.createElement(tag)
-//      if (key) elm.dataset.key = key
-//      return elm
-//    },
-//    n =>
-//      n instanceof HTMLElement &&
-//      n.nodeName === TAG &&
-//      (key == null || n.dataset.key === key)
-//        ? n
-//        : null,
-//    pith instanceof S.S ? pith : S.d(pith)
-//  )
-//}
-//
-//export const text = <State>(texts: SS<string>): N<State> =>
-//  node(
-//    () => document.createTextNode(''),
-//    n => (n instanceof Text ? n : null),
-//    S.d(o =>
-//      o(
-//        (texts instanceof S.S ? texts : S.d(texts)).map(text =>
-//          patch(n => {
-//            if (n.textContent !== text) n.textContent = text
-//          })
-//        )
-//      )
-//    )
-//  )
-//
 //export function select<A: any, B: any>(key: string): (R<B>) => R<A> {
 //  return function(rb) {
 //    return r((a: A) => ({ ...a, [key]: rb.r(a[key]) }))
