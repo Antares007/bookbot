@@ -61,6 +61,24 @@ const counter = (d: number) =>
     o('0')
   })
 
-function run<N: Node>(pith: SS<NPith<N>>) {}
+function run<N: Node>(pith: SS<NPith<N>>) {
+  return (pith instanceof S.S ? pith : S.d(pith)).flatMapLatest(pith => {
+    const nodes = []
+    const patches = []
+    pith.pith({
+      o: v => {
+        nodes.push(v instanceof S.S ? v : S.d(v))
+      },
+      patch: v => {
+        patches.push(v instanceof S.S ? v : S.d(v))
+      }
+    })
+    const init = S.combine(nodes => {}, nodes)
+      .take(1)
+      .multicast()
+
+    return S.d(1)
+  })
+}
 
 run(counter(3))

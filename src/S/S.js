@@ -67,6 +67,9 @@ export class S<A> {
   skipEquals(): S<A> {
     return skipEquals(this)
   }
+  skipUntil<U>(us: S<U>): S<A> {
+    return skipUntil(us, this)
+  }
 }
 export function s<A>(f: $PropertyType<S<A>, 'f'>): S<A> {
   return new S(f)
@@ -102,9 +105,9 @@ export const run = <A>(
   var disposables = []
   var disposed = false
   const disposable = D.create(() => {
-    var d
+    if (disposed) return
     disposed = true
-    while ((d = disposables.shift())) d.dispose()
+    for (var d of disposables) d.dispose()
   })
   var tp = now()
   as.f(function S$run(e) {
@@ -115,6 +118,7 @@ export const run = <A>(
       else (tp = now()), (disposables = [e])
     } else {
       if (e instanceof Error) disposable.dispose()
+      else disposables = []
       o(e)
     }
   })
@@ -383,5 +387,27 @@ export const skipEquals = <A>(as: S<A>): S<A> => {
         o(e)
       } else o(e)
     })
+  })
+}
+
+export const skipUntil = <A, U>(us: S<U>, as: S<A>): S<A> => {
+  return s(o => {
+    var skip = true
+    var d
+    o(
+      (d = run(e => {
+        if (e instanceof Next) {
+          skip = false
+          d.dispose()
+        } else if (e instanceof Error) o(e)
+      }, us))
+    )
+    o(
+      run(e => {
+        if (e instanceof Next) {
+          if (!skip) o(e)
+        } else o(e)
+      }, as)
+    )
   })
 }
