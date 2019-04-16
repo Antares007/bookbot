@@ -61,24 +61,46 @@ const counter = (d: number) =>
     o('0')
   })
 
-function run<N: Node>(pith: SS<NPith<N>>) {
-  return (pith instanceof S.S ? pith : S.d(pith)).flatMapLatest(pith => {
-    const nodes = []
-    const patches = []
-    pith.pith({
-      o: v => {
-        nodes.push(v instanceof S.S ? v : S.d(v))
-      },
-      patch: v => {
-        patches.push(v instanceof S.S ? v : S.d(v))
-      }
-    })
-    const init = S.combine(nodes => {}, nodes)
-      .take(1)
-      .multicast()
-
-    return S.d(1)
+function run<N: Node>(ps: S.S<NPith<N>>): S.S<(N) => void> {
+  return S.s(o => {
+    o(
+      S.run(e => {
+        if (e instanceof S.Next) {
+          var i = 0
+          e.value.pith({
+            o: v => {
+              const sv = v instanceof S.S ? v : S.d(v)
+            },
+            patch: v => {
+              const sv = v instanceof S.S ? v : S.d(v)
+            }
+          })
+        } else o(e)
+      }, ps)
+    )
+    //
   })
+
+  //return (pith instanceof S.S ? pith : S.d(pith)).flatMapLatest(pith => {
+  //  const nodes = []
+  //  const patches = []
+  //  pith.pith({
+  //    o: v => {
+  //      nodes.push(v instanceof S.S ? v : S.d(v))
+  //    },
+  //    patch: v => {
+  //      patches.push(v instanceof S.S ? v : S.d(v))
+  //    }
+  //  })
+  //  S.s(o => {
+  //    //
+  //  })
+  //  const init = S.combine(nodes => {}, nodes)
+  //    .take(1)
+  //    .multicast()
+
+  //  return S.d(1)
+  //})
 }
 
-run(counter(3))
+run(S.d(counter(3)))
