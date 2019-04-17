@@ -85,29 +85,41 @@ function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
     for (var i = 0, l = nodess.length; i < l; i++) {
       const n = nodess[i]
       if (n instanceof S.S) {
-        dmap.set(
-          n,
-          S.run(e => {
-            if (e instanceof S.Next) {
-              if (nodes) {
-                nodes[i] = e.value
-              } else {
-                mnodes[i] = e.value
-                if (!mnodes.some(n => n === null))
-                  nodes = cast(mnodes)<Array<Nodes>>()
-                o(initPatch)
-              }
-            } else if (e instanceof S.End) {
-              dmap.delete(n)
-              if (dmap.size === 0) o(e)
-            } else o(e)
-          }, n)
-        )
+        dmap.set(n, S.run(onchild(n, i), n))
         mnodes.push(null)
       } else mnodes.push(n)
     }
 
     var nodes: Array<Nodes>
+    var nodes2: []
+
+    function onchild(n, i) {
+      return e => {
+        if (e instanceof S.Next) {
+          if (nodes) {
+            nodes[i] = e.value
+          } else {
+            mnodes[i] = e.value
+            if (mnodes.some(n => n === null)) return
+            const nodes_ = cast(mnodes)<Array<Nodes>>()
+            for (var mn of nodes_) {
+              if (typeof mn === 'string') {
+                mn
+              } else if (mn instanceof Div) {
+                let see = run(mn)
+              } else if (mn instanceof Button) {
+                o(S.run(o, run(mn).map(p => n => {})))
+              }
+            }
+            nodes = cast(mnodes)<Array<Nodes>>()
+            o(initPatch)
+          }
+        } else if (e instanceof S.End) {
+          dmap.delete(n)
+          if (dmap.size === 0) o(e)
+        } else o(e)
+      }
+    }
 
     const initPatch = S.next(parent => {
       const pnodesLength = nodes.length
@@ -117,7 +129,6 @@ function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
         const n = nodes[index]
         const TAG =
           typeof n === 'string' ? '#text' : n.constructor.name.toUpperCase()
-
         li = null
         for (var i = index, l = childNodes.length; i < l; i++)
           if (childNodes[i].nodeName === TAG) {
