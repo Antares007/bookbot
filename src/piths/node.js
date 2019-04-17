@@ -1,5 +1,7 @@
 // @flow
 import * as S from '../S'
+import * as D from '../S/Disposable'
+import { cast } from '../cast'
 
 type SS<A> = S.S<A> | A
 
@@ -61,46 +63,79 @@ const counter = (d: number) =>
     o('0')
   })
 
-function run<N: Node>(ps: S.S<NPith<N>>): S.S<(N) => void> {
+function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
   return S.s(o => {
+    const dmap: Map<S.S<Nodes>, D.Disposable> = new Map()
+
     o(
-      S.run(e => {
-        if (e instanceof S.Next) {
-          var i = 0
-          e.value.pith({
-            o: v => {
-              const sv = v instanceof S.S ? v : S.d(v)
-            },
-            patch: v => {
-              const sv = v instanceof S.S ? v : S.d(v)
-            }
-          })
-        } else o(e)
-      }, ps)
+      D.create(() => {
+        for (var d of dmap.values()) d.dispose()
+      })
     )
-    //
+
+    const nodess: Array<SS<Nodes>> = []
+
+    pith.pith({
+      o: v => (nodess.push(v), void 0),
+      patch: v => {}
+    })
+
+    const mnodes: Array<?Nodes> = []
+
+    for (var i = 0, l = nodess.length; i < l; i++) {
+      const n = nodess[i]
+      if (n instanceof S.S) {
+        dmap.set(
+          n,
+          S.run(e => {
+            if (e instanceof S.Next) {
+              if (nodes) {
+                nodes[i] = e.value
+              } else {
+                mnodes[i] = e.value
+                if (!mnodes.some(n => n === null))
+                  nodes = cast(mnodes)<Array<Nodes>>()
+                o(initPatch)
+              }
+            } else if (e instanceof S.End) {
+              dmap.delete(n)
+              if (dmap.size === 0) o(e)
+            } else o(e)
+          }, n)
+        )
+        mnodes.push(null)
+      } else mnodes.push(n)
+    }
+
+    var nodes: Array<Nodes>
+
+    const initPatch = S.next(parent => {
+      const pnodesLength = nodes.length
+      const childNodes = parent.childNodes
+      var li: ?Node
+      for (var index = 0; index < pnodesLength; index++) {
+        const n = nodes[index]
+        const TAG =
+          typeof n === 'string' ? '#text' : n.constructor.name.toUpperCase()
+
+        li = null
+        for (var i = index, l = childNodes.length; i < l; i++)
+          if (childNodes[i].nodeName === TAG) {
+            li = childNodes[i]
+            break
+          }
+        if (li == null) {
+          li =
+            typeof n === 'string'
+              ? document.createTextNode(n)
+              : document.createElement(TAG)
+          parent.insertBefore(li, childNodes[index])
+        } else if (i !== index) parent.insertBefore(li, childNodes[index])
+      }
+      for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+        parent.removeChild(childNodes[i])
+    })
   })
-
-  //return (pith instanceof S.S ? pith : S.d(pith)).flatMapLatest(pith => {
-  //  const nodes = []
-  //  const patches = []
-  //  pith.pith({
-  //    o: v => {
-  //      nodes.push(v instanceof S.S ? v : S.d(v))
-  //    },
-  //    patch: v => {
-  //      patches.push(v instanceof S.S ? v : S.d(v))
-  //    }
-  //  })
-  //  S.s(o => {
-  //    //
-  //  })
-  //  const init = S.combine(nodes => {}, nodes)
-  //    .take(1)
-  //    .multicast()
-
-  //  return S.d(1)
-  //})
 }
 
-run(S.d(counter(3)))
+run(counter(3))
