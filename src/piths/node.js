@@ -65,76 +65,53 @@ const counter = (d: number) =>
 
 function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
   return S.s(o => {
-    const dmap: Map<*, D.Disposable> = new Map()
+    const { start, stop } = makeStreamController(o)
+    const mnodes: Array<?Nodes> = []
+    const mnodeIdxs = []
+    var mi = 0
+    const hasAllNodes = () => {
+      for (; mi < mnodeIdxs.length; mi++)
+        if (mnodes[mnodeIdxs[mi]] === null) return false
+      return true
+    }
+    var nodes: Array<Nodes>
+    var i = 0
 
-    o(
-      D.create(() => {
-        for (var d of dmap.values()) d.dispose()
-      })
-    )
-
-    const nodess: Array<SS<Nodes>> = []
-
+    const mkMapper = <T>(
+      index: number,
+      klass: Class<T>
+    ): (((T) => void) => N => void) => {
+      return p => (n: N) => {
+        const li = n.childNodes[index]
+        if (li instanceof klass) p(li)
+        else throw new Error('never')
+      }
+    }
     pith.pith({
-      o: v => (nodess.push(v), void 0),
+      o: ssnode => {
+        const index = i++
+        if (ssnode instanceof S.S) {
+          mnodes.push(null)
+          mnodeIdxs.push(index)
+          start(node => {
+            if (nodes) {
+              update(node, index)
+            } else {
+              mnodes[index] = node
+            }
+          }, ssnode)
+        } else {
+          mnodes.push(ssnode)
+          if (ssnode instanceof Div) {
+            let see = run(ssnode).map(mkMapper(index, HTMLDivElement))
+          }
+        }
+      },
       patch: v => {}
     })
 
-    const mnodes: Array<?Nodes> = []
-
-    for (var i = 0, l = nodess.length; i < l; i++) {
-      const n = nodess[i]
-      if (n instanceof S.S) {
-        dmap.set(n, S.run(onchild(n, i), n))
-        mnodes.push(null)
-      } else mnodes.push(n)
-    }
-
-    var nodes: Array<Nodes>
-    var nodes2: []
-
-    function onchild(n, i) {
-      return e => {
-        if (e instanceof S.Next) {
-          if (nodes) {
-            nodes[i] = e.value
-          } else {
-            mnodes[i] = e.value
-            if (mnodes.some(n => n === null)) return
-            const nodes_ = cast(mnodes)<Array<Nodes>>()
-            for (let mn of nodes_) {
-              if (typeof mn === 'string') {
-                mn
-              } else if (mn instanceof Div) {
-                let see = run(mn)
-              } else if (mn instanceof Button) {
-                dmap.set(
-                  mn,
-                  S.run(e => {
-                    if (e instanceof S.Next) {
-                      o(
-                        S.next(parent => {
-                          const n = parent.childNodes[i]
-                        })
-                      )
-                      e.value
-                    } else if (e instanceof S.End) {
-                      dmap.delete(mn)
-                      if (dmap.size === 0) o(e)
-                    } else o(e)
-                  }, run(mn))
-                )
-              }
-            }
-            nodes = cast(mnodes)<Array<Nodes>>()
-            o(initPatch)
-          }
-        } else if (e instanceof S.End) {
-          dmap.delete(n)
-          if (dmap.size === 0) o(e)
-        } else o(e)
-      }
-    }
+    function init() {}
+    function update(node, index) {}
 
     const initPatch = S.next(parent => {
       const pnodesLength = nodes.length
@@ -165,3 +142,36 @@ function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
 }
 
 run(counter(3))
+
+function makeStreamController(o) {
+  const dmap: Map<*, D.Disposable> = new Map()
+  const start = <A>(f: A => void, $: S.S<A>): void => {
+    dmap.set(
+      $,
+      S.run(e => {
+        if (e instanceof S.Next) f(e.value)
+        else if (e instanceof S.End) {
+          dmap.delete($)
+          if (dmap.size === 0) o(e)
+        } else o(e)
+      }, $)
+    )
+  }
+  const stop = <A>($: S.S<A>): void => {
+    const d = dmap.get($)
+    if (d) {
+      dmap.delete($)
+      d.dispose()
+      if (dmap.size === 0) o(S.end)
+    } else throw new Error('never')
+  }
+  o(
+    D.create(() => {
+      for (var d of dmap.values()) d.dispose()
+    })
+  )
+  return {
+    start,
+    stop
+  }
+}
