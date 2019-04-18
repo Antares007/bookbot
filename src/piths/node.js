@@ -65,7 +65,7 @@ const counter = (d: number) =>
 
 function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
   return S.s(o => {
-    const dmap: Map<S.S<Nodes>, D.Disposable> = new Map()
+    const dmap: Map<*, D.Disposable> = new Map()
 
     o(
       D.create(() => {
@@ -102,13 +102,28 @@ function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
             mnodes[i] = e.value
             if (mnodes.some(n => n === null)) return
             const nodes_ = cast(mnodes)<Array<Nodes>>()
-            for (var mn of nodes_) {
+            for (let mn of nodes_) {
               if (typeof mn === 'string') {
                 mn
               } else if (mn instanceof Div) {
                 let see = run(mn)
               } else if (mn instanceof Button) {
-                o(S.run(o, run(mn).map(p => n => {})))
+                dmap.set(
+                  mn,
+                  S.run(e => {
+                    if (e instanceof S.Next) {
+                      o(
+                        S.next(parent => {
+                          const n = parent.childNodes[i]
+                        })
+                      )
+                      e.value
+                    } else if (e instanceof S.End) {
+                      dmap.delete(mn)
+                      if (dmap.size === 0) o(e)
+                    } else o(e)
+                  }, run(mn))
+                )
               }
             }
             nodes = cast(mnodes)<Array<Nodes>>()
