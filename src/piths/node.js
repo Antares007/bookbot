@@ -66,17 +66,8 @@ const counter = (d: number) =>
 function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
   return S.s(o => {
     const { start, stop } = makeStreamController(o)
-    const mnodes: Array<?Nodes> = []
-    const mnodeIdxs = []
-    var mi = 0
-    const hasAllNodes = () => {
-      for (; mi < mnodeIdxs.length; mi++)
-        if (mnodes[mnodeIdxs[mi]] === null) return false
-      return true
-    }
-    var nodes: Array<Nodes>
-    var i = 0
-
+    const nodes: Array<string | [Div | Button, S.S<(N) => void>]> = []
+    const awaitingIds = []
     const mkMapper = <T>(
       index: number,
       klass: Class<T>
@@ -87,61 +78,128 @@ function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
         else throw new Error('never')
       }
     }
+    const mkNode = (
+      node: Nodes,
+      index: number
+    ): string | [Div | Button, S.S<(N) => void>] => {
+      if (typeof node === 'string') {
+        return node
+      } else if (node instanceof Div) {
+        return [node, run(node).map(mkMapper(index, HTMLDivElement))]
+      } else {
+        return [node, run(node).map(mkMapper(index, HTMLButtonElement))]
+      }
+    }
+    var i = 0
     pith.pith({
       o: ssnode => {
         const index = i++
         if (ssnode instanceof S.S) {
-          mnodes.push(null)
-          mnodeIdxs.push(index)
+          nodes.push('')
           start(node => {
-            if (nodes) {
-              update(node, index)
+            if (awaitingIds.length === 0) {
+              update(mkNode(node, index), index)
             } else {
-              mnodes[index] = node
+              var pos = awaitingIds.indexOf(index)
+              if (pos >= 0) awaitingIds.splice(pos, 1)
+              nodes[index] = mkNode(node, index)
+              if (awaitingIds.length === 0) init()
             }
           }, ssnode)
-        } else {
-          mnodes.push(ssnode)
-          if (ssnode instanceof Div) {
-            let see = run(ssnode).map(mkMapper(index, HTMLDivElement))
-          }
-        }
+        } else nodes.push(mkNode(ssnode, index))
       },
       patch: v => {}
     })
+    if (awaitingIds.length === 0) init()
 
-    function init() {}
-    function update(node, index) {}
-
-    const initPatch = S.next(parent => {
-      const pnodesLength = nodes.length
-      const childNodes = parent.childNodes
-      var li: ?Node
-      for (var index = 0; index < pnodesLength; index++) {
-        const n = nodes[index]
-        const TAG =
-          typeof n === 'string' ? '#text' : n.constructor.name.toUpperCase()
-        li = null
-        for (var i = index, l = childNodes.length; i < l; i++)
-          if (childNodes[i].nodeName === TAG) {
-            li = childNodes[i]
-            break
-          }
-        if (li == null) {
-          li =
-            typeof n === 'string'
-              ? document.createTextNode(n)
-              : document.createElement(TAG)
-          parent.insertBefore(li, childNodes[index])
-        } else if (i !== index) parent.insertBefore(li, childNodes[index])
+    function update(node, index) {
+      const oldNode = nodes[index]
+      if (typeof node === 'string')
+        if (typeof oldNode === 'string') {
+          if (oldNode !== node)
+            o(
+              S.next(parent => {
+                parent.childNodes[index].textContent = node
+              })
+            )
+        } else
+          o(
+            S.next(parent => {
+              const on = parent.childNodes[index]
+              parent.insertBefore(document.createTextNode(node), on)
+              parent.removeChild(on)
+            })
+          )
+      else {
+        if (
+          typeof oldNode !== 'string' &&
+          oldNode[0].constructor === node[0].constructor
+        ) {
+          stop(oldNode[1])
+        } else {
+          if (typeof oldNode !== 'string') stop(oldNode[1])
+          o(
+            S.next(parent => {
+              const on = parent.childNodes[index]
+              parent.insertBefore(
+                document.createTextNode(node[0].constructor.name),
+                on
+              )
+              parent.removeChild(on)
+            })
+          )
+        }
+        start(p => o(S.next(p)), node[1])
       }
-      for (var i = childNodes.length - 1; i >= pnodesLength; i--)
-        parent.removeChild(childNodes[i])
-    })
+      nodes[index] = node
+    }
+
+    function init() {
+      o(
+        S.next(parent => {
+          const pnodesLength = nodes.length
+          const childNodes = parent.childNodes
+          var li: ?Node
+          for (var index = 0; index < pnodesLength; index++) {
+            const x = nodes[index]
+            const TAG =
+              typeof x === 'string'
+                ? '#text'
+                : x[0].constructor.name.toUpperCase()
+            li = null
+            for (var i = index, l = childNodes.length; i < l; i++)
+              if (childNodes[i].nodeName === TAG) {
+                li = childNodes[i]
+                break
+              }
+            if (li == null) {
+              li =
+                typeof x === 'string'
+                  ? document.createTextNode(x)
+                  : document.createElement(TAG)
+              parent.insertBefore(li, childNodes[index])
+            } else if (i !== index) parent.insertBefore(li, childNodes[index])
+          }
+          for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+            parent.removeChild(childNodes[i])
+        })
+      )
+      for (var i = 0, l = nodes.length; i < l; i++) {
+        const n = nodes[i]
+        if (typeof n === 'string') continue
+        start(p => o(S.next(p)), n[1])
+      }
+    }
   })
 }
 
-run(counter(3))
+var patches = run(counter(3))
+const rootNode = document.getElementById('root-node')
+if (!rootNode) throw new Error('cant find root-node')
+const elm = document.createElement('div')
+rootNode.appendChild(elm)
+
+patches.map(p => p(elm)).run(console.log.bind(console))
 
 function makeStreamController(o) {
   const dmap: Map<*, D.Disposable> = new Map()
