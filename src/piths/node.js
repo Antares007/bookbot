@@ -1,4 +1,4 @@
-// @flow
+// @flow strict
 import * as S from '../S'
 import * as D from '../S/Disposable'
 import { cast } from '../cast'
@@ -46,24 +46,7 @@ const see = div(
   })
 )
 
-const counter = (d: number) =>
-  div(({ o }) => {
-    o(
-      button(({ o }) => {
-        o('+')
-        d > 0 && o(counter(d - 1))
-      })
-    )
-    o(
-      button(({ o }) => {
-        o('-')
-        d > 0 && o(counter(d - 1))
-      })
-    )
-    o('0')
-  })
-
-function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
+export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
   return S.s(o => {
     const { start, stop } = makeStreamController(o)
     const nodes: Array<string | [Div | Button, S.S<(N) => void>]> = []
@@ -96,13 +79,14 @@ function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
         const index = i++
         if (ssnode instanceof S.S) {
           nodes.push('')
+          awaitingIds.push(index)
           start(node => {
             if (awaitingIds.length === 0) {
-              update(mkNode(node, index), index)
+              update(mkNode(node.value, index), index)
             } else {
               var pos = awaitingIds.indexOf(index)
               if (pos >= 0) awaitingIds.splice(pos, 1)
-              nodes[index] = mkNode(node, index)
+              nodes[index] = mkNode(node.value, index)
               if (awaitingIds.length === 0) init()
             }
           }, ssnode)
@@ -110,7 +94,7 @@ function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
       },
       patch: v => {}
     })
-    if (awaitingIds.length === 0) init()
+    if (awaitingIds.length === 0) o(S.delay(() => init()))
 
     function update(node, index) {
       const oldNode = nodes[index]
@@ -149,7 +133,7 @@ function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
             })
           )
         }
-        start(p => o(S.next(p)), node[1])
+        start(o, node[1])
       }
       nodes[index] = node
     }
@@ -187,27 +171,19 @@ function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
       for (var i = 0, l = nodes.length; i < l; i++) {
         const n = nodes[i]
         if (typeof n === 'string') continue
-        start(p => o(S.next(p)), n[1])
+        start(o, n[1])
       }
     }
   })
 }
 
-var patches = run(counter(3))
-const rootNode = document.getElementById('root-node')
-if (!rootNode) throw new Error('cant find root-node')
-const elm = document.createElement('div')
-rootNode.appendChild(elm)
-
-patches.map(p => p(elm)).run(console.log.bind(console))
-
 function makeStreamController(o) {
   const dmap: Map<*, D.Disposable> = new Map()
-  const start = <A>(f: A => void, $: S.S<A>): void => {
+  const start = <A>(f: (S.Next<A>) => void, $: S.S<A>): void => {
     dmap.set(
       $,
       S.run(e => {
-        if (e instanceof S.Next) f(e.value)
+        if (e instanceof S.Next) f(e)
         else if (e instanceof S.End) {
           dmap.delete($)
           if (dmap.size === 0) o(e)
