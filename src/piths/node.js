@@ -31,54 +31,17 @@ const ring = <N: Node>(
   return o => {}
 }
 
-const see = div(
-  ring(({ o, patch }, i) => {
-    patch(a => {})
-    patch(true)
-    o(
-      button(
-        ring(({ o, patch }, i) => {
-          patch(n => {})
-        })
-      )
-    )
-    o(div(({ o, patch }, i) => {}))
-  })
-)
-
 export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
   return S.s(o => {
     const { start, stop } = makeStreamController(o)
     const nodes: Array<string | [Div | Button, S.S<(N) => void>]> = []
     const awaitingIds = []
-    const mkMapper = <T>(
-      index: number,
-      klass: Class<T>
-    ): (((T) => void) => N => void) => {
-      return p => (n: N) => {
-        const li = n.childNodes[index]
-        if (li instanceof klass) p(li)
-        else throw new Error('never')
-      }
-    }
-    const mkNode = (
-      node: Nodes,
-      index: number
-    ): string | [Div | Button, S.S<(N) => void>] => {
-      if (typeof node === 'string') {
-        return node
-      } else if (node instanceof Div) {
-        return [node, run(node).map(mkMapper(index, HTMLDivElement))]
-      } else {
-        return [node, run(node).map(mkMapper(index, HTMLButtonElement))]
-      }
-    }
     var i = 0
     pith.pith({
       o: ssnode => {
         const index = i++
         if (ssnode instanceof S.S) {
-          nodes.push('')
+          nodes.push('empty')
           awaitingIds.push(index)
           start(node => {
             if (awaitingIds.length === 0) {
@@ -98,44 +61,28 @@ export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
 
     function update(node, index) {
       const oldNode = nodes[index]
-      if (typeof node === 'string')
-        if (typeof oldNode === 'string') {
-          if (oldNode !== node)
-            o(
-              S.next(parent => {
-                parent.childNodes[index].textContent = node
-              })
-            )
-        } else
-          o(
-            S.next(parent => {
-              const on = parent.childNodes[index]
+      nodes[index] = node
+      if (typeof oldNode !== 'string') stop(oldNode[1])
+      o(
+        S.next(parent => {
+          const on = parent.childNodes[index]
+          if (typeof node === 'string') {
+            if (on.nodeName === '#text') {
+              if (on.textContent !== node) on.textContent = node
+            } else {
               parent.insertBefore(document.createTextNode(node), on)
               parent.removeChild(on)
-            })
-          )
-      else {
-        if (
-          typeof oldNode !== 'string' &&
-          oldNode[0].constructor === node[0].constructor
-        ) {
-          stop(oldNode[1])
-        } else {
-          if (typeof oldNode !== 'string') stop(oldNode[1])
-          o(
-            S.next(parent => {
-              const on = parent.childNodes[index]
-              parent.insertBefore(
-                document.createTextNode(node[0].constructor.name),
-                on
-              )
+            }
+          } else {
+            const TAG = node[0].constructor.name.toUpperCase()
+            if (on.nodeName !== TAG) {
+              parent.insertBefore(document.createElement(TAG), on)
               parent.removeChild(on)
-            })
-          )
-        }
-        start(o, node[1])
-      }
-      nodes[index] = node
+            }
+          }
+        })
+      )
+      if (typeof node !== 'string') start(o, node[1])
     }
 
     function init() {
@@ -177,7 +124,30 @@ export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
   })
 }
 
-function makeStreamController(o) {
+type INode<N: Node> = string | [Div | Button, S.S<(N) => void>]
+
+function mkMapper<T, N: Node>(
+  index: number,
+  klass: Class<T>
+): ((T) => void) => N => void {
+  return p => n => {
+    const li = n.childNodes[index]
+    if (li instanceof klass) p(li)
+    else throw new Error('never')
+  }
+}
+
+function mkNode<N: Node>(node: Nodes, index: number): INode<N> {
+  if (typeof node === 'string') {
+    return node
+  } else if (node instanceof Div) {
+    return [node, run(node).map(mkMapper(index, HTMLDivElement))]
+  } else {
+    return [node, run(node).map(mkMapper(index, HTMLButtonElement))]
+  }
+}
+
+function makeStreamController(o: (S.End | Error | D.Disposable) => void) {
   const dmap: Map<*, D.Disposable> = new Map()
   const start = <A>(f: (S.Next<A>) => void, $: S.S<A>): void => {
     dmap.set(

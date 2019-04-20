@@ -7,12 +7,7 @@ const counter = (d: number) =>
     o(
       N.button(({ o }) => {
         o('+')
-        d > 0 &&
-          o(
-            S.periodic(1000)
-              .skip(1)
-              .map(i => (i % 2 === 0 ? counter(d - 1) : ''))
-          )
+        d > 0 && o(counter(d - 1))
       })
     )
     o(
@@ -24,10 +19,13 @@ const counter = (d: number) =>
     o('0')
   })
 
-const patches = N.run(counter(2))
+const patches = N.run(counter(3))
 
 const rootNode = document.getElementById('root-node')
 if (!(rootNode instanceof HTMLDivElement))
   throw new Error('cant find root-node')
 
-patches.map(p => p(rootNode)).run(console.log.bind(console))
+patches
+  .map(p => p(rootNode))
+  .scan(s => s + 1, 0)
+  .run(console.log.bind(console))
