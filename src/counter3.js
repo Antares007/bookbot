@@ -7,7 +7,12 @@ const counter = (d: number) =>
     o(
       N.button(({ o }) => {
         o('+')
-        d > 0 && o(counter(d - 1))
+        d > 0 &&
+          o(
+            S.periodic(1000 + d * 100).map(i =>
+              i % 2 === 0 ? counter(d - 1) : ''
+            )
+          )
       })
     )
     o(
