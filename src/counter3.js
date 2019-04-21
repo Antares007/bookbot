@@ -9,10 +9,11 @@ const counter = (d: number) =>
         o('+')
         d > 0 &&
           o(
-            S.periodic(1000 + d * 100).map(i =>
+            S.periodic(50 + d * 50).map(i =>
               i % 2 === 0 ? counter(d - 1) : ''
             )
           )
+        //d > 0 && o(counter(d - 1))
       })
     )
     o(
@@ -24,7 +25,7 @@ const counter = (d: number) =>
     o('0')
   })
 
-const patches = N.run(counter(3))
+const patches = N.run(counter(2))
 
 const rootNode = document.getElementById('root-node')
 if (!(rootNode instanceof HTMLDivElement))
@@ -33,4 +34,6 @@ if (!(rootNode instanceof HTMLDivElement))
 patches
   .map(p => p(rootNode))
   .scan(s => s + 1, 0)
+  .skip(1)
+  .take(999)
   .run(console.log.bind(console))

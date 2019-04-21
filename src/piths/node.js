@@ -34,71 +34,58 @@ const ring = <N: Node>(
 export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
   return S.s(o => {
     const { start, stop } = makeStreamController(o)
-    const nodes: Array<Nodes> = []
-    const childPatches: Array<S.S<(N) => void>> = []
-    const awaitingIds = []
-    var i = 0
+    const ssnodes: Array<SS<Nodes>> = []
+    var childPatches: Array<S.S<(N) => void>>
+    var nodes: Array<Nodes>
     pith.pith({
       o: ssnode => {
-        const index = i++
-        if (ssnode instanceof S.S) {
-          nodes.push('empty')
-          awaitingIds.push(index)
-          start(node => {
-            if (awaitingIds.length === 0) {
-              nodes[index] = node.value
-              update(index)
-            } else {
-              var pos = awaitingIds.indexOf(index)
-              if (pos >= 0) awaitingIds.splice(pos, 1)
-              nodes[index] = node.value
-              if (awaitingIds.length === 0) init()
-            }
-          }, ssnode)
-        } else nodes.push(ssnode)
+        ssnodes.push(ssnode)
       },
       patch: v => {}
     })
-    if (awaitingIds.length === 0) o(S.delay(() => init()))
-
-    function update(index) {
-      const node = nodes[index]
-      stop(childPatches[index])
-      o(
-        S.next(parent => {
-          const on = parent.childNodes[index]
-          if (eq(on, node)) return
-          parent.insertBefore(create(node), on)
-          parent.removeChild(on)
-        })
-      )
-      start(o, (childPatches[index] = runAt(node, index)))
-    }
-
-    function init() {
-      o(
-        S.next(parent => {
-          const pnodesLength = nodes.length
-          const childNodes = parent.childNodes
-          var li: ?Node
-          for (var index = 0; index < pnodesLength; index++) {
-            const x = nodes[index]
-            li = null
-            for (var i = index, l = childNodes.length; i < l; i++)
-              if ((li = eq(childNodes[index], x))) break
-            if (li == null) parent.insertBefore(create(x), childNodes[index])
-            else if (i !== index) parent.insertBefore(li, childNodes[index])
-          }
-          for (var i = childNodes.length - 1; i >= pnodesLength; i--)
-            parent.removeChild(childNodes[i])
-        })
-      )
-      for (var i = 0, l = nodes.length; i < l; i++) {
-        const patch = runAt(nodes[i], i)
-        childPatches.push(patch)
+    start(e => {
+      const v = e.value
+      if (v.type === 'init') {
+        nodes = v.v
+        childPatches = nodes.map((n, i) => runAt(n, i))
+        childPatches.forEach(p => start(o, p))
+        o(
+          S.next(parent => {
+            const pnodesLength = nodes.length
+            const childNodes = parent.childNodes
+            var li: ?Node
+            for (var index = 0; index < pnodesLength; index++) {
+              const x = nodes[index]
+              li = null
+              for (var i = index, l = childNodes.length; i < l; i++)
+                if ((li = eq(childNodes[index], x))) break
+              if (li == null) parent.insertBefore(create(x), childNodes[index])
+              else if (i !== index) parent.insertBefore(li, childNodes[index])
+            }
+            for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+              parent.removeChild(childNodes[i])
+          })
+        )
+      } else {
+        const { index, v: node } = v
+        const oldNode = nodes[index]
+        nodes[index] = node
+        const patch = runAt(node, index)
+        const oldPatch = childPatches[index]
+        childPatches[index] = patch
         start(o, patch)
+        stop(oldPatch)
+        if (oldNode.constructor !== node.constructor)
+          o(
+            S.next(parent => {
+              const on = parent.childNodes[index]
+              if (eq(on, node)) return
+              parent.insertBefore(create(node), on)
+              parent.removeChild(on)
+            })
+          )
       }
-    }
+    }, combineSS(ssnodes))
   })
 }
 
@@ -138,6 +125,55 @@ function runAt<N: Node>(node: Nodes, index: number): S.S<(N) => void> {
   } else {
     return run(node).map(mkMapper(index, HTMLButtonElement))
   }
+}
+
+function combineSS<A>(
+  array: Array<SS<A>>
+): S.S<
+  { type: 'init', v: Array<A> } | { type: 'update', v: A, index: number }
+> {
+  return S.s(o => {
+    const dmap = new Map()
+    const as: Array<A> = new Array(array.length)
+    const idxs = []
+    o(
+      D.create(() => {
+        for (var d of dmap.values()) d.dispose()
+      })
+    )
+    for (let index = 0, l = array.length; index < l; index++) {
+      const a = array[index]
+      if (a instanceof S.S) {
+        idxs.push(index)
+        dmap.set(
+          index,
+          S.run(e => {
+            if (e instanceof S.Next) {
+              if (idxs.length === 0)
+                o(S.next({ type: 'update', v: e.value, index }))
+              else {
+                as[index] = e.value
+                const pos = idxs.indexOf(index)
+                if (pos !== -1) idxs.splice(pos, 1)
+                if (idxs.length === 0) o(S.next({ type: 'init', v: as }))
+              }
+            } else if (e instanceof S.End) {
+              dmap.delete(index)
+              if (dmap.size === 0) o(e)
+            } else o(e)
+          }, a)
+        )
+      } else as[index] = a
+    }
+    if (idxs.length === 0) {
+      o(
+        S.delay(() => {
+          o(S.next({ type: 'init', v: as }))
+          o(S.delay(() => o(S.end)))
+        })
+      )
+    }
+  })
 }
 
 function makeStreamController(o: (S.End | Error | D.Disposable) => void) {
