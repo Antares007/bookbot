@@ -3,17 +3,18 @@ import * as S from './S'
 import * as N from './piths/node'
 
 const counter = (d: number) =>
-  N.div(({ o }) => {
+  N.div(({ o, patch }) => {
     o(
       N.button(({ o }) => {
         o('+')
-        d > 0 &&
-          o(
-            S.periodic(50 + d * 50).map(i =>
-              i % 2 === 0 ? counter(d - 1) : ''
-            )
-          )
-        //d > 0 && o(counter(d - 1))
+        //d > 0 &&
+        //  o(
+        //    S.periodic(100 + d * 100).map(i =>
+        //      i % 2 === 0 ? counter(d - 1) : ''
+        //    )
+        //  )
+        patch(n => console.log(n))
+        d > 0 && o(counter(d - 1))
       })
     )
     o(

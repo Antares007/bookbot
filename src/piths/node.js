@@ -5,9 +5,14 @@ import { cast } from '../cast'
 
 type SS<A> = S.S<A> | A
 
+type NPithF<T: Node> = ({
+  o: (SS<Nodes>) => void,
+  patch: (SS<(T) => void>) => void
+}) => void
+
 export class NPith<T: Node> {
-  pith: ({ o: (SS<Nodes>) => void, patch: (SS<(T) => void>) => void }) => void
-  constructor(pith: $PropertyType<NPith<T>, 'pith'>) {
+  pith: NPithF<T>
+  constructor(pith: NPithF<T>) {
     this.pith = pith
   }
 }
@@ -17,9 +22,9 @@ type Nodes = Div | Button | string
 export class Div extends NPith<HTMLDivElement> {}
 export class Button extends NPith<HTMLButtonElement> {}
 
-export const div = (pith: $PropertyType<Div, 'pith'>): Div => new Div(pith)
+export const div = (pith: NPithF<HTMLDivElement>): Div => new Div(pith)
 
-export const button = (pith: $PropertyType<Button, 'pith'>): Button =>
+export const button = (pith: NPithF<HTMLButtonElement>): Button =>
   new Button(pith)
 
 const ring = <N: Node>(
@@ -37,11 +42,16 @@ export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
     const ssnodes: Array<SS<Nodes>> = []
     var childPatches: Array<S.S<(N) => void>>
     var nodes: Array<Nodes>
+    const patches: Array<(N) => void> = []
+    const patchess: Array<S.S<(N) => void>> = []
     pith.pith({
       o: ssnode => {
         ssnodes.push(ssnode)
       },
-      patch: v => {}
+      patch: v => {
+        if (v instanceof S.S) patchess.push(v)
+        else patches.push(v)
+      }
     })
     start(e => {
       const v = e.value
@@ -66,6 +76,8 @@ export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
               parent.removeChild(childNodes[i])
           })
         )
+        if (patches.length > 0) start(o, S.d(n => patches.forEach(p => p(n))))
+        patchess.forEach(ps => start(o, ps))
       } else {
         const { index, v: node } = v
         const oldNode = nodes[index]
