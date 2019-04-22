@@ -5,7 +5,7 @@ import * as N from './piths/node'
 const counter = (d: number) =>
   N.div(({ o, patch }) => {
     o(
-      N.button(({ o }) => {
+      N.button(({ o, patch }) => {
         o('+')
         //d > 0 &&
         //  o(

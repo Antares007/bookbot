@@ -74,10 +74,10 @@ export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
             }
             for (var i = childNodes.length - 1; i >= pnodesLength; i--)
               parent.removeChild(childNodes[i])
+            for (var i = 0, l = patches.length; i < l; i++) patches[i](parent)
           })
         )
-        if (patches.length > 0) start(o, S.d(n => patches.forEach(p => p(n))))
-        patchess.forEach(ps => start(o, ps))
+        for (var i = 0, l = patchess.length; i < l; i++) start(o, patchess[i])
       } else {
         const { index, v: node } = v
         const oldNode = nodes[index]
