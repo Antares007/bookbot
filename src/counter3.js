@@ -7,14 +7,14 @@ const counter = (d: number) =>
     o(
       N.button(({ o, patch }) => {
         o('+')
-        //d > 0 &&
-        //  o(
-        //    S.periodic(100 + d * 100).map(i =>
-        //      i % 2 === 0 ? counter(d - 1) : ''
-        //    )
-        //  )
-        patch(n => console.log(n))
-        d > 0 && o(counter(d - 1))
+        d > 0 &&
+          o(
+            S.periodic(100 + d * 100).map(i =>
+              i % 2 === 0 ? counter(d - 1) : ''
+            )
+          )
+        //patch(n => console.log(n))
+        //d > 0 && o(counter(d - 1))
       })
     )
     o(

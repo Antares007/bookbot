@@ -53,14 +53,14 @@ export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
         else patches.push(v)
       }
     })
-    start(e => {
-      const v = e.value
-      if (v.type === 'init') {
-        nodes = v.v
-        childPatches = nodes.map((n, i) => runAt(n, i))
-        childPatches.forEach(p => start(o, p))
-        o(
-          S.next(parent => {
+    start(
+      combineSS(ssnodes).map(v => {
+        if (v.type === 'init') {
+          nodes = v.v
+          childPatches = nodes.map((n, i) => runAt(n, i))
+          childPatches.forEach(p => start(p))
+          for (var i = 0, l = patchess.length; i < l; i++) start(patchess[i])
+          return parent => {
             const pnodesLength = nodes.length
             const childNodes = parent.childNodes
             var li: ?Node
@@ -75,29 +75,25 @@ export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
             for (var i = childNodes.length - 1; i >= pnodesLength; i--)
               parent.removeChild(childNodes[i])
             for (var i = 0, l = patches.length; i < l; i++) patches[i](parent)
-          })
-        )
-        for (var i = 0, l = patchess.length; i < l; i++) start(o, patchess[i])
-      } else {
-        const { index, v: node } = v
-        const oldNode = nodes[index]
-        nodes[index] = node
-        const patch = runAt(node, index)
-        const oldPatch = childPatches[index]
-        childPatches[index] = patch
-        start(o, patch)
-        stop(oldPatch)
-        if (oldNode.constructor !== node.constructor)
-          o(
-            S.next(parent => {
-              const on = parent.childNodes[index]
-              if (eq(on, node)) return
-              parent.insertBefore(create(node), on)
-              parent.removeChild(on)
-            })
-          )
-      }
-    }, combineSS(ssnodes))
+          }
+        } else {
+          const { index, v: node } = v
+          const oldNode = nodes[index]
+          nodes[index] = node
+          const patch = runAt(node, index)
+          const oldPatch = childPatches[index]
+          childPatches[index] = patch
+          start(patch)
+          stop(oldPatch)
+          return parent => {
+            const on = parent.childNodes[index]
+            if (eq(on, node)) return
+            parent.insertBefore(create(node), on)
+            parent.removeChild(on)
+          }
+        }
+      })
+    )
   })
 }
 
@@ -188,35 +184,38 @@ function combineSS<A>(
   })
 }
 
-function makeStreamController(o: (S.End | Error | D.Disposable) => void) {
-  const dmap: Map<*, D.Disposable> = new Map()
-  const start = <A>(f: (S.Next<A>) => void, $: S.S<A>): void => {
-    dmap.set(
-      $,
-      S.run(e => {
-        if (e instanceof S.Next) f(e)
-        else if (e instanceof S.End) {
-          dmap.delete($)
-          if (dmap.size === 0) o(e)
-        } else o(e)
-      }, $)
-    )
-  }
-  const stop = <A>($: S.S<A>): void => {
-    const d = dmap.get($)
-    if (d) {
-      dmap.delete($)
-      d.dispose()
-      if (dmap.size === 0) o(S.end)
-    }
-  }
+function makeStreamController<A>(
+  o: (S.Next<A> | S.End | Error | D.Disposable) => void
+): {
+  start: (S.S<A>) => void,
+  stop: (S.S<A>) => void
+} {
+  const dmap = new Map()
   o(
     D.create(() => {
       for (var d of dmap.values()) d.dispose()
     })
   )
   return {
-    start,
-    stop
+    start(s) {
+      dmap.set(
+        s,
+        S.run(e => {
+          if (e instanceof S.Next) o(e)
+          else if (e instanceof S.End) {
+            dmap.delete(s)
+            if (dmap.size === 0) o(e)
+          } else o(e)
+        }, s)
+      )
+    },
+    stop(s) {
+      const d = dmap.get(s)
+      if (d) {
+        dmap.delete(s)
+        d.dispose()
+        if (dmap.size === 0) o(S.end)
+      }
+    }
   }
 }
