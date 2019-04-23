@@ -40,8 +40,6 @@ export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
   return S.s(o => {
     const { start, stop } = makeStreamController(o)
     const ssnodes: Array<SS<Nodes>> = []
-    var childPatches: Array<S.S<(N) => void>>
-    var nodes: Array<Nodes>
     const patches: Array<(N) => void> = []
     const patchess: Array<S.S<(N) => void>> = []
     pith.pith({
@@ -53,12 +51,14 @@ export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
         else patches.push(v)
       }
     })
+    var childPatches: Array<S.S<(N) => void>>
     start(
       combineSS(ssnodes).map(v => {
         if (v.type === 'init') {
-          nodes = v.v
-          childPatches = nodes.map((n, i) => runAt(n, i))
-          childPatches.forEach(p => start(p))
+          const { v: nodes } = v
+          childPatches = new Array(nodes.length)
+          for (var i = 0, l = nodes.length; i < l; i++)
+            start((childPatches[i] = runAt(nodes[i], i)))
           for (var i = 0, l = patchess.length; i < l; i++) start(patchess[i])
           return parent => {
             const pnodesLength = nodes.length
@@ -78,12 +78,8 @@ export function run<N: Node>(pith: NPith<N>): S.S<(N) => void> {
           }
         } else {
           const { index, v: node } = v
-          const oldNode = nodes[index]
-          nodes[index] = node
-          const patch = runAt(node, index)
           const oldPatch = childPatches[index]
-          childPatches[index] = patch
-          start(patch)
+          start((childPatches[index] = runAt(node, index)))
           stop(oldPatch)
           return parent => {
             const on = parent.childNodes[index]
