@@ -5,16 +5,6 @@ import { cast } from '../cast'
 
 type SS<A> = S.S<A> | A
 
-export class Pith<I, O> {
-  f: ((SS<O>) => void, S.S<I>) => void
-}
-
-export class Patch<N: Node> {
-  f: N => void
-}
-
-export class NP<N: Node, O, I> extends Pith<Patch<N> | O, I> {}
-
 type NPithF<T: Node> = ({
   o: (SS<Nodes>) => void,
   patch: (SS<(T) => void>) => void
