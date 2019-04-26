@@ -8,54 +8,49 @@ type SS<A> = S.S<A> | A
 
 type Reducer<S> = { type: 'reducer', r: S => S }
 
-type Patch<N: Node> = { type: 'patch', p: N => void }
+type Patch = { type: 'patch', p: Node => void }
 
-type Ref<N: Node> = { type: 'ref', value: N }
-
-type State<S> = { type: 'state', value: S }
-
-type P<I, Elm: Node> = (
-  (SS<N<I>>) => void,
-  (SS<Patch<Elm> | Reducer<I>>) => void,
-  S.S<Ref<Elm> | State<I>>
+type P<I> = (
+  { node: (SS<N<I>>) => void, patch: (SS<Patch>) => void, reduce: (SS<Reducer<I>>) => void },
+  { ref: S.S<Node>, states: S.S<I> }
 ) => void
 
 type N<S> =
-  | string
-  | { type: 'ul', pith: P<S, HTMLUListElement> }
-  | { type: 'li', pith: P<S, HTMLLIElement> }
-  | { type: 'div', pith: P<S, HTMLDivElement> }
-  | { type: 'button', pith: P<S, HTMLButtonElement> }
+  | { type: 'element', tag: string, pith: P<S> }
+  | { type: 'text', tag: '#text', value: string }
+  | { type: 'comment', tag: '#comment', value: string }
 
 const reducer = <S>(r: S => S): Reducer<S> => ({ type: 'reducer', r })
 
-const patch = <N: Node>(p: N => void): Patch<N> => ({ type: 'patch', p })
+const patch = (p: Node => void): Patch => ({ type: 'patch', p })
 
-const ul = <S>(pith: P<S, HTMLUListElement>): N<S> => ({ type: 'ul', pith })
-const li = <S>(pith: P<S, HTMLLIElement>): N<S> => ({ type: 'li', pith })
-const div = <S>(pith: P<S, HTMLDivElement>): N<S> => ({ type: 'div', pith })
-const button = <S>(pith: P<S, HTMLButtonElement>): N<S> => ({ type: 'button', pith })
+const elm = <S>(tag: string, pith: P<S>): N<S> => ({
+  type: 'element',
+  tag: tag.toUpperCase(),
+  pith
+})
+const text = <S>(value: string): N<S> => ({ type: 'text', tag: '#text', value })
+const comment = <S>(value: string): N<S> => ({ type: 'comment', tag: '#comment', value })
 
 const counter = (d: number): N<{ n: number }> =>
-  div((o, p, i) => {
-    p(S.d(reducer(s => s)))
-    o(
-      button((o, p, i) => {
-        o('+')
-        d > 0 && o(S.periodic(50 + d * 50).map(i => (i % 2 === 0 ? counter(d - 1) : '')))
-        //d > 0 && o(counter(d - 1))
+  elm('div', (o, i) => {
+    o.node(comment('this is the comment'))
+    o.node(
+      elm('button', (o, i) => {
+        o.node(text('+'))
+        d > 0 && o.node(counter(d - 1))
       })
     )
-    o(
-      button((o, p, i) => {
-        o('-')
-        d > 0 && o(counter(d - 1))
+    o.node(
+      elm('button', (o, i) => {
+        o.node(text('-'))
+        d > 0 && o.node(counter(d - 1))
       })
     )
-    o('0')
+    o.node(text('0'))
   })
 
-const patches = run(div(o => o(S.d(counter(2), 1000))))
+const patches = run(elm('div', o => o.node(S.d(counter(2), 1000))))
 
 const rootNode = document.getElementById('root-node')
 if (!(rootNode instanceof HTMLDivElement)) throw new Error('cant find root-node')
@@ -67,78 +62,86 @@ patches
   .take(999)
   .run(console.log.bind(console))
 
-function run<State>(n: N<State>): S.S<Reducer<State> | Patch<Node>> {
-  if (typeof n === 'string') {
+function run<State>(n: N<State>): S.S<Reducer<State> | Patch> {
+  if (n.type !== 'element') {
     return S.d(
       patch(parent => {
-        parent.textContent = n
+        parent.textContent = n.value
       })
     )
   }
-  if (n.type === 'div')
-    return S.s(o => {
-      const { start, stop } = makeStreamController(o)
-      const ssnodes: Array<SS<N<State>>> = []
-      const prss = []
-      const prs = []
-      n.pith(
-        v => {
+  return S.s(o => {
+    const { start, stop } = makeStreamController(o)
+    const ssnodes: Array<SS<N<State>>> = []
+    const prss = []
+    const prs = []
+    n.pith(
+      {
+        node: v => {
           ssnodes.push(v)
         },
-        v => {
-          if (v instanceof S.S) {
-            prss.push(v)
-          } else {
-            prs.push(v)
-          }
-        },
-        S.empty()
-      )
+        patch: v => {},
+        reduce: v => {}
+      },
+      { ref: S.empty(), states: S.empty() }
+    )
 
-      var childPatches: Array<S.S<Reducer<State> | Patch<Node>>>
-      start(
-        combineSS(ssnodes).map(v => {
-          if (v.type === 'init') {
-            const { v: nodes } = v
-            childPatches = new Array(nodes.length)
-            for (var i = 0, l = nodes.length; i < l; i++)
-              start((childPatches[i] = runAt(nodes[i], i)))
-            for (var i = 0, l = prss.length; i < l; i++)
-              start(cast(prss[i])<S.S<Reducer<State> | Patch<Node>>>())
-            return patch(parent => {
-              const pnodesLength = nodes.length
-              const childNodes = parent.childNodes
-              var li: ?Node
-              for (var index = 0; index < pnodesLength; index++) {
-                const x = nodes[index]
-                li = null
-                for (var i = index, l = childNodes.length; i < l; i++)
-                  if ((li = eq(childNodes[index], x))) break
-                if (li == null) parent.insertBefore(create(x), childNodes[index])
-                else if (i !== index) parent.insertBefore(li, childNodes[index])
-              }
-              for (var i = childNodes.length - 1; i >= pnodesLength; i--)
-                parent.removeChild(childNodes[i])
-            })
-          } else {
-            const { index, v: node } = v
-            const oldPatch = childPatches[index]
-            start((childPatches[index] = runAt(node, index)))
-            stop(oldPatch)
-            return patch(parent => {
-              const on = parent.childNodes[index]
-              if (eq(on, node)) return
-              parent.insertBefore(create(node), on)
-              parent.removeChild(on)
-            })
-          }
-        })
-      )
-    })
-  throw new Error()
+    var childPatches: Array<S.S<Reducer<State> | Patch>>
+    start(
+      combineSS(ssnodes).map(v => {
+        if (v.type === 'init') {
+          const { v: nodes } = v
+          childPatches = new Array(nodes.length)
+          for (var i = 0, l = nodes.length; i < l; i++)
+            start((childPatches[i] = runAt(nodes[i], i)))
+          for (var i = 0, l = prss.length; i < l; i++) start(prss[i])
+          return patch(parent => {
+            const pnodesLength = nodes.length
+            const childNodes = parent.childNodes
+            var li: ?Node
+            for (var index = 0; index < pnodesLength; index++) {
+              const x = nodes[index]
+              li = null
+              for (var i = index, l = childNodes.length; i < l; i++)
+                if ((li = childNodes[index].nodeName === x.tag ? childNodes[index] : null)) break
+              if (li == null)
+                parent.insertBefore(
+                  x.type === 'element'
+                    ? document.createElement(x.tag)
+                    : x.type === 'text'
+                    ? document.createTextNode(x.value)
+                    : document.createComment(x.value),
+                  childNodes[index]
+                )
+              else if (i !== index) parent.insertBefore(li, childNodes[index])
+            }
+            for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+              parent.removeChild(childNodes[i])
+          })
+        } else {
+          const { index, v: node } = v
+          const oldPatch = childPatches[index]
+          start((childPatches[index] = runAt(node, index)))
+          stop(oldPatch)
+          return patch(parent => {
+            const on = parent.childNodes[index]
+            parent.insertBefore(
+              node.type === 'element'
+                ? document.createElement(node.tag)
+                : node.type === 'text'
+                ? document.createTextNode(node.value)
+                : document.createComment(node.value),
+              on
+            )
+            parent.removeChild(on)
+          })
+        }
+      })
+    )
+  })
 }
 
-function runAt<State>(n: N<State>, i: number): S.S<Patch<Node> | Reducer<State>> {
+function runAt<State>(n: N<State>, i: number): S.S<Patch | Reducer<State>> {
   return run(n).map(p =>
     p.type === 'patch'
       ? patch(parent => {
@@ -146,15 +149,4 @@ function runAt<State>(n: N<State>, i: number): S.S<Patch<Node> | Reducer<State>>
         })
       : p
   )
-}
-
-function eq<State>(n: Node, node: N<State>): ?Node {
-  const TAG = typeof node === 'string' ? '#text' : node.type.toUpperCase()
-  return n.nodeName === TAG ? n : null
-}
-
-function create<State>(node: N<State>): Node {
-  return typeof node === 'string'
-    ? document.createTextNode(node)
-    : document.createElement(node.type)
 }
