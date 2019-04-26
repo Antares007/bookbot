@@ -131,7 +131,7 @@ function runAt<N: Node>(node: Nodes, index: number): S.S<(N) => void> {
   }
 }
 
-function combineSS<A>(
+export function combineSS<A>(
   array: Array<SS<A>>
 ): S.S<
   { type: 'init', v: Array<A> } | { type: 'update', v: A, index: number }
@@ -180,7 +180,7 @@ function combineSS<A>(
   })
 }
 
-function makeStreamController<A>(
+export function makeStreamController<A>(
   o: (S.Next<A> | S.End | Error | D.Disposable) => void
 ): {
   start: (S.S<A>) => void,
