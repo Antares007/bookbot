@@ -38,20 +38,38 @@ const counter = (d: number): N<{ n: number }> =>
     o.node(
       elm('button', (o, i) => {
         o.node(text('+'))
-        d > 0 && o.node(S.periodic(30 + d * 30).map(i => (i % 2 === 0 ? counter(d - 1) : text(''))))
-        //d > 0 && o.node(counter(d - 1))
+        //d > 0 && o.node(S.periodic(30 + d * 30).map(i => (i % 2 === 0 ? counter(d - 1) : text(''))))
+        d > 0 && o.node(counter(d - 1))
+        o.node(
+          i.ref
+            .map(n => n.nodeName)
+            .startWith('na')
+            .map(text)
+        )
       })
     )
     o.node(
       elm('button', (o, i) => {
         o.node(text('-'))
         d > 0 && o.node(counter(d - 1))
+        o.node(
+          i.ref
+            .map(n => n.nodeName)
+            .startWith('na')
+            .map(text)
+        )
       })
+    )
+    o.node(
+      i.ref
+        .map(n => n.nodeName)
+        .startWith('na')
+        .map(text)
     )
     o.node(text('0'))
   })
 
-const patches = run(counter(2))
+const patches = run(S.empty(), counter(0))
 
 const rootNode = document.getElementById('root-node')
 if (!(rootNode instanceof HTMLDivElement)) throw new Error('cant find root-node')
@@ -61,7 +79,7 @@ patches
   .filter2(p => (p.type === 'patch' ? p.p(rootNode) : p))
   .run(console.log.bind(console))
 
-function run<State>(i: S.S<State>, n: N<State>): S.S<Reducer<State> | Patch> {
+function run<State>(states: S.S<State>, n: N<State>): S.S<Reducer<State> | Patch> {
   if (n.type !== 'element') {
     return S.d(
       patch(parent => {
@@ -76,6 +94,11 @@ function run<State>(i: S.S<State>, n: N<State>): S.S<Reducer<State> | Patch> {
     const patches = []
     const reducerss = []
     const reducers = []
+    var refO = _ => {}
+    const ref = S.s(o => {
+      refO = o
+    }).multicast()
+
     n.pith(
       {
         node: v => {
@@ -90,7 +113,10 @@ function run<State>(i: S.S<State>, n: N<State>): S.S<Reducer<State> | Patch> {
           else reducers.push(v)
         }
       },
-      { ref: S.empty(), states: i }
+      {
+        ref,
+        states
+      }
     )
 
     var childPatches: Array<S.S<Reducer<State> | Patch>>
@@ -101,7 +127,7 @@ function run<State>(i: S.S<State>, n: N<State>): S.S<Reducer<State> | Patch> {
           childPatches = new Array(nodes.length)
 
           for (var i = 0, l = nodes.length; i < l; i++)
-            start((childPatches[i] = runAt(nodes[i], i)))
+            start((childPatches[i] = runAt(states, nodes[i], i)))
 
           for (var i = 0, l = patchess.length; i < l; i++) start(patchess[i].map(x => x))
 
@@ -119,39 +145,47 @@ function run<State>(i: S.S<State>, n: N<State>): S.S<Reducer<State> | Patch> {
           for (var i = 0, l = reducerss.length; i < l; i++) start(reducerss[i].map(x => x))
 
           return patch(parent => {
-            const pnodesLength = nodes.length
-            const childNodes = parent.childNodes
-            var li: ?Node
-            for (var index = 0; index < pnodesLength; index++) {
-              const x = nodes[index]
-              li = null
-              for (var i = index, l = childNodes.length; i < l; i++)
-                if ((li = childNodes[index].nodeName === x.tag ? childNodes[index] : null)) break
-              if (li == null) parent.insertBefore(create(x), childNodes[index])
-              else if (i !== index) parent.insertBefore(li, childNodes[index])
-            }
-            for (var i = childNodes.length - 1; i >= pnodesLength; i--)
-              parent.removeChild(childNodes[i])
+            mkInitPatch(nodes, parent)
             for (var i = 0, l = patches.length; i < l; i++) patches[i].p(parent)
+            refO(S.next(parent))
           })
         } else {
           const { index, v: node } = v
           const oldPatch = childPatches[index]
-          start((childPatches[index] = runAt(node, index)))
+          start((childPatches[index] = runAt(states, node, index)))
           stop(oldPatch)
-          return patch(parent => {
-            const on = parent.childNodes[index]
-            parent.insertBefore(create(node), on)
-            parent.removeChild(on)
-          })
+          return patch(mkUpdatePatch(node, index))
         }
       })
     )
   })
 }
 
-function runAt<State>(n: N<State>, i: number): S.S<Patch | Reducer<State>> {
-  return run(n).map(p =>
+function mkUpdatePatch(node, index) {
+  return parent => {
+    const on = parent.childNodes[index]
+    parent.insertBefore(create(node), on)
+    parent.removeChild(on)
+  }
+}
+
+function mkInitPatch(nodes, parent) {
+  const pnodesLength = nodes.length
+  const childNodes = parent.childNodes
+  var li: ?Node
+  for (var index = 0; index < pnodesLength; index++) {
+    const x = nodes[index]
+    li = null
+    for (var i = index, l = childNodes.length; i < l; i++)
+      if ((li = childNodes[index].nodeName === x.tag ? childNodes[index] : null)) break
+    if (li == null) parent.insertBefore(create(x), childNodes[index])
+    else if (i !== index) parent.insertBefore(li, childNodes[index])
+  }
+  for (var i = childNodes.length - 1; i >= pnodesLength; i--) parent.removeChild(childNodes[i])
+}
+
+function runAt<State>(states: S.S<State>, n: N<State>, i: number): S.S<Patch | Reducer<State>> {
+  return run(states, n).map(p =>
     p.type === 'patch'
       ? patch(parent => {
           p.p(parent.childNodes[i])
