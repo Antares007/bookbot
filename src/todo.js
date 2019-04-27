@@ -4,13 +4,15 @@ import type { NPith } from './N'
 import * as N from './N'
 
 const initState = {
+  id: 0,
   inputText: 'b',
-  todos: [{ name: 'a', completed: false }]
+  todos: [{ id: 0, name: 'a', completed: false }]
 }
 
 type Model = {
+  id: number,
   inputText: string,
-  todos: Array<{ name: string, completed: boolean }>
+  todos: Array<{ id: number, name: string, completed: boolean }>
 }
 
 const todo = N.elm<Model>('div', (o, i) => {
@@ -45,8 +47,9 @@ const todo = N.elm<Model>('div', (o, i) => {
           )
           o.reduce(
             on.click().map(_ => s => ({
+              id: s.id + 1,
               inputText: '',
-              todos: s.todos.concat([{ name: s.inputText, completed: false }])
+              todos: s.todos.concat([{ id: s.id + 1, name: s.inputText, completed: false }])
             }))
           )
         })
@@ -58,7 +61,7 @@ const todo = N.elm<Model>('div', (o, i) => {
           o.reduce(
             on.click().map(_ => s => ({
               ...s,
-              todos: s.todos.reverse()
+              todos: s.todos.reverse().slice()
             }))
           )
         })
@@ -68,7 +71,7 @@ const todo = N.elm<Model>('div', (o, i) => {
   o.node(
     i.states
       .map(m => m.todos)
-      //.skipEquals()
+      .skipEquals()
       .map(todos =>
         N.elm('ul', (o, i) => {
           for (let todo of todos)
@@ -90,7 +93,7 @@ const todo = N.elm<Model>('div', (o, i) => {
                     })
                   )
                 },
-                todo.name
+                'k' + todo.id
               )
             )
         })
