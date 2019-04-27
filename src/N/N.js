@@ -2,8 +2,7 @@
 import * as S from '../S'
 import * as D from '../S/Disposable'
 import { combineSS, makeStreamController } from './streamstaff'
-
-export type SS<A> = S.S<A> | A
+import type { SS } from './streamstaff'
 
 export type Reducer<S> = { type: 'reducer', r: S => S }
 
