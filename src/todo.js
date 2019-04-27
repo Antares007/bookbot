@@ -51,31 +51,47 @@ const todo = N.elm<Model>('div', (o, i) => {
           )
         })
       )
+      o.node(
+        N.elm('button', (o, i) => {
+          const on = new S.On(i.ref)
+          o.node(N.text('reverse'))
+          o.reduce(
+            on.click().map(_ => s => ({
+              ...s,
+              todos: s.todos.reverse()
+            }))
+          )
+        })
+      )
     })
   )
   o.node(
     i.states
       .map(m => m.todos)
-      .skipEquals()
+      //.skipEquals()
       .map(todos =>
         N.elm('ul', (o, i) => {
           for (let todo of todos)
             o.node(
-              N.elm('li', (o, i) => {
-                o.node(N.text(todo.name))
-                o.node(
-                  N.elm('button', (o, i) => {
-                    const on = new S.On(i.ref)
-                    o.node(N.text('remove'))
-                    o.reduce(
-                      on.click().map(_ => s => ({
-                        ...s,
-                        todos: s.todos.filter(x => x !== todo)
-                      }))
-                    )
-                  })
-                )
-              })
+              N.elm(
+                'li',
+                (o, i) => {
+                  o.node(N.text(todo.name))
+                  o.node(
+                    N.elm('button', (o, i) => {
+                      const on = new S.On(i.ref)
+                      o.node(N.text('remove'))
+                      o.reduce(
+                        on.click().map(_ => s => ({
+                          ...s,
+                          todos: s.todos.filter(x => x !== todo)
+                        }))
+                      )
+                    })
+                  )
+                },
+                todo.name
+              )
             )
         })
       )

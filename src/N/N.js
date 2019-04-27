@@ -18,16 +18,17 @@ export type NPith<State> = (
 ) => void
 
 export type N<S> =
-  | { type: 'element', tag: string, pith: NPith<S> }
+  | { type: 'element', tag: string, pith: NPith<S>, key: ?string }
   | { type: 'text', tag: '#text', value: string }
   | { type: 'comment', tag: '#comment', value: string }
 
 export const reducer = <S>(r: S => S): Reducer<S> => ({ type: 'reducer', r })
 export const patch = (p: Node => void): Patch => ({ type: 'patch', p })
-export const elm = <S>(tag: string, pith: NPith<S>): N<S> => ({
+export const elm = <S>(tag: string, pith: NPith<S>, key?: ?string): N<S> => ({
   type: 'element',
   tag: tag.toUpperCase(),
-  pith
+  pith,
+  key
 })
 export const text = <S>(value: string): N<S> => ({ type: 'text', tag: '#text', value })
 export const comment = <S>(value: string): N<S> => ({ type: 'comment', tag: '#comment', value })
@@ -147,29 +148,6 @@ export function runI<State>(states: S.S<State>, n: N<State>): S.S<Reducer<State>
   })
 }
 
-function mkUpdatePatch(node, index) {
-  return parent => {
-    const on = parent.childNodes[index]
-    parent.insertBefore(create(node), on)
-    parent.removeChild(on)
-  }
-}
-
-function mkInitPatch(nodes, parent) {
-  const pnodesLength = nodes.length
-  const childNodes = parent.childNodes
-  var li: ?Node
-  for (var index = 0; index < pnodesLength; index++) {
-    const x = nodes[index]
-    li = null
-    for (var i = index, l = childNodes.length; i < l; i++)
-      if ((li = childNodes[index].nodeName === x.tag ? childNodes[index] : null)) break
-    if (li == null) parent.insertBefore(create(x), childNodes[index])
-    else if (i !== index) parent.insertBefore(li, childNodes[index])
-  }
-  for (var i = childNodes.length - 1; i >= pnodesLength; i--) parent.removeChild(childNodes[i])
-}
-
 function runAt<State>(states: S.S<State>, n: N<State>, i: number): S.S<Patch | Reducer<State>> {
   return runI(states, n).map(p =>
     p.type === 'patch'
@@ -180,10 +158,42 @@ function runAt<State>(states: S.S<State>, n: N<State>, i: number): S.S<Patch | R
   )
 }
 
+function mkUpdatePatch(node, index) {
+  return parent => {
+    const on = parent.childNodes[index]
+    if (eq(on, node)) return
+    parent.insertBefore(create(node), on)
+    console.log('rm_', parent.removeChild(on))
+  }
+}
+
+function mkInitPatch(nodes, parent) {
+  const pnodesLength = nodes.length
+  const childNodes = parent.childNodes
+  var li: ?Node
+  for (var index = 0; index < pnodesLength; index++) {
+    const x = nodes[index]
+    li = null
+    for (var i = index, l = childNodes.length; i < l; i++) if ((li = eq(childNodes[i], x))) break
+    if (li == null) parent.insertBefore(create(x), childNodes[index])
+    else if (i !== index) parent.insertBefore(li, childNodes[index])
+  }
+  for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+    console.log('rm', parent.removeChild(childNodes[i]))
+}
+
+function eq(node: Node, x): ?Node {
+  if (node.nodeName !== x.tag) return null
+  if (x.type === 'element' && x.key && node instanceof HTMLElement && node.dataset.key !== x.key)
+    return null
+  return node
+}
+
 function create(x) {
-  return x.type === 'element'
-    ? document.createElement(x.tag)
-    : x.type === 'text'
-    ? document.createTextNode(x.value)
-    : document.createComment(x.value)
+  if (x.type === 'element') {
+    const elm = document.createElement(x.tag)
+    if (x.key) elm.dataset.key = x.key
+    return elm
+  } else if (x.type === 'text') return document.createTextNode(x.value)
+  else return document.createComment(x.value)
 }
