@@ -1,7 +1,7 @@
 // @flow
 import * as S from './S'
-import * as N from './piths/p'
-import type { SS } from './piths/p'
+import * as N from './N'
+import type { SS } from './N'
 
 const counter = (d: number): N.N<{ n: number }> =>
   N.elm('div', (o, i) => {
@@ -28,7 +28,9 @@ const counter = (d: number): N.N<{ n: number }> =>
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
-N.runO(rootNode, { n: 0, b: true }, counter(2)).run(e => {
+const states = N.runO(rootNode, { n: 0, b: true }, counter(2))
+
+states.take(30).run(e => {
   if (e instanceof S.Next) console.log(JSON.stringify(e.value, null, '  '))
   else if (e instanceof Error) console.error(e)
   else console.info(e)
