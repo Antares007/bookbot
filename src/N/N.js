@@ -10,8 +10,7 @@ export class Patch {
     this.patch = patch
   }
 }
-export const patch = (patch: $PropertyType<Patch, 'patch'>): Patch =>
-  new Patch(patch)
+export const patch = (patch: $PropertyType<Patch, 'patch'>): Patch => new Patch(patch)
 
 export class N<I, O> {
   create: () => Node
@@ -67,9 +66,7 @@ export function bark<I, O>(i: I, pith: S.S<NPith<I, O>>): S.S<Patch | O> {
           pnodes.push(v)
           o(
             bark(i, v.pith).map(p =>
-              p instanceof Patch
-                ? patch(parent => p.patch(parent.childNodes[index]))
-                : p
+              p instanceof Patch ? patch(parent => p.patch(parent.childNodes[index])) : p
             )
           )
         }
