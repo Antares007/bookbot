@@ -4,65 +4,37 @@ import * as D from '../S/Disposable'
 import { cast } from '../cast'
 import { combineSS, makeStreamController } from './node'
 
-type SS<A> = S.S<A> | A
+export type SS<A> = S.S<A> | A
 
-type Reducer<S> = { type: 'reducer', r: S => S }
+export type Reducer<S> = { type: 'reducer', r: S => S }
 
-type Patch = { type: 'patch', p: Node => void }
+export type Patch = { type: 'patch', p: Node => void }
 
-type P<I> = (
+export type NPith<State> = (
   {
-    node: (SS<N<I>>) => void,
+    node: (SS<N<State>>) => void,
     patch: (SS<(Node) => void>) => void,
-    reduce: (SS<(I) => I>) => void
+    reduce: (SS<(State) => State>) => void
   },
-  { ref: S.S<Node>, states: S.S<I> }
+  { ref: S.S<Node>, states: S.S<State> }
 ) => void
 
-type N<S> =
-  | { type: 'element', tag: string, pith: P<S> }
+export type N<S> =
+  | { type: 'element', tag: string, pith: NPith<S> }
   | { type: 'text', tag: '#text', value: string }
   | { type: 'comment', tag: '#comment', value: string }
 
-const reducer = <S>(r: S => S): Reducer<S> => ({ type: 'reducer', r })
-
-const patch = (p: Node => void): Patch => ({ type: 'patch', p })
-
-const elm = <S>(tag: string, pith: P<S>): N<S> => ({
+export const reducer = <S>(r: S => S): Reducer<S> => ({ type: 'reducer', r })
+export const patch = (p: Node => void): Patch => ({ type: 'patch', p })
+export const elm = <S>(tag: string, pith: NPith<S>): N<S> => ({
   type: 'element',
   tag: tag.toUpperCase(),
   pith
 })
-const text = <S>(value: string): N<S> => ({ type: 'text', tag: '#text', value })
-const comment = <S>(value: string): N<S> => ({ type: 'comment', tag: '#comment', value })
+export const text = <S>(value: string): N<S> => ({ type: 'text', tag: '#text', value })
+export const comment = <S>(value: string): N<S> => ({ type: 'comment', tag: '#comment', value })
 
-const counter = (d: number): N<{ n: number }> =>
-  elm('div', (o, i) => {
-    o.node(comment('this is the comment'))
-    o.node(
-      elm('button', (o, i) => {
-        const on = new S.On(i.ref)
-        o.reduce(on.click().map(_ => s => ({ ...s, n: s.n + 1 })))
-        o.node(text('+'))
-      })
-    )
-    o.node(
-      elm('button', (o, i) => {
-        const on = new S.On(i.ref)
-        o.reduce(on.click().map(_ => s => ({ ...s, n: s.n - 1 })))
-        o.node(text('-'))
-      })
-    )
-    o.node(i.states.map(s => text(s.n + '')))
-  })
-
-const rootNode = document.getElementById('root-node')
-if (!rootNode) throw new Error('cant find root-node')
-
-const states = runO(rootNode, { n: 0, b: true }, counter(0))
-states.run(console.log.bind(console))
-
-function runO<State>(elm: Node, initState: State, n: N<State>): S.S<State> {
+export function runO<State>(elm: Node, initState: State, n: N<State>): S.S<State> {
   return S.s(o => {
     var state = initState
     const statesO = []
@@ -82,7 +54,7 @@ function runO<State>(elm: Node, initState: State, n: N<State>): S.S<State> {
     })
     o(
       runI(states, n)
-        .filter2(p => (p.type === 'patch' ? p.p(rootNode) : p))
+        .filter2(p => (p.type === 'patch' ? p.p(elm) : p))
         .run(e => {
           if (e instanceof S.Next) {
             state = e.value.r(state)
@@ -95,7 +67,7 @@ function runO<State>(elm: Node, initState: State, n: N<State>): S.S<State> {
   })
 }
 
-function runI<State>(states: S.S<State>, n: N<State>): S.S<Reducer<State> | Patch> {
+export function runI<State>(states: S.S<State>, n: N<State>): S.S<Reducer<State> | Patch> {
   if (n.type !== 'element') {
     return S.d(
       patch(parent => {

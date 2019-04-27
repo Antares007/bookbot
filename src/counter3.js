@@ -1,40 +1,32 @@
 // @flow strict
 import * as S from './S'
-import * as N from './piths/node'
+import * as N from './piths/p'
 
-const counter = (d: number) =>
-  N.div(({ o, patch }) => {
-    o(
-      N.button(({ o, patch }) => {
-        o('+')
-        d > 0 &&
-          o(
-            S.periodic(100 + d * 100).map(i =>
-              i % 2 === 0 ? counter(d - 1) : ''
-            )
-          )
-        //patch(n => console.log(n))
-        //d > 0 && o(counter(d - 1))
+const counter = (d: number): N.N<{ n: number }> =>
+  N.elm('div', (o, i) => {
+    o.node(
+      N.elm('button', (o, i) => {
+        const on = new S.On(i.ref)
+        o.reduce(on.click().map(_ => s => ({ ...s, n: s.n + 1 })))
+        o.node(N.text('+'))
       })
     )
-    o(
-      N.button(({ o }) => {
-        o('-')
-        d > 0 && o(counter(d - 1))
+    o.node(
+      N.elm('button', (o, i) => {
+        const on = new S.On(i.ref)
+        o.reduce(on.click().map(_ => s => ({ ...s, n: s.n - 1 })))
+        o.node(N.text('-'))
       })
     )
-    o('0')
+    o.node(i.states.map(s => N.text(s.n + '')))
+    o.node(i.states.map(s => N.comment(` ${s.n} `)))
   })
 
-const patches = N.run(counter(2))
-
 const rootNode = document.getElementById('root-node')
-if (!(rootNode instanceof HTMLDivElement))
-  throw new Error('cant find root-node')
+if (!rootNode) throw new Error('cant find root-node')
 
-patches
-  .map(p => p(rootNode))
-  .scan(s => s + 1, 0)
-  .skip(1)
-  .take(999)
-  .run(console.log.bind(console))
+N.runO(rootNode, { n: 0, b: true }, counter(0)).run(e => {
+  if (e instanceof S.Next) console.log(e.value)
+  else if (e instanceof Error) console.error(e)
+  else console.info(e)
+})
