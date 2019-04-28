@@ -1,1 +1,1 @@
-export const cast = o => () => o
+export const cast = o => o

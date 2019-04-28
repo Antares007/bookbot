@@ -1,3 +1,2 @@
 // @flow strict
-declare export var cast: <O>(O) => <A>() => A
-
+declare export var cast: <O, A>(O) => A
