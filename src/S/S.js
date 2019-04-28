@@ -49,8 +49,8 @@ export class S<A> {
   filter(f: A => boolean): S<A> {
     return filter(f, this)
   }
-  filter2<B>(f: A => ?B): S<B> {
-    return filter2(f, this)
+  filterJust<B>(f: A => ?B): S<B> {
+    return filterJust(f, this)
   }
   take(n: number): S<A> {
     return take(n, this)
@@ -98,10 +98,7 @@ export const periodic = (period: number): S<number> =>
     )
   })
 
-export const run = <A>(
-  o: (Next<A> | Error | End) => void,
-  as: S<A>
-): D.Disposable => {
+export const run = <A>(o: (Next<A> | Error | End) => void, as: S<A>): D.Disposable => {
   var disposables = []
   var disposed = false
   const disposable = D.create(() => {
@@ -299,7 +296,7 @@ export const filter = <A>(f: A => boolean, as: S<A>): S<A> =>
     })
   )
 
-export const filter2 = <A, B>(f: A => ?B, as: S<A>): S<B> =>
+export const filterJust = <A, B>(f: A => ?B, as: S<A>): S<B> =>
   s(o =>
     as.f(function S$filter(e) {
       if (e instanceof Next) {

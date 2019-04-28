@@ -53,7 +53,7 @@ export function runO<State>(elm: Node, initState: State, n: N<State>): S.S<State
     })
     o(
       runI(states, n)
-        .filter2(p => (p.type === 'patch' ? p.p(elm) : p))
+        .filterJust(p => (p.type === 'patch' ? p.p(elm) : p))
         .run(e => {
           if (e instanceof S.Next) {
             state = e.value.r(state)
