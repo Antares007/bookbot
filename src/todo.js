@@ -16,9 +16,9 @@ type Model = {
 }
 
 const todo = N.elm<Model>('div', (o, i) => {
-  o.node(
+  o(
     N.elm('div', (o, i) => {
-      o.node(
+      o(
         N.elm('input', (o, i) => {
           const on = new S.On(i.ref)
           o.patch(
@@ -34,10 +34,10 @@ const todo = N.elm<Model>('div', (o, i) => {
           )
         })
       )
-      o.node(
+      o(
         N.elm('button', (o, i) => {
           const on = new S.On(i.ref)
-          o.node(N.text('add'))
+          o(N.text('add'))
           o.patch(
             i.states.map(m => n => {
               if (n instanceof HTMLElement)
@@ -54,10 +54,10 @@ const todo = N.elm<Model>('div', (o, i) => {
           )
         })
       )
-      o.node(
+      o(
         N.elm('button', (o, i) => {
           const on = new S.On(i.ref)
-          o.node(N.text('reverse'))
+          o(N.text('reverse'))
           o.reduce(
             on.click().map(_ => s => ({
               ...s,
@@ -68,22 +68,22 @@ const todo = N.elm<Model>('div', (o, i) => {
       )
     })
   )
-  o.node(
+  o(
     i.states
       .map(m => m.todos)
       .skipEquals()
       .map(todos =>
         N.elm('ul', (o, i) => {
           for (let todo of todos)
-            o.node(
+            o(
               N.elm(
                 'li',
                 (o, i) => {
-                  o.node(N.text(todo.name))
-                  o.node(
+                  o(N.text(todo.name))
+                  o(
                     N.elm('button', (o, i) => {
                       const on = new S.On(i.ref)
-                      o.node(N.text('remove'))
+                      o(N.text('remove'))
                       o.reduce(
                         on.click().map(_ => s => ({
                           ...s,

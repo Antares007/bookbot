@@ -7,11 +7,10 @@ export function extend(key, b) {
     nb.type === 'element'
       ? N.elm(nb.tag, (o, i) => {
           nb.pith(
-            {
-              node: ss => o.node(ssmap(extend(key, b), ss)),
+            Object.assign(ss => o(ssmap(extend(key, b), ss)), {
               patch: o.patch,
               reduce: ss => o.reduce(ssmap(v => a => ({ ...a, [key]: v(a[key] || b) }), ss))
-            },
+            }),
             {
               ref: i.ref,
               states: i.states.map(s => {

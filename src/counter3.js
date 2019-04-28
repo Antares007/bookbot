@@ -4,24 +4,24 @@ import * as N from './N'
 
 const counter = (d: number): N.N<{ n: number }> =>
   N.elm('div', (o, i) => {
-    o.node(
+    o(
       N.elm('button', (o, i) => {
         const on = new S.On(i.ref)
         o.reduce(on.click().map(_ => s => ({ ...s, n: s.n + 1 })))
-        o.node(N.text('+'))
-        d > 0 && o.node(N.extend('+', { n: 0 })(counter(d - 1)))
+        o(N.text('+'))
+        d > 0 && o(N.extend('+', { n: 0 })(counter(d - 1)))
       })
     )
-    o.node(
+    o(
       N.elm('button', (o, i) => {
         const on = new S.On(i.ref)
         o.reduce(on.click().map(_ => s => ({ ...s, n: s.n - 1 })))
-        o.node(N.text('-'))
-        d > 0 && o.node(N.extend('-', { n: 0 })(counter(d - 1)))
+        o(N.text('-'))
+        d > 0 && o(N.extend('-', { n: 0 })(counter(d - 1)))
       })
     )
-    o.node(i.states.map(s => N.text(s.n + '')))
-    o.node(i.states.map(s => N.comment(` ${s.n} `)))
+    o(i.states.map(s => N.text(s.n + '')))
+    o(i.states.map(s => N.comment(` ${s.n} `)))
   })
 
 const rootNode = document.getElementById('root-node')

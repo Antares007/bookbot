@@ -10,7 +10,7 @@ export type Patch = { type: 'patch', p: Node => void }
 
 export type NPith<State> = (
   {
-    node: (SS<N<State>>) => void,
+    (SS<N<State>>): void,
     patch: (SS<(Node) => void>) => void,
     reduce: (SS<(State) => State>) => void
   },
@@ -87,19 +87,21 @@ export function runI<State>(states: S.S<State>, n: N<State>): S.S<Reducer<State>
     }).multicast()
 
     n.pith(
-      {
-        node: v => {
+      Object.assign(
+        v => {
           ssnodes.push(v)
         },
-        patch: v => {
-          if (v instanceof S.S) patchess.push(v)
-          else patches.push(v)
-        },
-        reduce: v => {
-          if (v instanceof S.S) reducerss.push(v)
-          else reducers.push(v)
+        {
+          patch: v => {
+            if (v instanceof S.S) patchess.push(v)
+            else patches.push(v)
+          },
+          reduce: v => {
+            if (v instanceof S.S) reducerss.push(v)
+            else reducers.push(v)
+          }
         }
-      },
+      ),
       {
         ref,
         states
