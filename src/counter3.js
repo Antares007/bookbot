@@ -6,7 +6,7 @@ const pi2 = Math.PI * 2
 const r = 10
 const counter = (d: number): N.N<{ n: number }> =>
   N.div((o, i) => {
-    o.style({ padding: '5px 10px', textAlign: 'center' })
+    o.style({ padding: '5px 10px', 'text-align': 'center' })
     const colors = S.periodic(20)
       .scan(i => (i >= pi2 ? 0 : i + 0.15), 0)
       .map(i => {
