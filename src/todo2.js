@@ -1,6 +1,5 @@
 // @flow strict
 import * as S from './S'
-import * as D from './D'
 import * as N from './N'
 
 const initState = {
@@ -15,11 +14,11 @@ type Model = {
   todos: Array<{ id: number, name: string, completed: boolean }>
 }
 
-const todo = D.div<Model>((o, i) => {
+const todo = N.div<Model>((o, i) => {
   o(
-    D.div((o, i) => {
+    N.div((o, i) => {
       o(
-        D.input((o, i) => {
+        N.input((o, i) => {
           o.props(i.states.map(m => ({ value: m.inputText })))
           o.reduce(
             i.on.input().map(e => s => ({
@@ -28,7 +27,7 @@ const todo = D.div<Model>((o, i) => {
             }))
           )
         }),
-        D.button((o, i) => {
+        N.button((o, i) => {
           o('add')
           o.attrs(i.states.map(m => ({ disabled: m.inputText.trim().length > 0 ? null : '' })))
           o.reduce(
@@ -39,7 +38,7 @@ const todo = D.div<Model>((o, i) => {
             }))
           )
         }),
-        D.button((o, i) => {
+        N.button((o, i) => {
           o('reverse')
           o.reduce(
             i.on.click().map(_ => s => ({
@@ -54,13 +53,13 @@ const todo = D.div<Model>((o, i) => {
       .map(m => m.todos)
       .skipEquals()
       .map(todos =>
-        D.ul((o, i) => {
+        N.ul((o, i) => {
           for (let todo of todos)
             o(
-              D.li((o, i) => {
+              N.li((o, i) => {
                 o(
                   todo.name,
-                  D.button((o, i) => {
+                  N.button((o, i) => {
                     o('remove')
                     o.reduce(
                       i.on.click().map(_ => s => ({
@@ -80,7 +79,7 @@ const todo = D.div<Model>((o, i) => {
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
-const states = N.runO(rootNode, initState, D.ring(todo))
+const states = N.runO(rootNode, initState, todo)
 
 states.run(e => {
   if (e instanceof S.Next) console.log(JSON.stringify(e.value, null, '  '))

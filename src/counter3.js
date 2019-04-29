@@ -3,25 +3,21 @@ import * as S from './S'
 import * as N from './N'
 
 const counter = (d: number): N.N<{ n: number }> =>
-  N.elm('div', (o, i) => {
+  N.div((o, i) => {
     o(
-      N.elm('button', (o, i) => {
-        const on = new S.On(i.ref)
-        o.reduce(on.click().map(_ => s => ({ ...s, n: s.n + 1 })))
-        o(N.text('+'))
+      N.button((o, i) => {
+        o('+')
+        o.reduce(i.on.click().map(_ => s => ({ ...s, n: s.n + 1 })))
         d > 0 && o(N.extend('+', { n: 0 })(counter(d - 1)))
-      })
-    )
-    o(
-      N.elm('button', (o, i) => {
-        const on = new S.On(i.ref)
-        o.reduce(on.click().map(_ => s => ({ ...s, n: s.n - 1 })))
-        o(N.text('-'))
+      }),
+      N.button((o, i) => {
+        o('-')
+        o.reduce(i.on.click().map(_ => s => ({ ...s, n: s.n - 1 })))
         d > 0 && o(N.extend('-', { n: 0 })(counter(d - 1)))
-      })
+      }),
+      i.states.map(s => s.n + ''),
+      i.states.map(s => N.comment(` ${s.n} `))
     )
-    o(i.states.map(s => N.text(s.n + '')))
-    o(i.states.map(s => N.comment(` ${s.n} `)))
   })
 
 const rootNode = document.getElementById('root-node')
