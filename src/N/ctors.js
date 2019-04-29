@@ -9,6 +9,7 @@ import { cast } from './cast'
 export type DPith<State, Elm: Node> = (
   {
     (...Array<SS<N<State> | string>>): void,
+    style: (SS<{ [string]: ?string }>) => void,
     attrs: (SS<{ [string]: ?string }>) => void,
     props: (SS<{ [string]: mixed }>) => void,
     patch: (SS<(Elm) => void>) => void,
@@ -30,6 +31,7 @@ export const li = <State>(pith: DPith<State, HTMLLIElement>, key?: ?string): N<S
 
 function pmap<State, T: Node>(klass: Class<T>, pith: DPith<State, T>): NPith<State> {
   return (o, i) => {
+    const ssstyle = []
     const ssattrs = []
     const ssprops = []
     pith(
@@ -38,6 +40,9 @@ function pmap<State, T: Node>(klass: Class<T>, pith: DPith<State, T>): NPith<Sta
         {
           patch: v => o.patch(ssmap(v => p => (p instanceof klass ? v(p) : void 0), v)),
           reduce: o.reduce,
+          style: v => {
+            ssstyle.push(v)
+          },
           attrs: v => {
             ssattrs.push(v)
           },
@@ -52,6 +57,16 @@ function pmap<State, T: Node>(klass: Class<T>, pith: DPith<State, T>): NPith<Sta
         on: new S.On(i.ref)
       }
     )
+    if (ssstyle.length > 0)
+      o.patch(
+        combineSS(ssstyle).filterJust(v => parent => {
+          if (!(parent instanceof HTMLElement)) return
+          for (var styles of v.type === 'init' ? v.v : [v.v])
+            for (var name in styles)
+              if (styles[name] != null) parent.style.setProperty(name, styles[name])
+              else parent.style.removeProperty(name)
+        })
+      )
     if (ssattrs.length > 0)
       o.patch(
         combineSS(ssattrs).filterJust(v => parent => {
