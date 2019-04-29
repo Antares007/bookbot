@@ -28,6 +28,14 @@ export const ul = <State>(pith: DPith<State, HTMLUListElement>, key?: ?string): 
   elm('ul', pmap(HTMLUListElement, pith), key)
 export const li = <State>(pith: DPith<State, HTMLLIElement>, key?: ?string): N<State> =>
   elm('li', pmap(HTMLLIElement, pith), key)
+export const h1 = <State>(pith: DPith<State, HTMLHeadingElement>, key?: ?string): N<State> =>
+  elm('h1', pmap(HTMLHeadingElement, pith), key)
+export const h2 = <State>(pith: DPith<State, HTMLHeadingElement>, key?: ?string): N<State> =>
+  elm('h2', pmap(HTMLHeadingElement, pith), key)
+export const h3 = <State>(pith: DPith<State, HTMLHeadingElement>, key?: ?string): N<State> =>
+  elm('h3', pmap(HTMLHeadingElement, pith), key)
+export const h4 = <State>(pith: DPith<State, HTMLHeadingElement>, key?: ?string): N<State> =>
+  elm('h4', pmap(HTMLHeadingElement, pith), key)
 
 function pmap<State, T: Node>(klass: Class<T>, pith: DPith<State, T>): NPith<State> {
   return (o, i) => {

@@ -34,8 +34,8 @@ const counter = (depth: number): N.N<{ n: number }> =>
         S.map(({ s, c, c1, c2 }) => {
           return {
             'border-radius': Math.abs(Math.floor(s * 20)) + 'px',
-            //left: Math.floor(r * c) + 'px',
-            //top: Math.floor(r * s) + 'px',
+            left: Math.floor(r * c) + 'px',
+            top: Math.floor(r * s) + 'px',
             'background-color': `rgb(255, ${c1}, ${c2})`
           }
         }, colors),
@@ -47,14 +47,14 @@ const counter = (depth: number): N.N<{ n: number }> =>
         S.map(({ s, c, c1, c2 }) => {
           return {
             'border-radius': Math.abs(Math.floor(c * 20)) + 'px',
-            //left: Math.floor(r * s) + 'px',
-            //top: Math.floor(r * c) + 'px',
+            left: Math.floor(r * s) + 'px',
+            top: Math.floor(r * c) + 'px',
             'background-color': `rgb(${c1}, ${c2}, 255)`
           }
         }, colors),
         depth
       ),
-      i.states.map(s => s.n + '')
+      N.h4(o => o(i.states.map(s => s.n + '')))
     )
   })
 
