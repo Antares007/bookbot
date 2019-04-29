@@ -3,7 +3,7 @@ import * as S from '../S'
 import type { N, NPith } from './N'
 import type { SS } from './streamstaff'
 import { ssmap, combineSS } from './streamstaff'
-import { text } from './N'
+import { text, elm } from './N'
 import { cast } from './cast'
 
 export type DPith<State, Elm: Node> = (
@@ -17,36 +17,16 @@ export type DPith<State, Elm: Node> = (
   { ref: S.S<Elm>, on: S.On, states: S.S<State> }
 ) => void
 
-export const div = <State>(pith: DPith<State, HTMLDivElement>, key?: ?string): N<State> => ({
-  type: 'element',
-  tag: 'DIV',
-  pith: pmap(HTMLDivElement, pith),
-  key
-})
-export const button = <State>(pith: DPith<State, HTMLButtonElement>, key?: ?string): N<State> => ({
-  type: 'element',
-  tag: 'BUTTON',
-  pith: pmap(HTMLButtonElement, pith),
-  key
-})
-export const input = <State>(pith: DPith<State, HTMLInputElement>, key?: ?string): N<State> => ({
-  type: 'element',
-  tag: 'INPUT',
-  pith: pmap(HTMLInputElement, pith),
-  key
-})
-export const ul = <State>(pith: DPith<State, HTMLUListElement>, key?: ?string): N<State> => ({
-  type: 'element',
-  tag: 'UL',
-  pith: pmap(HTMLUListElement, pith),
-  key
-})
-export const li = <State>(pith: DPith<State, HTMLLIElement>, key?: ?string): N<State> => ({
-  type: 'element',
-  tag: 'LI',
-  pith: pmap(HTMLLIElement, pith),
-  key
-})
+export const div = <State>(pith: DPith<State, HTMLDivElement>, key?: ?string): N<State> =>
+  elm('div', pmap(HTMLDivElement, pith), key)
+export const button = <State>(pith: DPith<State, HTMLButtonElement>, key?: ?string): N<State> =>
+  elm('button', pmap(HTMLButtonElement, pith), key)
+export const input = <State>(pith: DPith<State, HTMLInputElement>, key?: ?string): N<State> =>
+  elm('input', pmap(HTMLInputElement, pith), key)
+export const ul = <State>(pith: DPith<State, HTMLUListElement>, key?: ?string): N<State> =>
+  elm('ul', pmap(HTMLUListElement, pith), key)
+export const li = <State>(pith: DPith<State, HTMLLIElement>, key?: ?string): N<State> =>
+  elm('li', pmap(HTMLLIElement, pith), key)
 
 function pmap<State, T: Node>(klass: Class<T>, pith: DPith<State, T>): NPith<State> {
   return (o, i) => {
