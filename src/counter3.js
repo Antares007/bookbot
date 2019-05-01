@@ -11,7 +11,7 @@ const button = (label, action, styles, depth) =>
     o.style({ position: 'relative', outline: 'none' })
     o.style(styles)
     o.reduce(i.on.click().map(_ => s => ({ ...s, n: s.n + action })))
-    depth > 0 && o(N.extend('+', { n: 0 })(counter(depth - 1)))
+    depth > 0 && o(N.extend(label, { n: 0 })(counter(depth - 1)))
   })
 
 const counter = (depth: number): N.N<{ n: number }> =>
@@ -34,8 +34,8 @@ const counter = (depth: number): N.N<{ n: number }> =>
         S.map(({ s, c, c1, c2 }) => {
           return {
             'border-radius': Math.abs(Math.floor(s * 20)) + 'px',
-            left: Math.floor(r * c) + 'px',
-            top: Math.floor(r * s) + 'px',
+            //left: Math.floor(r * c) + 'px',
+            //top: Math.floor(r * s) + 'px',
             'background-color': `rgb(255, ${c1}, ${c2})`
           }
         }, colors),
@@ -47,8 +47,8 @@ const counter = (depth: number): N.N<{ n: number }> =>
         S.map(({ s, c, c1, c2 }) => {
           return {
             'border-radius': Math.abs(Math.floor(c * 20)) + 'px',
-            left: Math.floor(r * s) + 'px',
-            top: Math.floor(r * c) + 'px',
+            //left: Math.floor(r * s) + 'px',
+            //top: Math.floor(r * c) + 'px',
             'background-color': `rgb(${c1}, ${c2}, 255)`
           }
         }, colors),
