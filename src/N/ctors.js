@@ -4,7 +4,6 @@ import type { N, NPith } from './N'
 import type { SS } from './streamstaff'
 import { ssmap, combineSS } from './streamstaff'
 import { text, elm } from './N'
-import { cast } from './cast'
 
 export type DPith<State, Elm: Node> = (
   {
@@ -87,11 +86,10 @@ function pmap<State, T: Node>(klass: Class<T>, pith: DPith<State, T>): NPith<Sta
       )
     if (ssprops.length > 0)
       o.patch(
-        combineSS(ssprops).filterJust(v => parent => {
-          const p: { [string]: mixed } = cast(parent)
+        combineSS(ssprops).filterJust(v => (parent: Node & { [string]: mixed }) => {
           for (var props of v.type === 'init' ? v.v : [v.v])
             for (var name in props) {
-              p[name] = props[name]
+              parent[name] = props[name]
             }
         })
       )
