@@ -5,7 +5,7 @@ import { combineSS, makeStreamController } from './streamstaff'
 import type { SS } from './streamstaff'
 
 export type NORay = {
-  node: (SS<N>) => void,
+  (SS<N>): void,
   patch: (SS<(Node) => void>) => void
 }
 export type NIRay = { ref: S.S<Node> }
@@ -37,7 +37,7 @@ export function run(n: N): S.S<(Node) => void> {
     case 'text':
     case 'comment':
       return S.d(parent => {
-        parent.textContent = n.value
+        if (parent.textContent !== n.value) parent.textContent = n.value
       })
     case 'element':
     case 'elementNS':
@@ -46,26 +46,23 @@ export function run(n: N): S.S<(Node) => void> {
         const ssnodes: Array<SS<N>> = []
         const patchess = []
         const patches = []
-        var refNode: Node
-        const ref = S.s(o =>
-          o(
-            S.delay(() => {
-              o(S.next(refNode))
-              o(S.delay(() => o(S.end)))
-            })
-          )
-        )
+        var refO = _ => {}
+        const ref = S.s(o => {
+          refO = o
+        }).multicast()
 
         n.pith(
-          {
-            node: v => {
+          Object.assign(
+            v => {
               ssnodes.push(v)
             },
-            patch: v => {
-              if (v instanceof S.S) patchess.push(v)
-              else patches.push(v)
+            {
+              patch: v => {
+                if (v instanceof S.S) patchess.push(v)
+                else patches.push(v)
+              }
             }
-          },
+          ),
           { ref }
         )
 
@@ -96,7 +93,7 @@ export function run(n: N): S.S<(Node) => void> {
                 for (var i = childNodes.length - 1; i >= pnodesLength; i--)
                   console.log('rm', parent.removeChild(childNodes[i]))
                 for (var i = 0, l = patches.length; i < l; i++) patches[i](parent)
-                refNode = parent
+                refO(S.next(parent))
               }
             } else {
               const { index, v: node } = v
@@ -119,7 +116,7 @@ export function run(n: N): S.S<(Node) => void> {
 }
 
 function runOn(n: N, i: number): S.S<(Node) => void> {
-  return run(n).map(p => parent => p.p(parent.childNodes[i]))
+  return run(n).map(p => parent => p(parent.childNodes[i]))
 }
 
 function eq(node: Node, n): ?Node {
@@ -144,4 +141,27 @@ function create(n: N): Node {
     default:
       throw new Error('never')
   }
+}
+
+function proxy<A>(): [(A) => void, S.S<A>] {
+  const os = []
+  var lastA: ?A
+  const o = a => {
+    lastA = a
+    os.forEach(o => o(S.delay(() => o(S.next(a)))))
+  }
+  const s = S.s(o => {
+    os.push(o)
+    o(
+      D.create(() => {
+        const pos = os.indexOf(o)
+        if (pos >= 0) os.splice(pos, 1)
+      })
+    )
+    if (lastA) {
+      const nextA = S.next(lastA)
+      o(S.delay(() => o(nextA)))
+    }
+  })
+  return [o, s]
 }
