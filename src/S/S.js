@@ -408,3 +408,26 @@ export const skipUntil = <A, U>(us: S<U>, as: S<A>): S<A> => {
     )
   })
 }
+
+export function proxy<A>(): [(A) => void, S<A>] {
+  const os = []
+  var lastA: ?A
+  const o = a => {
+    lastA = a
+    os.forEach(o => o(delay(() => o(next(a)))))
+  }
+  const proxy = s(o => {
+    os.push(o)
+    o(
+      D.create(() => {
+        const pos = os.indexOf(o)
+        if (pos >= 0) os.splice(pos, 1)
+      })
+    )
+    if (lastA) {
+      const nextA = next(lastA)
+      o(delay(() => o(nextA)))
+    }
+  })
+  return [o, proxy]
+}

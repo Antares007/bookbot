@@ -1,5 +1,6 @@
 // @flow strict
 import * as S from '../S'
+import { findAppendPosition } from '../S/scheduler'
 import * as D from '../S/Disposable'
 import { combineSS, makeStreamController } from './streamstaff'
 import type { SS } from './streamstaff'
@@ -41,73 +42,79 @@ export function run(n: N): S.S<(Node) => void> {
       })
     case 'element':
     case 'elementNS':
-      return S.s(o => {
-        const { start, stop } = makeStreamController(o)
-        const ssnodes: Array<SS<N>> = []
-        const patchess = []
-        const patches = []
-        const [refO, ref] = proxy()
-        n.pith(
-          Object.assign(
-            v => {
-              ssnodes.push(v)
-            },
-            {
-              patch: v => {
-                if (v instanceof S.S) patchess.push(v)
-                else patches.push(v)
-              }
-            }
-          ),
-          { ref }
-        )
-
-        var childPatches: Array<S.S<(Node) => void>>
-        start(
-          combineSS(ssnodes).map(v => {
-            if (v.type === 'init') {
-              const { v: nodes } = v
-              childPatches = new Array(nodes.length)
-
-              for (var i = 0, l = nodes.length; i < l; i++)
-                start((childPatches[i] = runOn(nodes[i], i)))
-
-              for (var i = 0, l = patchess.length; i < l; i++) start(patchess[i])
-
-              return parent => {
-                const pnodesLength = nodes.length
-                const childNodes = parent.childNodes
-                var li: ?Node
-                for (var index = 0; index < pnodesLength; index++) {
-                  const x = nodes[index]
-                  li = null
-                  for (var i = index, l = childNodes.length; i < l; i++)
-                    if ((li = eq(childNodes[i], x))) break
-                  if (li == null) parent.insertBefore(create(x), childNodes[index])
-                  else if (i !== index) parent.insertBefore(li, childNodes[index])
-                }
-                for (var i = childNodes.length - 1; i >= pnodesLength; i--)
-                  console.log('rm', parent.removeChild(childNodes[i]))
-                for (var i = 0, l = patches.length; i < l; i++) patches[i](parent)
-                refO(parent)
-              }
-            } else {
-              const { index, v: node } = v
-              const oldPatch = childPatches[index]
-              start((childPatches[index] = runOn(node, index)))
-              stop(oldPatch)
-              return parent => {
-                const on = parent.childNodes[index]
-                if (eq(on, node)) return
-                parent.insertBefore(create(node), on)
-                console.log('rm_', parent.removeChild(on))
-              }
-            }
-          })
-        )
-      })
+      return S.s(runPith(n.pith))
     default:
       throw new Error('never')
+  }
+}
+
+function runPith(pith) {
+  return o => {
+    const { start, stop } = makeStreamController(o)
+    const ssnodes: Array<SS<N>> = []
+    const patchess = []
+    const patches = []
+    const [refO, ref] = S.proxy()
+    var i = 0
+    pith(
+      Object.assign(
+        v => {
+          const index = i++
+          ssnodes.push(v)
+        },
+        {
+          patch: v => {
+            if (v instanceof S.S) patchess.push(v)
+            else patches.push(v)
+          }
+        }
+      ),
+      { ref }
+    )
+
+    var childPatches: Array<S.S<(Node) => void>>
+    start(
+      combineSS(ssnodes).map(v => {
+        if (v.type === 'init') {
+          const { v: nodes } = v
+          childPatches = new Array(nodes.length)
+
+          for (var i = 0, l = nodes.length; i < l; i++)
+            start((childPatches[i] = runOn(nodes[i], i)))
+
+          for (var i = 0, l = patchess.length; i < l; i++) start(patchess[i])
+
+          return parent => {
+            const pnodesLength = nodes.length
+            const childNodes = parent.childNodes
+            var li: ?Node
+            for (var index = 0; index < pnodesLength; index++) {
+              const x = nodes[index]
+              li = null
+              for (var i = index, l = childNodes.length; i < l; i++)
+                if ((li = eq(childNodes[i], x))) break
+              if (li == null) parent.insertBefore(create(x), childNodes[index])
+              else if (i !== index) parent.insertBefore(li, childNodes[index])
+            }
+            for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+              console.log('rm', parent.removeChild(childNodes[i]))
+            for (var i = 0, l = patches.length; i < l; i++) patches[i](parent)
+            refO(parent)
+          }
+        } else {
+          const { index, v: node } = v
+          const oldPatch = childPatches[index]
+          start((childPatches[index] = runOn(node, index)))
+          stop(oldPatch)
+          return parent => {
+            const on = parent.childNodes[index]
+            if (eq(on, node)) return
+            parent.insertBefore(create(node), on)
+            console.log('rm_', parent.removeChild(on))
+          }
+        }
+      })
+    )
   }
 }
 
@@ -137,27 +144,4 @@ function create(n: N): Node {
     default:
       throw new Error('never')
   }
-}
-
-function proxy<A>(): [(A) => void, S.S<A>] {
-  const os = []
-  var lastA: ?A
-  const o = a => {
-    lastA = a
-    os.forEach(o => o(S.delay(() => o(S.next(a)))))
-  }
-  const s = S.s(o => {
-    os.push(o)
-    o(
-      D.create(() => {
-        const pos = os.indexOf(o)
-        if (pos >= 0) os.splice(pos, 1)
-      })
-    )
-    if (lastA) {
-      const nextA = S.next(lastA)
-      o(S.delay(() => o(nextA)))
-    }
-  })
-  return [o, s]
 }

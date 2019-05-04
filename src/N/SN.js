@@ -36,21 +36,7 @@ export const elmNS = <State>(ns: string, tag: string, pith: SNPith<State>): SN<S
 export function run<State>(node: Node, initState: State, sn: SN<State>): S.S<State> {
   return S.s(o => {
     var state = initState
-    const statesO = []
-    const states = S.s(o => {
-      statesO.push(o)
-      o(
-        D.create(() => {
-          const pos = statesO.indexOf(o)
-          if (pos >= 0) statesO.splice(pos, 1)
-        })
-      )
-      o(
-        S.delay(() => {
-          o(S.next(state))
-        })
-      )
-    })
+    const [statesO, states] = S.proxy()
     const reducers: Array<(State) => State> = []
     const reducerss: Array<S.S<(State) => State>> = []
     const pmap = (pith: SNPith<State>): NPith => (o, i) =>
@@ -92,9 +78,8 @@ export function run<State>(node: Node, initState: State, sn: SN<State>): S.S<Sta
             .run(e => {
               if (e instanceof S.Next) {
                 state = (e: S.Next<(State) => State>).value(state)
-                const nextState = S.next(state)
-                o(nextState)
-                statesO.forEach(o => o(S.delay(() => o(nextState))))
+                statesO(state)
+                o(S.next(state))
               } else if (e instanceof S.End) {
                 if (--dc === 0) o(e)
               } else o(e)
