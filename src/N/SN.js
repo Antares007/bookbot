@@ -37,18 +37,34 @@ export function run<State>(node: Node, initState: State, sn: SN<State>): S.S<Sta
   return S.s(o => {
     var state = initState
     const [statesO, states] = S.proxy()
-    const reducers: Array<(State) => State> = []
-    const reducerss: Array<S.S<(State) => State>> = []
-    const pmap = (pith: SNPith<State>): NPith => (o, i) =>
+    const dmap = new Map()
+    const srun = (f,s) => 
+    const reduce = s => e => {
+      if (e instanceof S.Next) {
+      } else if (e instanceof S.End) {
+        dmap.delete(s)
+        if (dmap.size === 0) o(e)
+      } else o(e)
+    }
+    const pmap = (pith: SNPith<State>): NPith => (o, i) => {
+      const reducers: Array<(State) => State> = []
+      const rs = S.d(state_ => {
+        var state = state_
+        for (var i = 0, l = reducers.length; i < l; i++) state = reducers[i](state)
+        return state
+      })
       pith(
         Object.assign(v => o(ssmap(v => ring(v), v)), o, {
           reduce: v => {
-            if (v instanceof S.S) reducerss.push(v)
-            else reducers.push(v)
+            if (v instanceof S.S) {
+              dmap.set(v, v.run(reduce(v)))
+            } else reducers.push(v)
           }
         }),
         { ...i, states }
       )
+      dmap.set(rs, rs.run(reduce(rs)))
+    }
     const ring = (sn: SN<State>): N => {
       if (sn.type === 'sElement') {
         return Nelm(sn.tag, pmap(sn.pith), sn.key)
@@ -56,25 +72,16 @@ export function run<State>(node: Node, initState: State, sn: SN<State>): S.S<Sta
         return NelmNS(sn.ns, sn.tag, pmap(sn.pith))
       } else return sn
     }
-    var dc = 2
-    o(
-      Nrun(ring(sn)).run(e => {
+    const ps = Nrun(ring(sn)).run(e => {
         if (e instanceof S.Next) {
           e.value(node)
         } else if (e instanceof S.End) {
           if (--dc === 0) o(e)
         } else o(e)
       })
-    )
     o(
       S.delay(() => {
         o(
-          S.d(state_ => {
-            var state = state_
-            for (var i = 0, l = reducers.length; i < l; i++) state = reducers[i](state)
-            return state
-          })
-            .merge(mergeArray(reducerss))
             .run(e => {
               if (e instanceof S.Next) {
                 state = (e: S.Next<(State) => State>).value(state)
