@@ -9,9 +9,14 @@ function pmap<A: any, B: any>(key: string, b: B, pith: SNPith<B>): SNPith<A> {
     pith(
       Object.assign(ss => o(ssmap(extend(key, b), ss)), o, {
         reduce: ss => {
-          console.log('map reduce', key, b)
           o.reduce(
-            ssmap(v => a => ({ ...a, [key]: v(typeof a[key] !== 'undefined' ? a[key] : b) }), ss)
+            ssmap(
+              reducer => a => ({
+                ...a,
+                [key]: reducer(typeof a[key] !== 'undefined' ? a[key] : b)
+              }),
+              ss
+            )
           )
         }
       }),
@@ -22,6 +27,7 @@ function pmap<A: any, B: any>(key: string, b: B, pith: SNPith<B>): SNPith<A> {
     )
   }
 }
+
 export function extend<A: any, B: any>(key: string, b: B): (SNT<B>) => SNT<A> {
   return nb =>
     nb.type === 'sElement'

@@ -46,11 +46,7 @@ export function run(n: N): S.S<(Node) => void> {
         const ssnodes: Array<SS<N>> = []
         const patchess = []
         const patches = []
-        var refO = _ => {}
-        const ref = S.s(o => {
-          refO = o
-        }).multicast()
-
+        const [refO, ref] = proxy()
         n.pith(
           Object.assign(
             v => {
@@ -93,7 +89,7 @@ export function run(n: N): S.S<(Node) => void> {
                 for (var i = childNodes.length - 1; i >= pnodesLength; i--)
                   console.log('rm', parent.removeChild(childNodes[i]))
                 for (var i = 0, l = patches.length; i < l; i++) patches[i](parent)
-                refO(S.next(parent))
+                refO(parent)
               }
             } else {
               const { index, v: node } = v

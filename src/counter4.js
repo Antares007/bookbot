@@ -12,11 +12,16 @@ const r = 10
 
 const button = (label, action, styles, depth) =>
   SN.elm('button', (o, i) => {
-    const on = new S.On(i.ref.tap(x => console.log('tap')))
+    const on = new S.On(i.ref)
     o(N.text(label))
     o.patch(style({ position: 'relative', outline: 'none' }))
     o.patch(style(styles))
-    o.reduce(on.click().map(_ => s => ({ ...s, n: s.n + action })))
+    o.reduce(
+      on
+        .click()
+        .tap(x => console.log('click ' + depth))
+        .map(_ => s => ({ ...s, n: s.n + action }))
+    )
     depth > 0 && o(extend(label, { n: 0 })(counter(depth - 1)))
   })
 

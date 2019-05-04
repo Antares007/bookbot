@@ -82,7 +82,6 @@ export function run<State>(node: Node, initState: State, sn: SN<State>): S.S<Sta
     )
     o(
       S.delay(() => {
-        console.log('reducerss', reducerss)
         o(
           S.d(state_ => {
             var state = state_
@@ -101,7 +100,7 @@ export function run<State>(node: Node, initState: State, sn: SN<State>): S.S<Sta
               } else o(e)
             })
         )
-      })
+      }, 1)
     )
   })
 }
