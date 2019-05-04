@@ -2,7 +2,6 @@
 import * as S from '../S'
 import { findAppendPosition } from '../S/scheduler'
 import * as D from '../S/Disposable'
-import { makeStreamController } from './streamstaff'
 import type { SS } from './streamstaff'
 
 export type NORay = {
@@ -50,7 +49,27 @@ export function run(n: N): S.S<(Node) => void> {
 
 function runPith(pith) {
   return o => {
-    const { start, stop } = makeStreamController(o)
+    const dmap = new Map()
+    o(D.create(() => dmap.forEach(d => d.dispose())))
+    const start = s => {
+      dmap.set(
+        s,
+        S.run(e => {
+          if (e instanceof S.End) {
+            dmap.delete(s)
+            if (dmap.size === 0) o(e)
+          } else o(e)
+        }, s)
+      )
+    }
+    const stop = s => {
+      const d = dmap.get(s)
+      if (d) {
+        dmap.delete(s)
+        d.dispose()
+        if (dmap.size === 0) o(S.end)
+      }
+    }
     const ssnodes: Array<SS<N>> = []
     const patchess = []
     const patches = []
