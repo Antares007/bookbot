@@ -52,7 +52,9 @@ export function run<State>(node: Node, initState: State, sn: SN<State>): S.S<Sta
     var state = initState
     statesO(state)
     const reduce = e => {
-      state = e.value(state)
+      const newState = e.value(state)
+      if (newState === state) return
+      state = newState
       o(S.next(state))
       statesO(state)
     }
