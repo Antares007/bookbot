@@ -175,11 +175,7 @@ function combineSS<A, B>(
     const dmap = new Map()
     const as: Array<A> = new Array(array.length)
     const idxs = []
-    o(
-      D.create(() => {
-        for (var d of dmap.values()) d.dispose()
-      })
-    )
+    o(D.create(() => dmap.forEach(d => d.dispose())))
     for (let index = 0, l = array.length; index < l; index++) {
       const a = array[index]
       if (a instanceof S.S) {
