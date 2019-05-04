@@ -2,7 +2,7 @@
 import * as S from '../S'
 import { findAppendPosition } from '../S/scheduler'
 import * as D from '../S/Disposable'
-import { combineSS, makeStreamController } from './streamstaff'
+import { makeStreamController } from './streamstaff'
 import type { SS } from './streamstaff'
 
 export type NORay = {
@@ -74,9 +74,8 @@ function runPith(pith) {
 
     var childPatches: Array<S.S<(Node) => void>>
     start(
-      combineSS(ssnodes).map(v => {
-        if (v.type === 'init') {
-          const { v: nodes } = v
+      combineSS(
+        nodes => {
           childPatches = new Array(nodes.length)
 
           for (var i = 0, l = nodes.length; i < l; i++)
@@ -101,19 +100,21 @@ function runPith(pith) {
             for (var i = 0, l = patches.length; i < l; i++) patches[i](parent)
             refO(parent)
           }
-        } else {
-          const { index, v: node } = v
+        },
+        (node, index) => {
           const oldPatch = childPatches[index]
           start((childPatches[index] = runOn(node, index)))
           stop(oldPatch)
+
           return parent => {
             const on = parent.childNodes[index]
             if (eq(on, node)) return
             parent.insertBefore(create(node), on)
             console.log('rm_', parent.removeChild(on))
           }
-        }
-      })
+        },
+        ssnodes
+      )
     )
   }
 }
@@ -144,4 +145,52 @@ function create(n: N): Node {
     default:
       throw new Error('never')
   }
+}
+
+function combineSS<A, B>(
+  initF: (Array<A>) => B,
+  updateF: (A, number) => B,
+  array: Array<SS<A>>
+): S.S<B> {
+  return S.s(o => {
+    const dmap = new Map()
+    const as: Array<A> = new Array(array.length)
+    const idxs = []
+    o(
+      D.create(() => {
+        for (var d of dmap.values()) d.dispose()
+      })
+    )
+    for (let index = 0, l = array.length; index < l; index++) {
+      const a = array[index]
+      if (a instanceof S.S) {
+        idxs.push(index)
+        dmap.set(
+          index,
+          S.run(e => {
+            if (e instanceof S.Next) {
+              if (idxs.length === 0) o(S.next(updateF(e.value, index)))
+              else {
+                as[index] = e.value
+                const pos = idxs.indexOf(index)
+                if (pos !== -1) idxs.splice(pos, 1)
+                if (idxs.length === 0) o(S.next(initF(as)))
+              }
+            } else if (e instanceof S.End) {
+              dmap.delete(index)
+              if (dmap.size === 0) o(e)
+            } else o(e)
+          }, a)
+        )
+      } else as[index] = a
+    }
+    if (idxs.length === 0) {
+      o(
+        S.delay(() => {
+          o(S.next(initF(as)))
+          o(S.delay(() => o(S.end)))
+        })
+      )
+    }
+  })
 }
