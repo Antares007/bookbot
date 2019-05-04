@@ -35,35 +35,48 @@ export const elmNS = <State>(ns: string, tag: string, pith: SNPith<State>): SN<S
 
 export function run<State>(node: Node, initState: State, sn: SN<State>): S.S<State> {
   return S.s(o => {
-    var state = initState
-    const [statesO, states] = S.proxy()
     const dmap = new Map()
-    const srun = (f,s) => 
-    const reduce = s => e => {
-      if (e instanceof S.Next) {
-      } else if (e instanceof S.End) {
-        dmap.delete(s)
-        if (dmap.size === 0) o(e)
-      } else o(e)
+    o(D.create(() => dmap.forEach(d => d.dispose())))
+    const srun = <A>(f: (S.Next<A>) => void, s: S.S<A>) =>
+      dmap.set(
+        s,
+        s.run(e => {
+          if (e instanceof S.Next) f(e)
+          else if (e instanceof S.End) {
+            dmap.delete(s)
+            if (dmap.size === 0) o(e)
+          } else o(e)
+        })
+      )
+    const [statesO, states] = S.proxy()
+    var state = initState
+    statesO(state)
+    const reduce = e => {
+      state = e.value(state)
+      o(S.next(state))
+      statesO(state)
     }
     const pmap = (pith: SNPith<State>): NPith => (o, i) => {
       const reducers: Array<(State) => State> = []
-      const rs = S.d(state_ => {
-        var state = state_
-        for (var i = 0, l = reducers.length; i < l; i++) state = reducers[i](state)
-        return state
-      })
       pith(
         Object.assign(v => o(ssmap(v => ring(v), v)), o, {
           reduce: v => {
             if (v instanceof S.S) {
-              dmap.set(v, v.run(reduce(v)))
+              srun(reduce, v)
             } else reducers.push(v)
           }
         }),
         { ...i, states }
       )
-      dmap.set(rs, rs.run(reduce(rs)))
+      if (reducers.length)
+        srun(
+          reduce,
+          S.d(state_ => {
+            var state = state_
+            for (var i = 0, l = reducers.length; i < l; i++) state = reducers[i](state)
+            return state
+          })
+        )
     }
     const ring = (sn: SN<State>): N => {
       if (sn.type === 'sElement') {
@@ -72,45 +85,6 @@ export function run<State>(node: Node, initState: State, sn: SN<State>): S.S<Sta
         return NelmNS(sn.ns, sn.tag, pmap(sn.pith))
       } else return sn
     }
-    const ps = Nrun(ring(sn)).run(e => {
-        if (e instanceof S.Next) {
-          e.value(node)
-        } else if (e instanceof S.End) {
-          if (--dc === 0) o(e)
-        } else o(e)
-      })
-    o(
-      S.delay(() => {
-        o(
-            .run(e => {
-              if (e instanceof S.Next) {
-                state = (e: S.Next<(State) => State>).value(state)
-                statesO(state)
-                o(S.next(state))
-              } else if (e instanceof S.End) {
-                if (--dc === 0) o(e)
-              } else o(e)
-            })
-        )
-      }, 1)
-    )
-  })
-}
-
-function mergeArray<A>(array: Array<S.S<A>>): S.S<A> {
-  return S.s(o => {
-    const dmap = new Map()
-    o(D.create(() => dmap.forEach(d => d.dispose())))
-    array.forEach((as, i) => {
-      dmap.set(
-        i,
-        as.run(e => {
-          if (e instanceof S.End) {
-            dmap.delete(i)
-            if (dmap.size === 0) o(e)
-          } else o(e)
-        })
-      )
-    })
+    srun(e => e.value(node), Nrun(ring(sn)))
   })
 }
