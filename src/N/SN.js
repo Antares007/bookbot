@@ -33,7 +33,11 @@ export const elmNS = <State>(ns: string, tag: string, pith: SNPith<State>): SN<S
   ns
 })
 
-export function run<State>(node: Node, initState: State, sn: SN<State>): S.S<State> {
+export function run<State>(
+  patch: ((Node) => void) => void,
+  initState: State,
+  sn: SN<State>
+): S.S<State> {
   return S.s(o => {
     const dmap = new Map()
     o(D.create(() => dmap.forEach(d => d.dispose())))
@@ -87,6 +91,6 @@ export function run<State>(node: Node, initState: State, sn: SN<State>): S.S<Sta
         return NelmNS(sn.ns, sn.tag, pmap(sn.pith))
       } else return sn
     }
-    srun(e => e.value(node), Nrun(ring(sn)))
+    srun(e => patch(e.value), Nrun(ring(sn)))
   })
 }

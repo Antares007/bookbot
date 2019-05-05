@@ -73,9 +73,11 @@ function runPith(pith) {
     )
 
     var childPatches: Array<S.S<(Node) => void>>
+    var childNodes: Array<N>
     start(
       combineSS(
         nodes => {
+          childNodes = nodes
           childPatches = new Array(nodes.length)
 
           for (var i = 0, l = nodes.length; i < l; i++)
@@ -105,16 +107,19 @@ function runPith(pith) {
           const oldPatch = childPatches[index]
           start((childPatches[index] = runOn(node, index)))
           stop(oldPatch)
-
-          return parent => {
-            const on = parent.childNodes[index]
-            if (eq(on, node)) return
-            parent.insertBefore(create(node), on)
-            console.log('rm_', parent.removeChild(on))
-          }
+          const oldNode = childNodes[index]
+          if (oldNode.tag !== node.tag || (node.key && oldNode.key !== node.key)) {
+            childNodes[index] = node
+            return parent => {
+              const on = parent.childNodes[index]
+              if (eq(on, node)) return
+              parent.insertBefore(create(node), on)
+              console.log('rm_', parent.removeChild(on))
+            }
+          } else return null
         },
         ssnodes
-      )
+      ).filterJust(x => x)
     )
   }
 }

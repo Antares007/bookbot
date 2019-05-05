@@ -22,7 +22,7 @@ function pmap<A: any, B: any>(key: string, b: B, pith: SNPith<B>): SNPith<A> {
       }),
       {
         ...i,
-        states: i.states.map(a => (typeof a[key] !== 'undefined' ? a[key] : b))
+        states: i.states.map(a => (typeof a[key] !== 'undefined' ? a[key] : b)).skipEquals()
       }
     )
   }

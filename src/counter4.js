@@ -1,6 +1,7 @@
 // @flow
 import * as S from './S'
 import * as SN from './N/SN'
+import type { SN as SNT } from './N/SN'
 import * as N from './N/N2'
 import { extend } from './N/rings2'
 import type { SS } from './N/streamstaff'
@@ -29,6 +30,7 @@ const counter = (depth: number): SN.SN<{ n: number }> =>
   SN.elm('div', (o, i) => {
     o.patch(style({ padding: '5px 10px', 'text-align': 'center' }))
     const colors = S.periodic(20)
+      .take(1)
       .scan(i => (i >= pi2 ? 0 : i + 0.15), 0)
       .map(i => {
         const s = Math.sin(i)
@@ -74,9 +76,26 @@ const counter = (depth: number): SN.SN<{ n: number }> =>
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
-const states = SN.run(rootNode, { n: 0, b: true }, counter(2))
+const patches = []
+window.speed = 17
+S.delay(function rec() {
+  const p = patches.shift()
+  if (p) {
+    console.log(p.toString())
+    p(rootNode)
+  }
+  S.delay(rec, window.speed)
+})
 
-states.take(30).run(e => {
+const states = SN.run(
+  p => {
+    patches.push(p)
+  },
+  { n: 0, b: true },
+  counter(4)
+)
+
+states.run(e => {
   if (e instanceof S.Next) console.log(JSON.stringify(e.value, null, '  '))
   else if (e instanceof Error) console.error(e)
   else console.info(e)
