@@ -4,6 +4,7 @@ import type { SN } from './N/SN'
 import { run } from './N/SN'
 import { extend } from './N/rings'
 import { div, button, h4 } from './N/ctors'
+import { linearPatcher } from './N/patchers'
 
 const pi2 = Math.PI * 2
 const r = 10
@@ -70,7 +71,7 @@ const counter = (depth: number): SN<{ n: number }> =>
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
-const states = run(p => p(rootNode), { n: 0, b: true }, counter(2))
+const states = run(linearPatcher(rootNode, 200), { n: 0, b: true }, counter(2))
 
 states.run(e => {
   if (e instanceof S.Next) console.log(JSON.stringify(e.value, null, '  '))
