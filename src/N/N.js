@@ -12,21 +12,21 @@ export type NIRay = { ref: S.S<Node> }
 export type NPith = (NORay, NIRay) => void
 
 export type N =
-  | { type: 'element', tag: string, pith: NPith, key: ?string }
+  | { type: 'element', tag: string, pith: NPith, key?: string }
   | { type: 'elementNS', tag: string, pith: NPith, ns: string }
   | { type: 'text', tag: '#text', value: string }
   | { type: 'comment', tag: '#comment', value: string }
 
-export const elm = (tag: string, pith: NPith, key?: ?string): N => ({
+export const elm = <T>(pmap: T => NPith, tag: string, t: T, key?: string): N => ({
   type: 'element',
   tag: tag.toUpperCase(),
-  pith,
+  pith: pmap(t),
   key
 })
-export const elmNS = (ns: string, tag: string, pith: NPith): N => ({
+export const elmNS = <T>(pmap: T => NPith, ns: string, tag: string, t: T): N => ({
   type: 'elementNS',
   tag: tag.toUpperCase(),
-  pith,
+  pith: pmap(t),
   ns
 })
 export const text = (value: string): N => ({ type: 'text', tag: '#text', value })
