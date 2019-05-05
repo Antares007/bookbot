@@ -1,6 +1,6 @@
 // @flow strict
 import * as S from './S'
-import * as N from './N'
+import * as N from './N_'
 
 const initState = {
   id: 0,

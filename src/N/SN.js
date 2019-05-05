@@ -1,10 +1,10 @@
 // @flow strict
 import * as S from '../S'
 import * as D from '../S/Disposable'
-import type { N, NPith, NORay, NIRay } from './N2'
+import type { N, NPith, NORay, NIRay } from './N'
 import type { SS } from './streamstaff'
-import { ssmap, makeStreamController } from './streamstaff'
-import { run as Nrun, elm as Nelm, elmNS as NelmNS } from './N2'
+import { ssmap } from './streamstaff'
+import { run as Nrun, elm as Nelm, elmNS as NelmNS } from './N'
 
 export type SNPith<State> = (
   {

@@ -1,201 +1,216 @@
 // @flow strict
 import * as S from '../S'
+import { findAppendPosition } from '../S/scheduler'
 import * as D from '../S/Disposable'
-import { combineSS, makeStreamController } from './streamstaff'
 import type { SS } from './streamstaff'
 
-export type Reducer<S> = { type: 'reducer', r: S => S }
+export type NORay = {
+  (SS<N>): void,
+  patch: (SS<(Node) => void>) => void
+}
+export type NIRay = { ref: S.S<Node> }
+export type NPith = (NORay, NIRay) => void
 
-export type Patch = { type: 'patch', p: Node => void }
-
-export type NPith<State> = (
-  {
-    (SS<N<State>>): void,
-    patch: (SS<(Node) => void>) => void,
-    reduce: (SS<(State) => State>) => void
-  },
-  { ref: S.S<Node>, states: S.S<State> }
-) => void
-
-export type N<S> =
-  | { type: 'element', tag: string, pith: NPith<S>, key: ?string }
+export type N =
+  | { type: 'element', tag: string, pith: NPith, key: ?string }
+  | { type: 'elementNS', tag: string, pith: NPith, ns: string }
   | { type: 'text', tag: '#text', value: string }
   | { type: 'comment', tag: '#comment', value: string }
 
-export const reducer = <S>(r: S => S): Reducer<S> => ({ type: 'reducer', r })
-export const patch = (p: Node => void): Patch => ({ type: 'patch', p })
-export const elm = <S>(tag: string, pith: NPith<S>, key?: ?string): N<S> => ({
+export const elm = (tag: string, pith: NPith, key?: ?string): N => ({
   type: 'element',
   tag: tag.toUpperCase(),
   pith,
   key
 })
-export const text = <S>(value: string): N<S> => ({ type: 'text', tag: '#text', value })
-export const comment = <S>(value: string): N<S> => ({ type: 'comment', tag: '#comment', value })
+export const elmNS = (ns: string, tag: string, pith: NPith): N => ({
+  type: 'elementNS',
+  tag: tag.toUpperCase(),
+  pith,
+  ns
+})
+export const text = (value: string): N => ({ type: 'text', tag: '#text', value })
+export const comment = (value: string): N => ({ type: 'comment', tag: '#comment', value })
 
-export function runO<State>(elm: Node, initState: State, n: N<State>): S.S<State> {
-  return S.s(o => {
-    var state = initState
-    const statesO = []
-    const states = S.s(o => {
-      statesO.push(o)
-      o(
-        D.create(() => {
-          const pos = statesO.indexOf(o)
-          if (pos >= 0) statesO.splice(pos, 1)
-        })
-      )
-      o(
-        S.delay(() => {
-          o(S.next(state))
-        })
-      )
-    })
-    o(
-      runI(states, n)
-        .filterJust(p => (p.type === 'patch' ? p.p(elm) : p))
-        .run(e => {
-          if (e instanceof S.Next) {
-            state = e.value.r(state)
-            const nextState = S.next(state)
-            o(nextState)
-            statesO.forEach(o => o(S.delay(() => o(nextState))))
-          } else o(e)
-        })
-    )
-  })
+export function run(n: N): S.S<(Node) => void> {
+  switch (n.type) {
+    case 'text':
+    case 'comment':
+      return S.d(parent => {
+        if (parent.textContent !== n.value) parent.textContent = n.value
+      })
+    case 'element':
+    case 'elementNS':
+      return S.s(runPith(n.pith))
+    default:
+      throw new Error('never')
+  }
 }
 
-export function runI<State>(states: S.S<State>, n: N<State>): S.S<Reducer<State> | Patch> {
-  if (n.type !== 'element') {
-    return S.d(
-      patch(parent => {
-        parent.textContent = n.value
-      })
-    )
-  }
-  return S.s(o => {
-    const { start, stop } = makeStreamController(o)
-    const ssnodes: Array<SS<N<State>>> = []
+function runPith(pith) {
+  return o => {
+    const dmap = new Map()
+    o(D.create(() => dmap.forEach(d => d.dispose())))
+    const start = s => {
+      dmap.set(
+        s,
+        S.run(e => {
+          if (e instanceof S.End) {
+            dmap.delete(s)
+            if (dmap.size === 0) o(e)
+          } else o(e)
+        }, s)
+      )
+    }
+    const stop = s => {
+      const d = dmap.get(s)
+      if (d) {
+        dmap.delete(s)
+        d.dispose()
+        if (dmap.size === 0) o(S.end)
+      }
+    }
+    const ssnodes: Array<SS<N>> = []
     const patchess = []
     const patches = []
-    const reducerss = []
-    const reducers = []
-    var refO = _ => {}
-    const ref = S.s(o => {
-      refO = o
-    }).multicast()
-
-    n.pith(
+    const [refO, ref] = S.proxy()
+    var i = 0
+    pith(
       Object.assign(
         v => {
+          const index = i++
           ssnodes.push(v)
         },
         {
           patch: v => {
             if (v instanceof S.S) patchess.push(v)
             else patches.push(v)
-          },
-          reduce: v => {
-            if (v instanceof S.S) reducerss.push(v)
-            else reducers.push(v)
           }
         }
       ),
-      {
-        ref,
-        states
-      }
+      { ref }
     )
 
-    var childPatches: Array<S.S<Reducer<State> | Patch>>
+    var childPatches: Array<S.S<(Node) => void>>
+    var childNodes: Array<N>
     start(
-      combineSS(ssnodes).map(v => {
-        if (v.type === 'init') {
-          const { v: nodes } = v
+      combineSS(
+        nodes => {
+          childNodes = nodes
           childPatches = new Array(nodes.length)
 
           for (var i = 0, l = nodes.length; i < l; i++)
-            start((childPatches[i] = runAt(states, nodes[i], i)))
+            start((childPatches[i] = runOn(nodes[i], i)))
 
-          for (var i = 0, l = patchess.length; i < l; i++) start(patchess[i].map(x => patch(x)))
+          for (var i = 0, l = patchess.length; i < l; i++) start(patchess[i])
 
-          if (reducers.length > 0)
-            start(
-              S.d(
-                reducer(s => {
-                  var s_ = s
-                  for (var i = 0, l = reducers.length; i < l; i++) s_ = reducers[i](s_)
-                  return s_
-                })
-              )
-            )
-
-          for (var i = 0, l = reducerss.length; i < l; i++) start(reducerss[i].map(x => reducer(x)))
-
-          return patch(parent => {
-            mkInitPatch(nodes, parent)
+          return parent => {
+            const pnodesLength = nodes.length
+            const childNodes = parent.childNodes
+            var li: ?Node
+            for (var index = 0; index < pnodesLength; index++) {
+              const x = nodes[index]
+              li = null
+              for (var i = index, l = childNodes.length; i < l; i++)
+                if ((li = eq(childNodes[i], x))) break
+              if (li == null) parent.insertBefore(create(x), childNodes[index])
+              else if (i !== index) parent.insertBefore(li, childNodes[index])
+            }
+            for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+              console.log('rm', parent.removeChild(childNodes[i]))
             for (var i = 0, l = patches.length; i < l; i++) patches[i](parent)
-            refO(S.next(parent))
-          })
-        } else {
-          const { index, v: node } = v
+            refO(parent)
+          }
+        },
+        (node, index) => {
           const oldPatch = childPatches[index]
-          start((childPatches[index] = runAt(states, node, index)))
+          start((childPatches[index] = runOn(node, index)))
           stop(oldPatch)
-          return patch(mkUpdatePatch(node, index))
-        }
-      })
+          const oldNode = childNodes[index]
+          if (oldNode.tag !== node.tag || (node.key && oldNode.key !== node.key)) {
+            childNodes[index] = node
+            return parent => {
+              const on = parent.childNodes[index]
+              if (eq(on, node)) return
+              parent.insertBefore(create(node), on)
+              console.log('rm_', parent.removeChild(on))
+            }
+          } else return null
+        },
+        ssnodes
+      ).filterJust(x => x)
     )
-  })
+  }
 }
 
-function runAt<State>(states: S.S<State>, n: N<State>, i: number): S.S<Patch | Reducer<State>> {
-  return runI(states, n).map(p =>
-    p.type === 'patch'
-      ? patch(parent => {
-          p.p(parent.childNodes[i])
+function runOn(n: N, i: number): S.S<(Node) => void> {
+  return run(n).map(p => parent => p(parent.childNodes[i]))
+}
+
+function eq(node: Node, n): ?Node {
+  return node.nodeName !== n.tag ||
+    (n.type === 'element' && n.key && node instanceof HTMLElement && node.dataset.key !== n.key)
+    ? null
+    : node
+}
+
+function create(n: N): Node {
+  switch (n.type) {
+    case 'element':
+      const elm = document.createElement(n.tag)
+      if (n.key) elm.dataset.key = n.key
+      return elm
+    case 'elementNS':
+      return document.createElementNS(n.ns, n.tag)
+    case 'text':
+      return document.createTextNode(n.value)
+    case 'comment':
+      return document.createComment(n.value)
+    default:
+      throw new Error('never')
+  }
+}
+
+function combineSS<A, B>(
+  initF: (Array<A>) => B,
+  updateF: (A, number) => B,
+  array: Array<SS<A>>
+): S.S<B> {
+  return S.s(o => {
+    const dmap = new Map()
+    const as: Array<A> = new Array(array.length)
+    const idxs = []
+    o(D.create(() => dmap.forEach(d => d.dispose())))
+    for (let index = 0, l = array.length; index < l; index++) {
+      const a = array[index]
+      if (a instanceof S.S) {
+        idxs.push(index)
+        dmap.set(
+          index,
+          S.run(e => {
+            if (e instanceof S.Next) {
+              if (idxs.length === 0) o(S.next(updateF(e.value, index)))
+              else {
+                as[index] = e.value
+                const pos = idxs.indexOf(index)
+                if (pos !== -1) idxs.splice(pos, 1)
+                if (idxs.length === 0) o(S.next(initF(as)))
+              }
+            } else if (e instanceof S.End) {
+              dmap.delete(index)
+              if (dmap.size === 0) o(e)
+            } else o(e)
+          }, a)
+        )
+      } else as[index] = a
+    }
+    if (idxs.length === 0) {
+      o(
+        S.delay(() => {
+          o(S.next(initF(as)))
+          o(S.delay(() => o(S.end)))
         })
-      : p
-  )
-}
-
-function mkUpdatePatch(node, index) {
-  return parent => {
-    const on = parent.childNodes[index]
-    if (eq(on, node)) return
-    parent.insertBefore(create(node), on)
-    console.log('rm_', parent.removeChild(on))
-  }
-}
-
-function mkInitPatch(nodes, parent) {
-  const pnodesLength = nodes.length
-  const childNodes = parent.childNodes
-  var li: ?Node
-  for (var index = 0; index < pnodesLength; index++) {
-    const x = nodes[index]
-    li = null
-    for (var i = index, l = childNodes.length; i < l; i++) if ((li = eq(childNodes[i], x))) break
-    if (li == null) parent.insertBefore(create(x), childNodes[index])
-    else if (i !== index) parent.insertBefore(li, childNodes[index])
-  }
-  for (var i = childNodes.length - 1; i >= pnodesLength; i--)
-    console.log('rm', parent.removeChild(childNodes[i]))
-}
-
-function eq(node: Node, x): ?Node {
-  if (node.nodeName !== x.tag) return null
-  if (x.type === 'element' && x.key && node instanceof HTMLElement && node.dataset.key !== x.key)
-    return null
-  return node
-}
-
-function create(x) {
-  if (x.type === 'element') {
-    const elm = document.createElement(x.tag)
-    if (x.key) elm.dataset.key = x.key
-    return elm
-  } else if (x.type === 'text') return document.createTextNode(x.value)
-  else return document.createComment(x.value)
+      )
+    }
+  })
 }

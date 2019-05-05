@@ -2,11 +2,10 @@
 import * as S from './S'
 import * as SN from './N/SN'
 import type { SN as SNT } from './N/SN'
-import * as N from './N/N2'
-import { extend } from './N/rings2'
+import * as N from './N/N'
+import { extend } from './N/rings'
 import type { SS } from './N/streamstaff'
-import { ssmap, combineSS } from './N/streamstaff'
-import { cast } from './N/cast'
+import { ssmap } from './N/streamstaff'
 
 const pi2 = Math.PI * 2
 const r = 10

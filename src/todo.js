@@ -1,7 +1,7 @@
 // @flow strict
 import * as S from './S'
-import type { NPith } from './N'
-import * as N from './N'
+import type { NPith } from './N_'
+import * as N from './N_'
 
 const initState = {
   id: 0,

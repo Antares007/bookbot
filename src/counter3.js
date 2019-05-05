@@ -1,6 +1,6 @@
 // @flow strict
 import * as S from './S'
-import * as N from './N'
+import * as N from './N_'
 
 const pi2 = Math.PI * 2
 const r = 10
