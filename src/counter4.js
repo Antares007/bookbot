@@ -75,30 +75,41 @@ const counter = (depth: number): SN.SN<{ n: number }> =>
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
-const patches = []
-window.speed = 17
-S.delay(function rec() {
-  const p = patches.shift()
-  if (p) {
-    console.log(p.toString())
-    p(rootNode)
-  }
-  S.delay(rec, window.speed)
-})
-
-const states = SN.run(
-  p => {
-    patches.push(p)
-  },
-  { n: 0, b: true },
-  counter(4)
-)
+const states = SN.run(linearPatcher(rootNode), { n: 0, b: true }, counter(4))
 
 states.run(e => {
   if (e instanceof S.Next) console.log(JSON.stringify(e.value, null, '  '))
   else if (e instanceof Error) console.error(e)
   else console.info(e)
 })
+
+function animationFramePatcher(node: Node): ((Node) => void) => void {
+  var patches = []
+  window.requestAnimationFrame(function rec() {
+    var p
+    while ((p = patches.shift())) p(node)
+    window.requestAnimationFrame(rec)
+  })
+  return p => {
+    patches.push(p)
+  }
+}
+
+function linearPatcher(node: Node, speed: number = 17): ((Node) => void) => void {
+  const patches = []
+  window.speed = speed
+  S.delay(function rec() {
+    const p = patches.shift()
+    if (p) {
+      console.log(p.toString())
+      p(node)
+    }
+    S.delay(rec, window.speed)
+  })
+  return p => {
+    patches.push(p)
+  }
+}
 
 function style(styles: SS<{ [string]: ?string }>): SS<(Node) => void> {
   return ssmap(
