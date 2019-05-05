@@ -1,8 +1,8 @@
 // @flow strict
 import * as S from './S'
-import * as N_ from './N_'
-import * as N from './N/N'
-import * as SN from './N/SN'
+import { div, button, input, ul, li } from './N/ctors'
+import { run } from './N/SN'
+import { linearPatcher } from './N/patchers'
 
 const initState = {
   id: 0,
@@ -16,11 +16,11 @@ type Model = {
   todos: Array<{ id: number, name: string, completed: boolean }>
 }
 
-const todo = N_.div<Model>((o, i) => {
+const todo = div<Model>((o, i) => {
   o(
-    N_.div((o, i) => {
+    div((o, i) => {
       o(
-        N_.input((o, i) => {
+        input((o, i) => {
           o.props(i.states.map(m => ({ value: m.inputText })))
           o.reduce(
             i.on.input().map(e => s => ({
@@ -29,7 +29,7 @@ const todo = N_.div<Model>((o, i) => {
             }))
           )
         }),
-        N_.button((o, i) => {
+        button((o, i) => {
           o('add')
           o.attrs(i.states.map(m => ({ disabled: m.inputText.trim().length > 0 ? null : '' })))
           o.reduce(
@@ -40,7 +40,7 @@ const todo = N_.div<Model>((o, i) => {
             }))
           )
         }),
-        N_.button((o, i) => {
+        button((o, i) => {
           o('reverse')
           o.reduce(
             i.on.click().map(_ => s => ({
@@ -55,13 +55,13 @@ const todo = N_.div<Model>((o, i) => {
       .map(m => m.todos)
       .skipEquals()
       .map(todos =>
-        N_.ul((o, i) => {
+        ul((o, i) => {
           for (let todo of todos)
             o(
-              N_.li((o, i) => {
+              li((o, i) => {
                 o(
                   todo.name,
-                  N_.button((o, i) => {
+                  button((o, i) => {
                     o('remove')
                     o.reduce(
                       i.on.click().map(_ => s => ({
@@ -81,7 +81,7 @@ const todo = N_.div<Model>((o, i) => {
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
-const states = N_.runO(rootNode, initState, todo)
+const states = run(p => p(rootNode), initState, todo)
 
 states.run(e => {
   if (e instanceof S.Next) console.log(JSON.stringify(e.value, null, '  '))

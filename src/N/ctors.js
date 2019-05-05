@@ -25,6 +25,9 @@ export const div = <State>(pith: DPith<State, HTMLDivElement>, key?: ?string): S
 export const button = <State>(pith: DPith<State, HTMLButtonElement>, key?: ?string): SN<State> =>
   elm('button', pmap(HTMLButtonElement, pith), key)
 
+export const input = <State>(pith: DPith<State, HTMLInputElement>, key?: ?string): SN<State> =>
+  elm('input', pmap(HTMLInputElement, pith), key)
+
 export const ul = <State>(pith: DPith<State, HTMLUListElement>, key?: ?string): SN<State> =>
   elm('ul', pmap(HTMLUListElement, pith), key)
 
