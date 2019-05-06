@@ -16,8 +16,8 @@ export class Next<+A> {
 }
 export const next = <A>(a: A): Next<A> => new Next(a)
 
-export class S<A> {
-  f: Pith<Next<A> | Error | End | D.Disposable, void, void>
+export class S<+A> {
+  +f: Pith<Next<A> | Error | End | D.Disposable, void, void>
   constructor(f: $PropertyType<S<A>, 'f'>) {
     this.f = f
   }
@@ -27,9 +27,9 @@ export class S<A> {
   merge<B>(sb: S<B>): S<A | B> {
     return merge(this, sb)
   }
-  startWith(a: A): S<A> {
-    return startWith(a, this)
-  }
+  //startWith(a: A): S<A> {
+  //  return startWith(a, this)
+  //}
   tryCatch(): S<A> {
     return tryCatch(this)
   }
@@ -70,6 +70,7 @@ export class S<A> {
     return skipUntil(us, this)
   }
 }
+
 export function s<A>(f: $PropertyType<S<A>, 'f'>): S<A> {
   return new S(f)
 }
