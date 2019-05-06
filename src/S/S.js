@@ -1,8 +1,7 @@
 // @flow strict
+import type { Pith } from '../pith'
 import { delay, now } from './scheduler'
 import * as D from './Disposable'
-
-type StreamF<A> = ((Next<A> | Error | End | D.Disposable) => void) => void
 
 export { delay, now }
 
@@ -18,7 +17,7 @@ export class Next<+A> {
 export const next = <A>(a: A): Next<A> => new Next(a)
 
 export class S<A> {
-  f: StreamF<A>
+  f: Pith<Next<A> | Error | End | D.Disposable, void, void>
   constructor(f: $PropertyType<S<A>, 'f'>) {
     this.f = f
   }
