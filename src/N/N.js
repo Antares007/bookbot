@@ -17,16 +17,16 @@ export type N =
   | { type: 'text', tag: '#text', value: string }
   | { type: 'comment', tag: '#comment', value: string }
 
-export const elm = <T>(pmap: T => NPith, tag: string, t: T, key?: string): N => ({
+export const elm = (tag: string, pith: NPith, key?: string): N => ({
   type: 'element',
   tag: tag.toUpperCase(),
-  pith: pmap(t),
+  pith,
   key
 })
-export const elmNS = <T>(pmap: T => NPith, ns: string, tag: string, t: T): N => ({
+export const elmNS = (ns: string, tag: string, pith: NPith): N => ({
   type: 'elementNS',
   tag: tag.toUpperCase(),
-  pith: pmap(t),
+  pith,
   ns
 })
 export const text = (value: string): N => ({ type: 'text', tag: '#text', value })

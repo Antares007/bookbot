@@ -86,9 +86,10 @@ export function run<State>(
     }
     const ring = (sn: SN<State>): N => {
       if (sn.type === 'sElement') {
-        return sn.key ? Nelm(pmap, sn.tag, sn.pith, sn.key) : Nelm(pmap, sn.tag, sn.pith)
+        const npith = pmap(sn.pith)
+        return sn.key ? Nelm(sn.tag, npith, sn.key) : Nelm(sn.tag, npith)
       } else if (sn.type === 'sElementNS') {
-        return NelmNS(pmap, sn.ns, sn.tag, sn.pith)
+        return NelmNS(sn.ns, sn.tag, pmap(sn.pith))
       } else return sn
     }
     srun(e => patch(e.value), Nrun(ring(sn)))
