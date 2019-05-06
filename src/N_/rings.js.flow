@@ -1,4 +1,0 @@
-// @flow strict
-import * as N from './N'
-
-declare export function extend<A, B>(key: string, b: B): (N.N<B>) => N.N<A>
