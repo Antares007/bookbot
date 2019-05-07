@@ -1,6 +1,5 @@
 // @flow strict
 import * as S from '../S'
-import { findAppendPosition } from '../S/scheduler'
 import * as D from '../S/Disposable'
 import type { SS } from './streamstaff'
 import { ssmap } from './streamstaff'
@@ -82,12 +81,19 @@ function runPith(pith) {
     }
 
     var i = 0
+    const ns: Array<[number, N]> = []
     pith(
       Object.assign(
         ss => {
           const index = i++
           const map = (n: N) => {
-            //
+            const at = index
+            const ap = findAppendPosition(at, ns)
+            var li = ns[ap]
+            if (ap === -1 || li[0] !== at) {
+              li = [at, n]
+              ns.splice(ap + 1, 0, li)
+            }
             return (node: Node) => {}
           }
           const stop = mergeO(ss instanceof S.S ? ss.map(n => map(n)) : map(ss))
@@ -243,4 +249,24 @@ function combineSS<A, B>(
       )
     }
   })
+}
+
+export function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
+  var l = 0
+  var r = line.length
+  while (true) {
+    if (l < r) {
+      const m = ~~((l + r) / 2) | 0
+      if (line[m][0] > n) {
+        r = m
+        continue
+      } else {
+        l = m + 1
+        continue
+      }
+    } else {
+      return l - 1
+    }
+  }
+  throw new Error('never')
 }
