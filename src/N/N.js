@@ -3,6 +3,7 @@ import * as S from '../S'
 import { findAppendPosition } from '../S/scheduler'
 import * as D from '../S/Disposable'
 import type { SS } from './streamstaff'
+import { ssmap } from './streamstaff'
 
 export type NORay = {
   (SS<N>): void,
@@ -51,57 +52,55 @@ function runPith(pith) {
   return o => {
     const dmap = new Map()
     o(D.create(() => dmap.forEach(d => d.dispose())))
-    const start = s => {
-      dmap.set(
-        s,
-        S.run(e => {
-          if (e instanceof S.End) {
-            dmap.delete(s)
-            if (dmap.size === 0) o(e)
-          } else o(e)
-        }, s)
-      )
-    }
-    const stop = s => {
-      const d = dmap.get(s)
-      if (d) {
-        dmap.delete(s)
-        d.dispose()
-        if (dmap.size === 0) o(S.end)
-      }
-    }
 
     const [refO, ref] = S.proxy()
     const patches: Array<(Node) => void> = []
-    const mergeO = e => {}
 
-    const stopD = S.d(domNode => {}).run(e => {
-      if (e instanceof S.Next) {
-      } else o(e)
-    })
-    dmap.set(
-      0,
-      D.create(() => {
-        dmap.delete(0)
-        stopD.dispose()
-      })
-    )
+    const mergeO = (ss: S.S<(Node) => void> | (Node => void)) => {
+      const d =
+        ss instanceof S.S
+          ? ss.run(e => {
+              if (e instanceof S.End) {
+                dmap.delete(ss)
+                if (dmap.size === 0) o(e)
+              } else o(e)
+            })
+          : S.delay(() => {
+              dmap.delete(ss)
+              if (dmap.size === 0) o(S.delay(() => o(S.end)))
+              o(S.next(node => ss(node)))
+            })
+      return dmap
+        .set(
+          ss,
+          D.create(() => {
+            dmap.delete(ss)
+            d.dispose()
+          })
+        )
+        .get(ss)
+    }
 
     var i = 0
     pith(
       Object.assign(
-        v => {
+        ss => {
           const index = i++
+          const map = (n: N) => {
+            //
+            return (node: Node) => {}
+          }
+          const stop = mergeO(ss instanceof S.S ? ss.map(n => map(n)) : map(ss))
         },
         {
           patch: ms => {
-            if (ms instanceof S.S) start(ms)
-            else patches.push(ms)
+            mergeO(ms)
           }
         }
       ),
       { ref }
     )
+
     //    const ssnodes: Array<SS<N>> = []
     //    const patchess = []
     //    const patches = []

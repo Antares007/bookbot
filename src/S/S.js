@@ -16,6 +16,13 @@ export class Next<+A> {
 }
 export const next = <A>(a: A): Next<A> => new Next(a)
 
+export class Ray<-A> {
+  +f: (Next<A> | End | Error) => void
+  constructor(f: $PropertyType<Ray<A>, 'f'>) {
+    this.f = f
+  }
+}
+
 export class S<+A> {
   +f: Pith<Next<A> | Error | End | D.Disposable, void, void>
   constructor(f: $PropertyType<S<A>, 'f'>) {
