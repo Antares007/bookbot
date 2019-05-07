@@ -70,76 +70,107 @@ function runPith(pith) {
         if (dmap.size === 0) o(S.end)
       }
     }
-    const ssnodes: Array<SS<N>> = []
-    const patchess = []
-    const patches = []
+
     const [refO, ref] = S.proxy()
+    const patches: Array<(Node) => void> = []
+    const mergeO = e => {}
+
+    const stopD = S.d(domNode => {}).run(e => {
+      if (e instanceof S.Next) {
+      } else o(e)
+    })
+    dmap.set(
+      0,
+      D.create(() => {
+        dmap.delete(0)
+        stopD.dispose()
+      })
+    )
+
     var i = 0
     pith(
       Object.assign(
         v => {
           const index = i++
-          ssnodes.push(v)
         },
         {
-          patch: v => {
-            if (v instanceof S.S) patchess.push(v)
-            else patches.push(v)
+          patch: ms => {
+            if (ms instanceof S.S) start(ms)
+            else patches.push(ms)
           }
         }
       ),
       { ref }
     )
-
-    var childPatches: Array<S.S<(Node) => void>>
-    var childNodes: Array<N>
-    start(
-      combineSS(
-        nodes => {
-          childNodes = nodes
-          childPatches = new Array(nodes.length)
-
-          for (var i = 0, l = nodes.length; i < l; i++)
-            start((childPatches[i] = runOn(nodes[i], i)))
-
-          for (var i = 0, l = patchess.length; i < l; i++) start(patchess[i])
-
-          return parent => {
-            const pnodesLength = nodes.length
-            const childNodes = parent.childNodes
-            var li: ?Node
-            for (var index = 0; index < pnodesLength; index++) {
-              const x = nodes[index]
-              li = null
-              for (var i = index, l = childNodes.length; i < l; i++)
-                if ((li = eq(childNodes[i], x))) break
-              if (li == null) parent.insertBefore(create(x), childNodes[index])
-              else if (i !== index) parent.insertBefore(li, childNodes[index])
-            }
-            for (var i = childNodes.length - 1; i >= pnodesLength; i--)
-              console.log('rm', parent.removeChild(childNodes[i]))
-            for (var i = 0, l = patches.length; i < l; i++) patches[i](parent)
-            refO(parent)
-          }
-        },
-        (node, index) => {
-          const oldPatch = childPatches[index]
-          start((childPatches[index] = runOn(node, index)))
-          stop(oldPatch)
-          const oldNode = childNodes[index]
-          if (oldNode.tag !== node.tag || (node.key && oldNode.key !== node.key)) {
-            childNodes[index] = node
-            return parent => {
-              const on = parent.childNodes[index]
-              if (eq(on, node)) return
-              parent.insertBefore(create(node), on)
-              console.log('rm_', parent.removeChild(on))
-            }
-          } else return null
-        },
-        ssnodes
-      ).filterJust(x => x)
-    )
+    //    const ssnodes: Array<SS<N>> = []
+    //    const patchess = []
+    //    const patches = []
+    //    var i = 0
+    //    pith(
+    //      Object.assign(
+    //        v => {
+    //          const index = i++
+    //          ssnodes.push(v)
+    //        },
+    //        {
+    //          patch: v => {
+    //            if (v instanceof S.S) patchess.push(v)
+    //            else patches.push(v)
+    //          }
+    //        }
+    //      ),
+    //      { ref }
+    //    )
+    //
+    //    var childPatches: Array<S.S<(Node) => void>>
+    //    var childNodes: Array<N>
+    //    start(
+    //      combineSS(
+    //        nodes => {
+    //          childNodes = nodes
+    //          childPatches = new Array(nodes.length)
+    //
+    //          for (var i = 0, l = nodes.length; i < l; i++)
+    //            start((childPatches[i] = runOn(nodes[i], i)))
+    //
+    //          for (var i = 0, l = patchess.length; i < l; i++) start(patchess[i])
+    //
+    //          return parent => {
+    //            const pnodesLength = nodes.length
+    //            const childNodes = parent.childNodes
+    //            var li: ?Node
+    //            for (var index = 0; index < pnodesLength; index++) {
+    //              const x = nodes[index]
+    //              li = null
+    //              for (var i = index, l = childNodes.length; i < l; i++)
+    //                if ((li = eq(childNodes[i], x))) break
+    //              if (li == null) parent.insertBefore(create(x), childNodes[index])
+    //              else if (i !== index) parent.insertBefore(li, childNodes[index])
+    //            }
+    //            for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+    //              console.log('rm', parent.removeChild(childNodes[i]))
+    //            for (var i = 0, l = patches.length; i < l; i++) patches[i](parent)
+    //            refO(parent)
+    //          }
+    //        },
+    //        (node, index) => {
+    //          const oldPatch = childPatches[index]
+    //          start((childPatches[index] = runOn(node, index)))
+    //          stop(oldPatch)
+    //          const oldNode = childNodes[index]
+    //          if (oldNode.tag !== node.tag || (node.key && oldNode.key !== node.key)) {
+    //            childNodes[index] = node
+    //            return parent => {
+    //              const on = parent.childNodes[index]
+    //              if (eq(on, node)) return
+    //              parent.insertBefore(create(node), on)
+    //              console.log('rm_', parent.removeChild(on))
+    //            }
+    //          } else return null
+    //        },
+    //        ssnodes
+    //      ).filterJust(x => x)
+    //    )
   }
 }
 
