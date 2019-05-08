@@ -55,30 +55,7 @@ function runPith(pith) {
     const [refO, ref] = S.proxy()
     const patches: Array<(Node) => void> = []
 
-    const mergeO = (ss: S.S<(Node) => void> | (Node => void)) => {
-      const d =
-        ss instanceof S.S
-          ? ss.run(e => {
-              if (e instanceof S.End) {
-                dmap.delete(ss)
-                if (dmap.size === 0) o(e)
-              } else o(e)
-            })
-          : S.delay(() => {
-              dmap.delete(ss)
-              if (dmap.size === 0) o(S.delay(() => o(S.end)))
-              o(S.next(node => ss(node)))
-            })
-      return dmap
-        .set(
-          ss,
-          D.create(() => {
-            dmap.delete(ss)
-            d.dispose()
-          })
-        )
-        .get(ss)
-    }
+    const mergeO = makeMergeO(o)
 
     var i = 0
     const ns: Array<[number, N]> = []
@@ -269,4 +246,35 @@ export function findAppendPosition<T>(n: number, line: Array<[number, T]>): numb
     }
   }
   throw new Error('never')
+}
+
+function makeMergeO<A>(
+  o: (S.Next<A> | S.End | Error | D.Disposable) => void
+): (S.S<A> | A) => ?D.Disposable {
+  const dmap = new Map()
+  o(D.create(() => dmap.forEach(d => d.dispose())))
+  return x => {
+    var d =
+      x instanceof S.S
+        ? x.run(e => {
+            if (e instanceof S.End) {
+              dmap.delete(x)
+              if (dmap.size === 0) o(e)
+            } else o(e)
+          })
+        : S.delay(() => {
+            dmap.delete(x)
+            if (dmap.size === 0) o((d = S.delay(() => o(S.end))))
+            o(S.next(x))
+          })
+    return dmap
+      .set(
+        x,
+        D.create(() => {
+          dmap.delete(x)
+          d.dispose()
+        })
+      )
+      .get(x)
+  }
 }
