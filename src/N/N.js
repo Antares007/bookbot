@@ -47,7 +47,7 @@ export function run(n: N): S.S<(Node) => void> {
   }
 }
 
-function runPith(pith) {
+function runPith(pith: NPith) {
   return o => {
     const dmap = new Map()
     o(D.create(() => dmap.forEach(d => d.dispose())))
@@ -250,7 +250,7 @@ export function findAppendPosition<T>(n: number, line: Array<[number, T]>): numb
 
 function makeMergeO<A>(
   o: (S.Next<A> | S.End | Error | D.Disposable) => void
-): (S.S<A> | A) => ?D.Disposable {
+): (S.S<A> | A) => D.Disposable {
   const dmap = new Map()
   o(D.create(() => dmap.forEach(d => d.dispose())))
   return x => {
@@ -267,14 +267,11 @@ function makeMergeO<A>(
             if (dmap.size === 0) o((d = S.delay(() => o(S.end))))
             o(S.next(x))
           })
-    return dmap
-      .set(
-        x,
-        D.create(() => {
-          dmap.delete(x)
-          d.dispose()
-        })
-      )
-      .get(x)
+    const ret = D.create(() => {
+      dmap.delete(x)
+      d.dispose()
+    })
+    dmap.set(x, ret)
+    return ret
   }
 }
