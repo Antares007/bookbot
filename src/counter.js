@@ -2,6 +2,7 @@
 import { div, button, h4 } from './N/ctors'
 import { run } from './N/SN'
 import { extend } from './N/rings'
+import { linearPatcher } from './N/patchers'
 
 const counter = (depth: number) =>
   div<{ n: number }>((o, i) => {
@@ -25,4 +26,4 @@ const counter = (depth: number) =>
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root')
 
-run(p => p(rootNode), { n: 0 }, counter(2)).run(console.log.bind(console))
+run(linearPatcher(rootNode, 1000), { n: 0 }, counter(1)).run(console.log.bind(console))
