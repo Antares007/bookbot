@@ -7,16 +7,13 @@ import { ssmap } from './streamstaff'
 function pmap<A: any, B: any>(key: string, b: B, pith: SNPith<B>): SNPith<A> {
   return (o, i) => {
     pith(
-      Object.assign(ss => o(ssmap(extend(key, b), ss)), o, {
+      Object.assign(ss => o(ss.map(extend(key, b))), o, {
         reduce: ss => {
           o.reduce(
-            ssmap(
-              reducer => a => ({
-                ...a,
-                [key]: reducer(typeof a[key] !== 'undefined' ? a[key] : b)
-              }),
-              ss
-            )
+            ss.map(reducer => a => ({
+              ...a,
+              [key]: reducer(typeof a[key] !== 'undefined' ? a[key] : b)
+            }))
           )
         }
       }),

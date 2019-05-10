@@ -5,8 +5,8 @@ import type { SS } from './streamstaff'
 import { ssmap } from './streamstaff'
 
 export type NORay = {
-  (SS<N>): void,
-  patch: (SS<(Node) => void>) => void
+  (S.S<N>): void,
+  patch: (S.S<(Node) => void>) => void
 }
 export type NIRay = { ref: S.S<Node> }
 export type NPith = (NORay, NIRay) => void

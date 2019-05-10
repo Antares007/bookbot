@@ -8,9 +8,9 @@ import { run as Nrun, elm as Nelm, elmNS as NelmNS } from './N'
 
 export type SNPith<State> = (
   {
-    (SS<SN<State>>): void,
-    patch: (SS<(Node) => void>) => void,
-    reduce: (SS<(State) => State>) => void
+    (S.S<SN<State>>): void,
+    patch: (S.S<(Node) => void>) => void,
+    reduce: (S.S<(State) => State>) => void
   },
   { ref: S.S<Node>, states: S.S<State> }
 ) => void
@@ -65,7 +65,7 @@ export function run<State>(
     const pmap = (pith: SNPith<State>): NPith => (o, i) => {
       const reducers: Array<(State) => State> = []
       pith(
-        Object.assign(v => o(ssmap(v => ring(v), v)), o, {
+        Object.assign(v => o(v.map(ring)), o, {
           reduce: v => {
             if (v instanceof S.S) {
               srun(reduce, v)

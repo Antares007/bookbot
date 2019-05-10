@@ -41,13 +41,19 @@ function pmap<State, T: Node>(klass: Class<T>, pith: DPith<State, T>): SNPith<St
   return (o, i) => {
     pith(
       Object.assign(
-        (...vs) => vs.forEach(v => o(ssmap(v => (typeof v === 'string' ? text(v) : v), v))),
+        (...vs) =>
+          vs.forEach(v =>
+            o((v instanceof S.S ? v : S.d(v)).map(v => (typeof v === 'string' ? text(v) : v)))
+          ),
         {
-          patch: v => o.patch(ssmap(v => p => (p instanceof klass ? v(p) : void 0), v)),
-          reduce: o.reduce,
-          style: v => o.patch(style(v)),
-          attrs: v => o.patch(attr(v)),
-          props: v => o.patch(prop(v))
+          patch: v =>
+            o.patch(
+              (v instanceof S.S ? v : S.d(v)).map(v => p => (p instanceof klass ? v(p) : void 0))
+            ),
+          reduce: v => o.reduce(v instanceof S.S ? v : S.d(v)),
+          style: v => o.patch(style(v instanceof S.S ? v : S.d(v))),
+          attrs: v => o.patch(attr(v instanceof S.S ? v : S.d(v))),
+          props: v => o.patch(prop(v instanceof S.S ? v : S.d(v)))
         }
       ),
       {
@@ -59,35 +65,26 @@ function pmap<State, T: Node>(klass: Class<T>, pith: DPith<State, T>): SNPith<St
   }
 }
 
-function style(styles: SS<{ [string]: ?string }>): SS<(Node) => void> {
-  return ssmap(
-    styles => parent => {
-      if (parent instanceof HTMLElement)
-        for (var name in styles)
-          if (styles[name] != null) parent.style.setProperty(name, styles[name])
-          else parent.style.removeProperty(name)
-    },
-    styles
-  )
+function style(styles: S.S<{ [string]: ?string }>): S.S<(Node) => void> {
+  return styles.map(styles => parent => {
+    if (parent instanceof HTMLElement)
+      for (var name in styles)
+        if (styles[name] != null) parent.style.setProperty(name, styles[name])
+        else parent.style.removeProperty(name)
+  })
 }
 
-function attr(attrs: SS<{ [string]: ?string }>): SS<(Node) => void> {
-  return ssmap(
-    attrs => parent => {
-      if (parent instanceof Element)
-        for (var name in attrs)
-          if (attrs[name] != null) parent.setAttribute(name, attrs[name])
-          else parent.removeAttribute(name)
-    },
-    attrs
-  )
+function attr(attrs: S.S<{ [string]: ?string }>): S.S<(Node) => void> {
+  return attrs.map(attrs => parent => {
+    if (parent instanceof Element)
+      for (var name in attrs)
+        if (attrs[name] != null) parent.setAttribute(name, attrs[name])
+        else parent.removeAttribute(name)
+  })
 }
 
-function prop(props: SS<{ [string]: mixed }>): SS<(Node) => void> {
-  return ssmap(
-    props => (parent: Node & { [string]: mixed }) => {
-      for (var name in props) parent[name] = props[name]
-    },
-    props
-  )
+function prop(props: S.S<{ [string]: mixed }>): S.S<(Node) => void> {
+  return props.map(props => (parent: Node & { [string]: mixed }) => {
+    for (var name in props) parent[name] = props[name]
+  })
 }
