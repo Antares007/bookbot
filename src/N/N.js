@@ -67,6 +67,7 @@ function runPith(pith: NPith): S.S<(Node) => void> {
             v.map((n: N) => parent => {
               const ap = ncount === ns.length ? nindex : findAppendPosition(nindex, ns)
               if (ap === -1 || ns[ap].i !== nindex) {
+                console.log('add', n)
                 const nodeData = {
                   i: nindex,
                   currentIndex: ap + 1,
@@ -100,6 +101,8 @@ function runPith(pith: NPith): S.S<(Node) => void> {
                   run(n).map(patch => node => patch(node.childNodes[nodeData.currentIndex]))
                 )
                 const on = parent.childNodes[nindex]
+                if (eq(on, n)) return console.log('update canceled', n)
+                console.log('update', parent)
                 parent.insertBefore(create(n), on)
                 console.log('rm_', parent.removeChild(on))
               }
@@ -129,6 +132,7 @@ function makeMergeO<A>(
     const ret = D.create(() => {
       dmap.delete(ret)
       d.dispose()
+      if (dmap.size === 0) o(S.delay(() => o(S.end)))
     })
     dmap.set(sa, ret)
     return ret

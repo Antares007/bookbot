@@ -52,7 +52,9 @@ const todo = div<Model>((o, i) => {
           )
         })
       )
-    }),
+    })
+  )
+  o(
     i.states
       .map(m => m.todos)
       .skipEquals()
