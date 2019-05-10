@@ -61,25 +61,22 @@ function runPith(pith: NPith): S.S<(Node) => void> {
     const ns: Array<{ i: number, n: N, d: D.Disposable, currentIndex: number }> = []
     pith(
       Object.assign(
-        ss => {
-          const index = ncount++
-          const map = (n: N) => {
-            const ap = findAppendPosition(index, ns)
-            if (ap === -1 || ns[ap][0] !== index) {
-              const nodeData = {
-                i: index,
-                currentIndex: ap + 1,
-                n,
-                d: D.empty
-              }
-              console.log('prep patch0', nodeData)
-              for (var k = nodeData.currentIndex, l = ns.length; k < l; k++) ns[k].currentIndex++
-              ns.splice(nodeData.currentIndex, 0, nodeData)
-              return parent => {
-                nodeData.d = mergeO(
-                  run(n).map(patch => node => patch(node.childNodes[nodeData.currentIndex]))
-                )
-                console.log('patch0', parent)
+        v => {
+          const nindex = ncount++
+          mergeO(
+            v.map((n: N) => parent => {
+              const ap = ncount === ns.length ? nindex : findAppendPosition(nindex, ns)
+              if (ap === -1 || ns[ap].i !== nindex) {
+                const nodeData = {
+                  i: nindex,
+                  currentIndex: ap + 1,
+                  n,
+                  d: mergeO(
+                    run(n).map(patch => node => patch(node.childNodes[nodeData.currentIndex]))
+                  )
+                }
+                for (var k = nodeData.currentIndex, l = ns.length; k < l; k++) ns[k].currentIndex++
+                ns.splice(nodeData.currentIndex, 0, nodeData)
                 const pnodesLength = ns.length
                 const childNodes = parent.childNodes
                 var li: ?Node
@@ -91,50 +88,47 @@ function runPith(pith: NPith): S.S<(Node) => void> {
                   if (li == null) parent.insertBefore(create(x.n), childNodes[index])
                   else if (i !== index) parent.insertBefore(li, childNodes[index])
                 }
-                if (ncount === pnodesLength) {
-                  console.log('init done')
+                if (ncount === ns.length) {
                   for (var i = childNodes.length - 1; i >= pnodesLength; i--)
                     console.log('rm', parent.removeChild(childNodes[i]))
                   refO(parent)
                 }
-              }
-            } else {
-              const nodeData = ns[ap]
-              console.log('prep patch1', nodeData)
-              nodeData.n = n
-              nodeData.d.dispose()
-              return parent => {
+              } else {
+                const nodeData = ns[ap]
+                nodeData.n = n
+                nodeData.d.dispose()
                 nodeData.d = mergeO(
                   run(n).map(patch => node => patch(node.childNodes[nodeData.currentIndex]))
                 )
-                console.log('patch1', parent)
-                const on = parent.childNodes[index]
+                const on = parent.childNodes[nindex]
                 if (eq(on, n)) return
                 parent.insertBefore(create(n), on)
                 console.log('rm_', parent.removeChild(on))
               }
-            }
-          }
-          const stop = mergeO(ss instanceof S.S ? ss.map(n => map(n)) : map(ss))
+            })
+          )
         },
-        {
-          patch: ms => {
-            mergeO(ms)
-          }
-        }
+        { patch: ms => (mergeO(ms), void 0) }
       ),
       { ref }
     )
   })
 }
-
+//              {
+//              const ap = findAppendPosition(index, ns)
+//              if (ap === -1 || ns[ap][0] !== index) {
+//                return parent => {
+//                }
+//              } else {
+//              }
+//            }
 function makeMergeO<A>(
   o: (S.Next<A> | S.End | Error | D.Disposable) => void
-): (S.S<A> | A) => D.Disposable {
+): (S.S<A>) => D.Disposable {
   const dmap = new Map()
   o(D.create(() => dmap.forEach(d => d.dispose())))
-  return x => {
-    var d = (x instanceof S.S ? x : S.d(x)).run(e => {
+  return sa => {
+    var d = sa.run(e => {
       if (e instanceof S.End) {
         dmap.delete(ret)
         if (dmap.size === 0) o(e)
@@ -144,7 +138,7 @@ function makeMergeO<A>(
       dmap.delete(ret)
       d.dispose()
     })
-    dmap.set(x, ret)
+    dmap.set(sa, ret)
     return ret
   }
 }

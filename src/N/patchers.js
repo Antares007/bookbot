@@ -19,7 +19,7 @@ export function linearPatcher(node: Node, speed: number = 17): ((Node) => void) 
   S.delay(function rec() {
     const p = patches.shift()
     if (p) {
-      console.log(p.toString())
+      //console.log(p.toString())
       p(node)
     }
     S.delay(rec, window.speed)
