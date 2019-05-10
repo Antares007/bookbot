@@ -57,7 +57,9 @@ function pmap<State, T: Node>(klass: Class<T>, pith: DPith<State, T>): SNPith<St
         }
       ),
       {
-        ref: i.ref.filterJust(x => (x instanceof klass ? x : null)),
+        ref: i.ref
+          .tap(console.log.bind(console, 'ref'))
+          .filterJust(x => (x instanceof klass ? x : null)),
         states: i.states,
         on: new S.On(i.ref)
       }

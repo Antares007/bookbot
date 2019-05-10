@@ -91,7 +91,6 @@ function runPith(pith: NPith): S.S<(Node) => void> {
                 if (ncount === ns.length) {
                   for (var i = childNodes.length - 1; i >= pnodesLength; i--)
                     console.log('rm', parent.removeChild(childNodes[i]))
-                  refO(parent)
                 }
               } else {
                 const nodeData = ns[ap]
@@ -101,7 +100,6 @@ function runPith(pith: NPith): S.S<(Node) => void> {
                   run(n).map(patch => node => patch(node.childNodes[nodeData.currentIndex]))
                 )
                 const on = parent.childNodes[nindex]
-                if (eq(on, n)) return
                 parent.insertBefore(create(n), on)
                 console.log('rm_', parent.removeChild(on))
               }
@@ -112,16 +110,10 @@ function runPith(pith: NPith): S.S<(Node) => void> {
       ),
       { ref }
     )
+    mergeO(S.d(parent => refO(parent), 1))
   })
 }
-//              {
-//              const ap = findAppendPosition(index, ns)
-//              if (ap === -1 || ns[ap][0] !== index) {
-//                return parent => {
-//                }
-//              } else {
-//              }
-//            }
+
 function makeMergeO<A>(
   o: (S.Next<A> | S.End | Error | D.Disposable) => void
 ): (S.S<A>) => D.Disposable {

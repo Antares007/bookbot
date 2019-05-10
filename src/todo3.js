@@ -1,6 +1,6 @@
 // @flow
 import * as S from './S'
-import { div, button, input, ul, li } from './N/ctors'
+import { div, button, input, ul, li, h4 } from './N/ctors'
 import { extend } from './N/rings'
 import { run } from './N/SN'
 import { linearPatcher } from './N/patchers'
@@ -16,26 +16,18 @@ type Model = {
   inputText: string,
   todos: Array<{ id: number, name: string, completed: boolean }>
 }
-const inputBox = extend('inputText', '')(
-  input((o, i) => {
-    o.props(i.states.map(inputText => ({ value: inputText })))
-    o.reduce(
-      i.on
-        .input()
-        .map(e => inputText => (e.target instanceof HTMLInputElement ? e.target.value : ''))
-    )
-  })
-)
+
 const todo = div<Model>((o, i) => {
   o(
     div((o, i) => {
       o(
+        h4(o => o('Todo App')),
         input((o, i) => {
           o.props(i.states.map(m => ({ value: m.inputText })))
           o.reduce(
             i.on.input().map(e => s => ({
               ...s,
-              inputText: e.target instanceof HTMLInputElement ? e.target.value : ''
+              inputText: e.target instanceof HTMLInputElement ? e.target.value : 'notInput'
             }))
           )
         }),
@@ -91,7 +83,7 @@ const todo = div<Model>((o, i) => {
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
-const states = run(linearPatcher(rootNode), initState, todo)
+const states = run(linearPatcher(rootNode, 300), initState, todo)
 
 states.run(e => {
   if (e instanceof S.Next) console.log(JSON.stringify(e.value, null, '  '))
