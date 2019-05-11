@@ -26,4 +26,4 @@ const counter = (depth: number) =>
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root')
 
-run(linearPatcher(rootNode, 1000 / 60), { n: 0 }, counter(4)).run(console.log.bind(console))
+run(linearPatcher(rootNode, 1000), { n: 0 }, counter(4)).run(console.log.bind(console))

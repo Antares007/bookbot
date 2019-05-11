@@ -53,67 +53,97 @@ export const run: N => S.S<(Node) => void> = memoized(n =>
     : runPith(n.pith)
 )
 
+const loading = text(' Loading... ')
+
 function runPith(pith: NPith): S.S<(Node) => void> {
   return S.s(o => {
+    const dmap = new Map()
+    var d: D.Disposable
+    o(D.create(() => (dmap.forEach(d => d.dispose()), d.dispose())))
+    const start = <A>(f: A => void, s: S.S<A>): void => {
+      dmap.set(
+        s,
+        s.run(e => {
+          if (e instanceof S.Next) f(e.value)
+          else if (e instanceof S.End) dmap.delete(s)
+          else o(e)
+        })
+      )
+    }
+    const stop = <A>(s: S.S<A>): void => {
+      const d = dmap.get(s)
+      if (d) d.dispose(), dmap.delete(s)
+    }
+
     const [refO, ref] = S.proxy()
-    const mergeO = makeMergeO(o)
-    var ncount = 0
-    const ns: Array<{ i: number, n: N, d: D.Disposable, currentIndex: number }> = []
+
+    const ns: Array<[number, N]> = []
+    const patches: Array<(Node) => void> = []
+
     pith(
       Object.assign(
-        v => {
-          const nindex = ncount++
-          mergeO(
-            v.map((n: N) => parent => {
-              const ap = ncount === ns.length ? nindex : findAppendPosition(nindex, ns)
-              if (ap === -1 || ns[ap].i !== nindex) {
-                console.log('add', n)
-                const nodeData = {
-                  i: nindex,
-                  currentIndex: ap + 1,
-                  n,
-                  d: mergeO(
-                    run(n).map(patch => node => patch(node.childNodes[nodeData.currentIndex]))
-                  )
-                }
-                for (var k = nodeData.currentIndex, l = ns.length; k < l; k++) ns[k].currentIndex++
-                ns.splice(nodeData.currentIndex, 0, nodeData)
-                const pnodesLength = ns.length
-                const childNodes = parent.childNodes
-                var li: ?Node
-                for (var index = nodeData.currentIndex; index < pnodesLength; index++) {
-                  const x = ns[index]
-                  li = null
-                  for (var i = index, l = childNodes.length; i < l; i++)
-                    if ((li = eq(childNodes[i], x.n))) break
-                  if (li == null) parent.insertBefore(create(x.n), childNodes[index])
-                  else if (i !== index) parent.insertBefore(li, childNodes[index])
-                }
-                if (ncount === ns.length) {
-                  for (var i = childNodes.length - 1; i >= pnodesLength; i--)
-                    console.log('rm', parent.removeChild(childNodes[i]))
-                }
-              } else {
-                const nodeData = ns[ap]
-                nodeData.n = n
-                nodeData.d.dispose()
-                nodeData.d = mergeO(
-                  run(n).map(patch => node => patch(node.childNodes[nodeData.currentIndex]))
-                )
-                const on = parent.childNodes[nindex]
-                if (eq(on, n)) return console.log('update canceled', n)
-                console.log('update', parent)
-                parent.insertBefore(create(n), on)
-                console.log('rm_', parent.removeChild(on))
-              }
-            })
-          )
+        s => {
+          const index = ns.length
+          ns.push([index, loading])
+          start(n => {
+            const ap = findAppendPosition(index, ns)
+            if (ap === -1 || ns[ap][0] !== index) {
+              ns.splice(ap + 1, 0, [index, n])
+            } else {
+              ns[ap][1] = n
+            }
+          }, s)
         },
-        { patch: ms => (mergeO(ms), void 0) }
+        {
+          patch: s => start(p => (patches.push(p), void 0), s)
+        }
       ),
       { ref }
     )
-    mergeO(S.d(parent => refO(parent), 1))
+    d = S.delay(() => o(dmap.size === 0 ? S.end : S.next(init)))
+
+    var nstops: Array<() => void> = []
+
+    function update(parent) {
+      var ni
+      while ((ni = ns.shift())) {
+        const [index, n] = ni
+        nstops[index]()
+        const s = run(n)
+        start(p => (patches.push(node => p(node.childNodes[index])), void 0), s)
+        nstops[index] = () => stop(s)
+      }
+      var patch
+      while ((patch = patches.shift())) patch(parent)
+      d = S.delay(() => o(dmap.size === 0 ? S.end : S.next(update)))
+    }
+
+    function init(parent) {
+      const pnodesLength = ns.length
+      const childNodes = parent.childNodes
+      var li: ?Node
+      for (var index = 0; index < pnodesLength; index++) {
+        const n = ns[index][1]
+        li = null
+        for (var i = index, l = childNodes.length; i < l; i++)
+          if ((li = eq(childNodes[i], n))) break
+        if (li == null) parent.insertBefore(create(n), childNodes[index])
+        else if (i !== index) parent.insertBefore(li, childNodes[index])
+      }
+      for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+        console.log('rm', parent.removeChild(childNodes[i]))
+      refO(parent)
+      var ni
+      while ((ni = ns.shift())) {
+        const [index, n] = ni
+        const s = run(n)
+        start(p => (patches.push(node => p(node.childNodes[index])), void 0), s)
+        nstops.push(() => stop(s))
+      }
+      var patch
+      while ((patch = patches.shift())) patch(parent)
+      d = S.delay(() => o(dmap.size === 0 ? S.end : S.next(update)))
+    }
   })
 }
 
@@ -211,16 +241,13 @@ function combineSS<A, B>(
   })
 }
 
-export function findAppendPosition<T>(
-  n: number,
-  line: Array<{ i: number, n: N, d: D.Disposable, currentIndex: number }>
-): number {
+export function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
   var l = 0
   var r = line.length
   while (true) {
     if (l < r) {
       const m = ~~((l + r) / 2) | 0
-      if (line[m].i > n) {
+      if (line[m][0] > n) {
         r = m
         continue
       } else {
@@ -233,3 +260,46 @@ export function findAppendPosition<T>(
   }
   throw new Error('never')
 }
+//parent => {
+//  const ap = ncount === ns.length ? nindex : findAppendPosition(nindex, ns)
+//  if (ap === -1 || ns[ap].i !== nindex) {
+//    console.log('add', n)
+//    const nodeData = {
+//      i: nindex,
+//      currentIndex: ap + 1,
+//      n,
+//      d: mergeO(
+//        run(n).map(patch => node => patch(node.childNodes[nodeData.currentIndex]))
+//      )
+//    }
+//    for (var k = nodeData.currentIndex, l = ns.length; k < l; k++) ns[k].currentIndex++
+//    ns.splice(nodeData.currentIndex, 0, nodeData)
+//    const pnodesLength = ns.length
+//    const childNodes = parent.childNodes
+//    var li: ?Node
+//    for (var index = nodeData.currentIndex; index < pnodesLength; index++) {
+//      const x = ns[index]
+//      li = null
+//      for (var i = index, l = childNodes.length; i < l; i++)
+//        if ((li = eq(childNodes[i], x.n))) break
+//      if (li == null) parent.insertBefore(create(x.n), childNodes[index])
+//      else if (i !== index) parent.insertBefore(li, childNodes[index])
+//    }
+//    if (ncount === ns.length) {
+//      for (var i = childNodes.length - 1; i >= pnodesLength; i--)
+//        console.log('rm', parent.removeChild(childNodes[i]))
+//    }
+//  } else {
+//    const nodeData = ns[ap]
+//    nodeData.n = n
+//    nodeData.d.dispose()
+//    nodeData.d = mergeO(
+//      run(n).map(patch => node => patch(node.childNodes[nodeData.currentIndex]))
+//    )
+//    const on = parent.childNodes[nindex]
+//    if (eq(on, n)) return console.log('update canceled', n)
+//    console.log('update', parent)
+//    parent.insertBefore(create(n), on)
+//    console.log('rm_', parent.removeChild(on))
+//  }
+//}
