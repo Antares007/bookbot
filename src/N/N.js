@@ -45,13 +45,12 @@ function memoized<A, B>(f: A => B): A => B {
   }
 }
 
-export const run: N => S.S<(Node) => void> = memoized(n =>
+export const run: N => S.S<(Node) => void> = n =>
   n.type === 'text' || n.type === 'comment'
     ? S.d(parent => {
         if (parent.textContent !== n.value) parent.textContent = n.value
       })
     : runPith(n.pith)
-)
 
 const loading = text(' Loading... ')
 
@@ -147,32 +146,6 @@ function runPith(pith: NPith): S.S<(Node) => void> {
   })
 }
 
-function makeMergeO<A>(
-  o: (S.Next<A> | S.End | Error | D.Disposable) => void
-): (S.S<A>) => D.Disposable {
-  const dmap = new Map()
-  o(D.create(() => dmap.forEach(d => d.dispose())))
-  return sa => {
-    var d = sa.run(e => {
-      if (e instanceof S.End) {
-        dmap.delete(ret)
-        if (dmap.size === 0) o(e)
-      } else o(e)
-    })
-    const ret = D.create(() => {
-      dmap.delete(ret)
-      d.dispose()
-      if (dmap.size === 0) o(S.delay(() => o(S.end)))
-    })
-    dmap.set(sa, ret)
-    return ret
-  }
-}
-
-function runOn(n: N, i: number): S.S<(Node) => void> {
-  return run(n).map(p => parent => p(parent.childNodes[i]))
-}
-
 function eq(node: Node, n: N): ?Node {
   return node.nodeName !== n.tag ||
     (n.type === 'element' && n.key && node instanceof HTMLElement && node.dataset.key !== n.key)
@@ -195,50 +168,6 @@ function create(n: N): Node {
     default:
       throw new Error('never')
   }
-}
-
-function combineSS<A, B>(
-  initF: (Array<A>) => B,
-  updateF: (A, number) => B,
-  array: Array<SS<A>>
-): S.S<B> {
-  return S.s(o => {
-    const dmap = new Map()
-    const as: Array<A> = new Array(array.length)
-    const idxs = []
-    o(D.create(() => dmap.forEach(d => d.dispose())))
-    for (let index = 0, l = array.length; index < l; index++) {
-      const a = array[index]
-      if (a instanceof S.S) {
-        idxs.push(index)
-        dmap.set(
-          index,
-          S.run(e => {
-            if (e instanceof S.Next) {
-              if (idxs.length === 0) o(S.next(updateF(e.value, index)))
-              else {
-                as[index] = e.value
-                const pos = idxs.indexOf(index)
-                if (pos !== -1) idxs.splice(pos, 1)
-                if (idxs.length === 0) o(S.next(initF(as)))
-              }
-            } else if (e instanceof S.End) {
-              dmap.delete(index)
-              if (dmap.size === 0) o(e)
-            } else o(e)
-          }, a)
-        )
-      } else as[index] = a
-    }
-    if (idxs.length === 0) {
-      o(
-        S.delay(() => {
-          o(S.next(initF(as)))
-          o(S.delay(() => o(S.end)))
-        })
-      )
-    }
-  })
 }
 
 export function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
