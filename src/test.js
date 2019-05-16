@@ -39,7 +39,7 @@ export function run(pith: NPith): S.S<Patch> {
   return S.s(o => {
     const dmap = new Map()
     o(D.create(() => dmap.forEach(d => d.dispose())))
-    const srun = <A>(f: (S.Next<A>) => void, s: S.S<A>): void => {
+    const start = <A>(f: (S.Next<A>) => void, s: S.S<A>): void => {
       const d = s.run(e => {
         if (e instanceof S.Next) f(e)
         else if (e instanceof S.End) {
@@ -58,7 +58,7 @@ export function run(pith: NPith): S.S<Patch> {
     pith(v => {
       if (v.R === 'node') {
         const nIndex = nsLength++
-        srun(e => {
+        start(e => {
           const n = e.value
           o(
             S.next(parent => {
@@ -84,16 +84,16 @@ export function run(pith: NPith): S.S<Patch> {
                 else parent.replaceChild((node = create(n)), nodeAtPos)
               }
               if (n.T === 'element' || n.T === 'elementNS')
-                srun(e => o(S.next(_ => e.value(node))), n.s)
-              else if (node.textContent !== n.value) node.textContent = n.value
+                start(e => o(S.next(_ => e.value(node))), n.s)
+              else node.textContent = n.value
             })
           )
         }, v.s)
       } else {
-        srun(o, v.s)
+        start(o, v.s)
       }
     }, S.empty())
-    srun(
+    start(
       o,
       S.d(parent => {
         const childNodes = parent.childNodes
