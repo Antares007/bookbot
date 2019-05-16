@@ -1,6 +1,6 @@
 // @flow strict
 import * as S from './S'
-import { elm, run, text, node, patch } from './test'
+import { elm, run, text, node, patch } from './test3'
 import { linearPatcher, animationFramePatcher } from './N/patchers'
 
 const counter = (depth: number) =>
@@ -27,8 +27,10 @@ const counter = (depth: number) =>
 const rootNode = document.getElementById('root-node')
 
 if (rootNode)
-  run(o => o(node(counter(2))))
-    //.tap(linearPatcher(rootNode, 1700))
+  run(o => {
+    o(node(S.periodic(2500).map(i => counter(i % 6))))
+  })
+    .tap(linearPatcher(rootNode, 17))
     //.tap(animationFramePatcher(rootNode))
-    .tap(p => p(rootNode))
+    //.tap(p => p(rootNode))
     .run(console.log.bind(console))
