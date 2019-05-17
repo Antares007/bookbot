@@ -51,7 +51,10 @@ export function run(pith: NPith): S.S<Patch> {
     }
     const stop = <A>(s: S.S<A>): void => {
       const d = dmap.get(s)
-      if (d) dmap.delete(s), d.dispose()
+      if (d) {
+        d.dispose()
+        dmap.delete(s)
+      }
     }
     const ns: Array<[number, N]> = []
     var nsLength = 0
@@ -73,7 +76,7 @@ export function run(pith: NPith): S.S<Patch> {
           handler = update
           ns.forEach(([index, n]) => {
             if (n.T === 'element' || n.T === 'elementNS')
-              start(o, n.s.map(p => parent => p(parent.childNodes[index])))
+              start(e => o(S.next(parent => e.value(parent.childNodes[index]))), n.s)
           })
           o(
             S.next(parent => {
@@ -83,21 +86,27 @@ export function run(pith: NPith): S.S<Patch> {
                 const n = ns[index][1]
                 li = null
                 for (var i = index, l = childNodes.length; i < l; i++)
-                  if ((li = eq(childNodes[i], n))) break
+                  if ((li = eq(childNodes[i], n))) {
+                    if ((n.T === 'text' || n.T === 'comment') && li.textContent !== n.value)
+                      li.textContent = n.value
+                    break
+                  }
                 if (li == null) parent.insertBefore(create(n), childNodes[index])
                 else if (i !== index) parent.insertBefore(li, childNodes[index])
               }
               for (var i = childNodes.length - 1; i >= nsLength; i--)
-                console.log('rm', parent.removeChild(childNodes[i]))
+                parent.removeChild(childNodes[i])
             })
           )
         }
       } else ns[apos][1] = n
     }
+
     function update(n: N, index: number) {
       const oldN = ns[index][1]
+      ns[index][1] = n
       if (n.T === 'element' || n.T === 'elementNS')
-        start(o, n.s.map(p => parent => p(parent.childNodes[index])))
+        start(e => o(S.next(parent => e.value(parent.childNodes[index]))), n.s)
       if (oldN.T === 'element' || oldN.T === 'elementNS') stop(oldN.s)
       o(
         S.next(parent => {
