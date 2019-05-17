@@ -25,10 +25,21 @@ const counter = (depth: number) =>
   })
 
 const rootNode = document.getElementById('root-node')
-
+const arrays = [[1, 2, 3], [3, 1, 2]]
 if (rootNode)
   run(o => {
-    o(node(S.periodic(2500).map(i => counter(i % 6))))
+    o(node(S.periodic(4000).map(i => counter(i % 3))))
+    o(
+      node(
+        S.periodic(5000)
+          .map(i => arrays[i % 2])
+          .map(list =>
+            elm('ul', o => {
+              for (let li of list) o(node(elm('li', o => o(node(text(li + ''))), 'k' + li)))
+            })
+          )
+      )
+    )
   })
     .tap(linearPatcher(rootNode, 17))
     //.tap(animationFramePatcher(rootNode))

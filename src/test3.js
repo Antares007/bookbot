@@ -116,6 +116,8 @@ export function run(pith: NPith): S.S<Patch> {
 function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
   var l = 0
   var r = line.length
+  if (line.length === l) return -1
+  if (line[r - 1][0] <= n) return r - 1
   while (true) {
     if (l < r) {
       const m = ~~((l + r) / 2) | 0
@@ -134,7 +136,6 @@ function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
 }
 
 function eq(node: Node, n: N): ?Node {
-  if (!node) return null
   return node.nodeName !== n.tag ||
     (n.T === 'element' && n.key && node instanceof HTMLElement && node.dataset.key !== n.key)
     ? null
