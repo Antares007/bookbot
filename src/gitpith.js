@@ -3,6 +3,15 @@
 import type { Pith } from './pith'
 import * as S from './S'
 
+import { frame, deframe, encoders, decoders } from 'js-git/lib/object-codec'
+import modes from 'js-git/lib/modes'
+import sha1 from 'git-sha1'
+
+frame({
+  type: 'tree',
+  body: encoders.tree({ file: { mode: modes.blob, hash: '' } })
+})
+
 type Repo = {
   saveBlob(Buffer): Promise<BlobHash>,
   saveTree({ [string]: { mode: number, hash: string } }): Promise<TreeHash>,
@@ -43,9 +52,12 @@ const entry = (ss: SS<BlobEntry | TreeEntry | CommitEntry>): EntryR => ({
 function runBlob(s: S.S<string | Buffer>): S.S<(Repo) => Promise<BlobHash>> {
   return s.map(s => repo => repo.saveBlob(typeof s === 'string' ? Buffer.from(s, 'utf8') : s))
 }
+
 function runTree(pith: GTreePith): S.S<(Repo) => Promise<TreeHash>> {
   return S.s(o => {
-    //
+    pith(v => {
+      //
+    })
   })
 }
 

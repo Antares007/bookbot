@@ -15,5 +15,8 @@
     "webpack-cli": "^3.3.0"
   },
   "scripts": {},
-  "dependencies": {}
+  "dependencies": {
+    "git-sha1": "^0.1.2",
+    "js-git": "^0.7.8"
+  }
 }
