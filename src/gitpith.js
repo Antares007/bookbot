@@ -3,41 +3,95 @@
 import type { Pith } from './pith'
 import * as S from './S'
 
-opaque type BlobSha = string
-opaque type TreeSha = string
-opaque type CommitSha = string
+type Repo = {
+  saveBlob(Buffer): Promise<BlobHash>,
+  saveTree({ [string]: { mode: number, hash: string } }): Promise<TreeHash>,
+  saveAs(
+    'commit',
+    { author: { name: string, email: string }, tree: string, message: string }
+  ): Promise<CommitHash>
+}
 
-type BlobT = { T: 'blob', name: string, s: S.S<BlobSha> }
-type TreeT = { T: 'tree', name: string, s: S.S<TreeSha> }
-type CommitT = { T: 'commit', name: string, s: S.S<CommitSha> }
-type EntryR = { R: 'entry', s: S.S<BlobT | TreeT | CommitT> }
+opaque type BlobHash = string
+opaque type TreeHash = string
+opaque type CommitHash = string
+
+type BlobEntry = { T: 'blob', name: string, s: S.S<(Repo) => Promise<BlobHash>> }
+type TreeEntry = { T: 'tree', name: string, s: S.S<(Repo) => Promise<TreeHash>> }
+type CommitEntry = { T: 'commit', name: string, s: S.S<(Repo) => Promise<CommitHash>> }
+
+type EntryR = { R: 'entry', s: S.S<BlobEntry | TreeEntry | CommitEntry> }
 
 type GTreePith = Pith<EntryR, void, void>
 
-const blob = (name: string, s: S.S<BlobSha>): BlobT => ({ T: 'blob', name, s })
-const tree = (name: string, s: S.S<TreeSha>): TreeT => ({ T: 'tree', name, s })
+type SS<+A> = S.S<A> | A
 
-const entry = (s: S.S<BlobT | TreeT | CommitT>): EntryR => ({ R: 'entry', s })
+const blob = (name: string, ss: SS<string | Buffer>): BlobEntry => {
+  return {
+    T: 'blob',
+    name,
+    s: ss instanceof S.S ? runBlob(ss) : runBlob(S.d(ss))
+  }
+}
+const tree = (name: string, pith: GTreePith): TreeEntry => ({ T: 'tree', name, s: runTree(pith) })
 
-const p: GTreePith = o => {
-  o(entry(S.d(blob('hey', runBlob(S.d(''))))))
+const entry = (ss: SS<BlobEntry | TreeEntry | CommitEntry>): EntryR => ({
+  R: 'entry',
+  s: ss instanceof S.S ? ss : S.d(ss)
+})
+
+function runBlob(s: S.S<string | Buffer>): S.S<(Repo) => Promise<BlobHash>> {
+  return s.map(s => repo => repo.saveBlob(typeof s === 'string' ? Buffer.from(s, 'utf8') : s))
+}
+function runTree(pith: GTreePith): S.S<(Repo) => Promise<TreeHash>> {
+  return S.s(o => {
+    //
+  })
+}
+
+const see = runTree(o => {
+  o(entry(blob('hey', 'there')))
   o(
     entry(
-      S.d(
-        tree(
-          'hey2',
-          runTree(o => {
-            o(entry(S.d(blob('hey', runBlob(S.d(''))))))
-          })
+      tree('hey1', o => {
+        o(entry(blob('hey', 'there')))
+        o(
+          entry(
+            tree('hey1', o => {
+              //
+            })
+          )
         )
-      )
+      })
     )
   )
-}
-
-function runBlob(s: S.S<string | Buffer>): S.S<BlobSha> {
-  throw new Error()
-}
-function runTree(pith: GTreePith): S.S<TreeSha> {
-  throw new Error()
-}
+})
+//const p: GTreePith = o => {
+//  o(entry(S.d(blob('hey', runBlob(S.d(''))))))
+//  o(
+//    entry(
+//      S.d(
+//        tree(
+//          'hey2',
+//          runTree(o => {
+//            o(entry(S.d(blob('hey', runBlob(S.d(''))))))
+//          })
+//        )
+//      )
+//    )
+//  )
+//}
+//var commit = {
+//  tree: '',
+//  author: {
+//    name: 'Tim Caswell',
+//    email: 'tim@creationix.com',
+//    date: {
+//      seconds: 1391790884,
+//      offset: 7 * 60
+//    }
+//  },
+//  committer: person,
+//  message: 'Test Commit\n',
+//  parents: []
+//}
