@@ -12,22 +12,15 @@ frame({
   body: encoders.tree({ file: { mode: modes.blob, hash: '' } })
 })
 
-type Repo = {
-  saveBlob(Buffer): Promise<BlobHash>,
-  saveTree({ [string]: { mode: number, hash: string } }): Promise<TreeHash>,
-  saveAs(
-    'commit',
-    { author: { name: string, email: string }, tree: string, message: string }
-  ): Promise<CommitHash>
-}
+type CAS = Buffer => Promise<string>
 
 opaque type BlobHash = string
 opaque type TreeHash = string
 opaque type CommitHash = string
 
-type BlobEntry = { T: 'blob', name: string, s: S.S<(Repo) => Promise<BlobHash>> }
-type TreeEntry = { T: 'tree', name: string, s: S.S<(Repo) => Promise<TreeHash>> }
-type CommitEntry = { T: 'commit', name: string, s: S.S<(Repo) => Promise<CommitHash>> }
+type BlobEntry = { T: 'blob', name: string, s: CAS => S.S<Promise<BlobHash>> }
+type TreeEntry = { T: 'tree', name: string, s: CAS => S.S<Promise<TreeHash>> }
+type CommitEntry = { T: 'commit', name: string, s: CAS => S.S<Promise<CommitHash>> }
 
 type EntryR = { R: 'entry', s: S.S<BlobEntry | TreeEntry | CommitEntry> }
 
@@ -49,16 +42,33 @@ const entry = (ss: SS<BlobEntry | TreeEntry | CommitEntry>): EntryR => ({
   s: ss instanceof S.S ? ss : S.d(ss)
 })
 
-function runBlob(s: S.S<string | Buffer>): S.S<(Repo) => Promise<BlobHash>> {
-  return s.map(s => repo => repo.saveBlob(typeof s === 'string' ? Buffer.from(s, 'utf8') : s))
+function runBlob(s: S.S<string | Buffer>): CAS => S.S<Promise<BlobHash>> {
+  return cas =>
+    s.map(s =>
+      cas(
+        frame({
+          type: 'blob',
+          body: typeof s === 'string' ? Buffer.from(s, 'utf8') : s
+        })
+      )
+    )
 }
 
-function runTree(pith: GTreePith): S.S<(Repo) => Promise<TreeHash>> {
-  return S.s(o => {
-    pith(v => {
-      //
+function runTree(pith: GTreePith): CAS => S.S<Promise<TreeHash>> {
+  return cas =>
+    S.s(o => {
+      const entries = []
+      pith(v => {
+        entries.push(v.s)
+      })
+      let see = S.combine(
+        entries =>
+          Promise.all(entries.map(e => e.s(cas))).then(hashes => {
+            let see = hashes[0]
+          }),
+        entries
+      )
     })
-  })
 }
 
 const see = runTree(o => {
