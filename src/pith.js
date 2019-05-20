@@ -1,6 +1,9 @@
 // @flow strict
 
 export type Pith<+O, -A, +B> = ((O) => void, A) => B
+
+export type Bark<-O, +A, -B, +C> = (pith: Pith<O, A, B>) => C
+
 import * as D from './S/Disposable'
 
 type Nxt<+A> = { +T: 'nxt', +a: A }
