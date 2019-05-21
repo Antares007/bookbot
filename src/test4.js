@@ -32,35 +32,37 @@ export const elmNS = (ns: string, tag: string, pith: NPith): N => ({
   s: run(pith),
   ns
 })
-export const text = (ss: SS<string>): N => ({ T: 'text', tag: '#text', s: node => D.empty })
+export const text = (ss: SS<string>): N => ({
+  T: 'text',
+  tag: '#text',
+  s: node =>
+    (ss instanceof S.S ? ss : S.d(ss))
+      .map(text => {
+        if (node.textContent !== text) node.textContent = text
+      })
+      .run(e => {})
+})
 export const comment = (ss: SS<string>): N => ({
   T: 'comment',
   tag: '#comment',
-  s: node => {
-    return D.empty
-  }
+  s: node =>
+    (ss instanceof S.S ? ss : S.d(ss))
+      .map(text => {
+        if (node.textContent !== text) node.textContent = text
+      })
+      .run(e => {})
 })
 
 export function run(pith: NPith): Node => D.Disposable {
   return thisNode => {
     const ns: Array<[number, D.Disposable]> = []
     var nsLength = 0
-
-    const disposables = []
     const dmap = new Map()
-    const kmap = new Map()
     const childNodes = thisNode.childNodes
-    for (var i = 0, l = childNodes.length; i < l; i++) {
-      const node = childNodes[i]
-      if (node instanceof HTMLElement) {
-        const key = node.dataset.key
-        if (key) kmap.set(key, i)
-      }
-    }
     pith(
       v => {
         if (v.R === 'node') {
-          const index = nsLength++
+          const nIndex = nsLength++
           dmap.set(
             v,
             v.s.tryCatch().run(e => {
@@ -72,12 +74,17 @@ export function run(pith: NPith): Node => D.Disposable {
                 return
               } else n = text(e.message)
 
-              const apos = findAppendPosition(index, ns)
-              if (apos === -1 || index !== ns[apos][0]) {
-                ns.splice(apos + 1, 0, [index, D.empty])
-                if (ns.length === nsLength) {
-                }
+              var apos = findAppendPosition(nIndex, ns)
+              if (apos === -1 || nIndex !== ns[apos][0]) {
+                ++apos
+                var node = eq(childNodes[apos], n)
+                if (!node) node = thisNode.insertBefore(create(n), childNodes[apos])
+                ns.splice(apos, 0, [nIndex, n.s(node)])
               } else {
+                ns[apos][1].dispose()
+                ns[apos][1] = n.s(childNodes[apos])
+                if (eq(childNodes[apos], n)) return
+                thisNode.replaceChild(create(n), childNodes[apos])
               }
             })
           )
@@ -95,9 +102,13 @@ export function run(pith: NPith): Node => D.Disposable {
       },
       { ref: S.empty() }
     )
+    const d = S.delay(() => {
+      for (var i = childNodes.length - 1; i >= ns.length; i--) thisNode.removeChild(childNodes[i])
+    })
     return D.create(() => {
       dmap.forEach(d => d.dispose())
       ns.forEach(ni => ni[1].dispose())
+      d.dispose()
     })
   }
 }
@@ -124,7 +135,8 @@ function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
   throw new Error('never')
 }
 
-function eq(node: Node, n: N): ?Node {
+function eq(node: ?Node, n: N): ?Node {
+  if (node == null) return null
   return node.nodeName !== n.tag ||
     (n.T === 'element' && n.key && node instanceof HTMLElement && node.dataset.key !== n.key)
     ? null
