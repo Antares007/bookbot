@@ -56,4 +56,4 @@ const d = run(o => {
     )
   )
 })(rootNode)
-S.delay(() => d.dispose(), 5000)
+S.delay(() => d.dispose(), 8000)

@@ -78,13 +78,18 @@ export function run(pith: NPith): Node => D.Disposable {
               if (apos === -1 || nIndex !== ns[apos][0]) {
                 ++apos
                 var node = eq(childNodes[apos], n)
-                if (!node) node = thisNode.insertBefore(create(n), childNodes[apos])
+                if (!node) {
+                  var li = null
+                  for (var i = ns.length, l = childNodes.length; i < l; i++)
+                    if ((li = eq(childNodes[i], n))) break
+                  if (li == null) node = thisNode.insertBefore(create(n), childNodes[apos])
+                  else node = thisNode.insertBefore(li, childNodes[apos])
+                }
                 ns.splice(apos, 0, [nIndex, n.s(node)])
               } else {
                 ns[apos][1].dispose()
+                if (!eq(childNodes[apos], n)) thisNode.replaceChild(create(n), childNodes[apos])
                 ns[apos][1] = n.s(childNodes[apos])
-                if (eq(childNodes[apos], n)) return
-                thisNode.replaceChild(create(n), childNodes[apos])
               }
             })
           )
@@ -136,9 +141,10 @@ function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
 }
 
 function eq(node: ?Node, n: N): ?Node {
-  if (node == null) return null
-  return node.nodeName !== n.tag ||
-    (n.T === 'element' && n.key && node instanceof HTMLElement && node.dataset.key !== n.key)
+  return !node
+    ? node
+    : node.nodeName !== n.tag ||
+      (n.T === 'element' && n.key && node instanceof HTMLElement && node.dataset.key !== n.key)
     ? null
     : node
 }
