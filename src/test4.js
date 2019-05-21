@@ -82,8 +82,9 @@ export function run(pith: NPith): Node => D.Disposable {
                   var li = null
                   for (var i = ns.length, l = childNodes.length; i < l; i++)
                     if ((li = eq(childNodes[i], n))) break
-                  if (li == null) node = thisNode.insertBefore(create(n), childNodes[apos])
-                  else node = thisNode.insertBefore(li, childNodes[apos])
+                  node = li
+                    ? thisNode.insertBefore(li, childNodes[apos])
+                    : thisNode.insertBefore(create(n), childNodes[apos])
                 }
                 ns.splice(apos, 0, [nIndex, n.s(node)])
               } else {
