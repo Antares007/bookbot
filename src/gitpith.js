@@ -2,6 +2,7 @@
 
 import type { Pith } from './pith'
 import * as S from './S'
+import * as D from './S/Disposable'
 
 import { frame, deframe, encoders, decoders } from 'js-git/lib/object-codec'
 import modes from 'js-git/lib/modes'
@@ -19,8 +20,8 @@ opaque type TreeHash = string
 opaque type CommitHash = string
 
 type BlobEntry = { T: 'blob', name: string, s: CAS => S.S<BlobHash> }
-type TreeEntry = { T: 'tree', name: string, s: CAS => S.S<Promise<TreeHash>> }
-type CommitEntry = { T: 'commit', name: string, s: CAS => S.S<Promise<CommitHash>> }
+type TreeEntry = { T: 'tree', name: string, s: CAS => S.S<TreeHash> }
+type CommitEntry = { T: 'commit', name: string, s: CAS => S.S<CommitHash> }
 
 type EntryR = { R: 'entry', s: S.S<BlobEntry | TreeEntry | CommitEntry> }
 
@@ -44,29 +45,13 @@ const entry = (ss: SS<BlobEntry | TreeEntry | CommitEntry>): EntryR => ({
 
 function runBlob(s: S.S<string | Buffer>): CAS => S.S<BlobHash> {
   return cas =>
-    S.s(o => {
-      var buffer: ?Buffer
-      var p: ?Promise<void> = null
-      var nextE
-
-      s.run(e => {
-        nextE = e
-        if (!p) p = new Promise(store)
-      })
-
-      function store() {
-        const e = nextE
-        if (e instanceof S.Next)
-          return cas(Buffer.from('a', 'utf8')).then(hash => {
-            p = nextE === e ? null : new Promise(store)
-            o(S.next(hash))
-          })
-        else o(e)
-      }
-    })
+    mapPromise(
+      v => cas(frame({ type: 'blob', body: typeof v === 'string' ? Buffer.from(v, 'utf8') : v })),
+      s
+    )
 }
 
-function runTree(pith: GTreePith): CAS => S.S<Promise<TreeHash>> {
+function runTree(pith: GTreePith): CAS => S.S<TreeHash> {
   return cas =>
     S.s(o => {
       const entries = []
@@ -100,6 +85,28 @@ const see = runTree(o => {
     )
   )
 })
+function mapPromise<A, B>(f: A => Promise<B>, s: S.S<A>): S.S<B> {
+  return S.s(o => {
+    var p = Promise.resolve()
+    var active = true
+    const sd = s.run(e => {
+      if (e instanceof S.Next) {
+        p = p
+          .then(() => f(e.value))
+          .then(b => active && o(S.next(b)), err => (d.dispose(), active && o(err)))
+      } else if (e instanceof S.End) {
+        p = p.then(() => active && o(e), err => (d.dispose(), active && o(err)))
+      } else {
+        p = p.then(() => active && o(e))
+      }
+    })
+    const d = D.create(() => {
+      active = false
+      sd.dispose()
+    })
+    o(d)
+  })
+}
 //const p: GTreePith = o => {
 //  o(entry(S.d(blob('hey', runBlob(S.d(''))))))
 //  o(
