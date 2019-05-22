@@ -18,7 +18,7 @@ opaque type BlobHash = string
 opaque type TreeHash = string
 opaque type CommitHash = string
 
-type BlobEntry = { T: 'blob', name: string, s: CAS => S.S<Promise<BlobHash>> }
+type BlobEntry = { T: 'blob', name: string, s: CAS => S.S<BlobHash> }
 type TreeEntry = { T: 'tree', name: string, s: CAS => S.S<Promise<TreeHash>> }
 type CommitEntry = { T: 'commit', name: string, s: CAS => S.S<Promise<CommitHash>> }
 
@@ -42,16 +42,28 @@ const entry = (ss: SS<BlobEntry | TreeEntry | CommitEntry>): EntryR => ({
   s: ss instanceof S.S ? ss : S.d(ss)
 })
 
-function runBlob(s: S.S<string | Buffer>): CAS => S.S<Promise<BlobHash>> {
+function runBlob(s: S.S<string | Buffer>): CAS => S.S<BlobHash> {
   return cas =>
-    s.map(s =>
-      cas(
-        frame({
-          type: 'blob',
-          body: typeof s === 'string' ? Buffer.from(s, 'utf8') : s
-        })
-      )
-    )
+    S.s(o => {
+      var buffer: ?Buffer
+      var p: ?Promise<void> = null
+      var nextE
+
+      s.run(e => {
+        nextE = e
+        if (!p) p = new Promise(store)
+      })
+
+      function store() {
+        const e = nextE
+        if (e instanceof S.Next)
+          return cas(Buffer.from('a', 'utf8')).then(hash => {
+            p = nextE === e ? null : new Promise(store)
+            o(S.next(hash))
+          })
+        else o(e)
+      }
+    })
 }
 
 function runTree(pith: GTreePith): CAS => S.S<Promise<TreeHash>> {
