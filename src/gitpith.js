@@ -24,6 +24,8 @@ type GTreePith = Pith<EntryR, void, void>
 
 type SS<+A> = S.S<A> | A
 
+const emptyTreeHash = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+
 const blob = (name: string, ss: SS<string | Buffer>): BlobEntry => {
   return {
     T: 'blob',
@@ -55,24 +57,26 @@ function runTree(pith: GTreePith): CAS => S.S<TreeHash> {
           v.s.flatMapLatest(v => v.s(cas).map(hash => ({ type: v.T, name: v.name, hash })))
         )
       })
-      o(
-        mapPromise(
-          buf => cas(buf),
-          S.combine(
-            entries =>
-              frame({
-                type: 'tree',
-                body: encoders.tree(
-                  entries.reduce((s, e) => {
-                    s[e.name] = { mode: modes[e.type], hash: e.hash }
-                    return s
-                  }, {})
-                )
-              }),
-            entries
-          )
-        ).run(o)
-      )
+      if (entries.length)
+        o(
+          mapPromise(
+            buf => cas(buf),
+            S.combine(
+              entries =>
+                frame({
+                  type: 'tree',
+                  body: encoders.tree(
+                    entries.reduce((s, e) => {
+                      s[e.name] = { mode: modes[e.type], hash: e.hash }
+                      return s
+                    }, {})
+                  )
+                }),
+              entries
+            )
+          ).run(o)
+        )
+      else o(S.d(emptyTreeHash).run(o))
     })
 }
 
@@ -82,17 +86,17 @@ const see = runTree(o => {
     entry(
       tree('hey1', o => {
         o(entry(blob('hey', 'there')))
-        o(
-          entry(
-            tree('hey1', o => {
-              //
-            })
-          )
-        )
+        o(entry(tree('hey1', o => {})))
       })
     )
   )
 })
+
+see(b => {
+  const hash = Promise.resolve(sha1(b))
+  return hash
+}).run(e => console.log(e))
+
 function mapPromise<A, B>(f: A => Promise<B>, s: S.S<A>): S.S<B> {
   return S.s(o => {
     var p = Promise.resolve()
@@ -101,7 +105,12 @@ function mapPromise<A, B>(f: A => Promise<B>, s: S.S<A>): S.S<B> {
       if (e instanceof S.Next) {
         p = p
           .then(() => f(e.value))
-          .then(b => active && o(S.next(b)), err => (d.dispose(), active && o(err)))
+          .then(
+            b => {
+              if (active) o(S.next(b))
+            },
+            err => (d.dispose(), active && o(err))
+          )
       } else if (e instanceof S.End) {
         p = p.then(() => active && o(e), err => (d.dispose(), active && o(err)))
       } else {
