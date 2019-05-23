@@ -5,7 +5,7 @@ declare module 'js-git/lib/modes' {
   declare module.exports: {
     isBlob(Mode): boolean,
     isFile(Mode): boolean,
-    toType(Mode): 'blob' | 'tree' | 'commit' | 'unknown',
+    toType(Mode): 'blob' | 'tree' | 'commit',
     blob: 33188,
     commit: 57344,
     exec: 33261,

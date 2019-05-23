@@ -8,11 +8,6 @@ import { frame, deframe, encoders, decoders } from 'js-git/lib/object-codec'
 import modes from 'js-git/lib/modes'
 import sha1 from 'git-sha1'
 
-frame({
-  type: 'tree',
-  body: encoders.tree({ file: { mode: modes.blob, hash: '' } })
-})
-
 type CAS = Buffer => Promise<string>
 
 opaque type BlobHash = string
@@ -56,14 +51,27 @@ function runTree(pith: GTreePith): CAS => S.S<TreeHash> {
     S.s(o => {
       const entries = []
       pith(v => {
-        entries.push(v.s)
+        entries.push(
+          v.s.flatMapLatest(v => v.s(cas).map(hash => ({ type: v.T, name: v.name, hash })))
+        )
       })
-      let see = S.combine(
-        entries =>
-          Promise.all(entries.map(e => e.s(cas))).then(hashes => {
-            let see = hashes[0]
-          }),
-        entries
+      o(
+        mapPromise(
+          buf => cas(buf),
+          S.combine(
+            entries =>
+              frame({
+                type: 'tree',
+                body: encoders.tree(
+                  entries.reduce((s, e) => {
+                    s[e.name] = { mode: modes[e.type], hash: e.hash }
+                    return s
+                  }, {})
+                )
+              }),
+            entries
+          )
+        ).run(o)
       )
     })
 }
