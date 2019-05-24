@@ -8,10 +8,10 @@ type NORay = { R: 'patch', s: S.S<(Node) => void> } | { R: 'node', s: S.S<N> }
 type NIRay = { ref: S.S<Node> }
 
 type N =
-  | { T: 'element', tag: string, s: Node => D.Disposable, key: ?string }
-  | { T: 'elementNS', tag: string, s: Node => D.Disposable, ns: string }
-  | { T: 'text', tag: '#text', s: Node => D.Disposable }
-  | { T: 'comment', tag: '#comment', s: Node => D.Disposable }
+  | { T: 'element', tag: string, s: S.S<(Node) => void>, key: ?string }
+  | { T: 'elementNS', tag: string, s: S.S<(Node) => void>, ns: string }
+  | { T: 'text', tag: '#text', s: S.S<(Node) => void> }
+  | { T: 'comment', tag: '#comment', s: S.S<(Node) => void> }
 
 type NPith = Pith<NORay, NIRay, void>
 
@@ -35,53 +35,36 @@ export const elmNS = (ns: string, tag: string, pith: NPith): N => ({
 export const text = (ss: SS<string>): N => ({
   T: 'text',
   tag: '#text',
-  s: node =>
-    S.run(
-      e => {},
-      S.map(
-        text => {
-          if (node.textContent !== text) node.textContent = text
-        },
-        typeof ss === 'string' ? S.d(ss) : ss
-      )
-    )
+  s: S.map(
+    text => node => {
+      if (node.textContent !== text) node.textContent = text
+    },
+    typeof ss === 'string' ? S.d(ss) : ss
+  )
 })
 export const comment = (ss: SS<string>): N => ({
   T: 'comment',
   tag: '#comment',
-  s: node =>
-    S.run(
-      e => {},
-      S.map(
-        text => {
-          if (node.textContent !== text) node.textContent = text
-        },
-        typeof ss === 'string' ? S.d(ss) : ss
-      )
-    )
+  s: S.map(
+    text => node => {
+      if (node.textContent !== text) node.textContent = text
+    },
+    typeof ss === 'string' ? S.d(ss) : ss
+  )
 })
 
-export function run(pith: NPith): Node => D.Disposable {
-  return thisNode => {
-    const ns: Array<[number, D.Disposable]> = []
-    var nsLength = 0
-    const dmap = new Map()
-    const childNodes = thisNode.childNodes
-    pith(
-      v => {
-        if (v.R === 'node') {
-          const nIndex = nsLength++
-          dmap.set(
-            v,
-            S.run(e => {
-              var n: N
-              if (e.R === 'next') {
-                n = e.value
-              } else if (e.R === 'end') {
-                dmap.delete(v)
-                return
-              } else n = text(e.error.message)
-
+export function run(pith: NPith): S.S<(Node) => void> {
+  return {
+    T: 's',
+    pith: o => {
+      const ns: Array<[number, void]> = []
+      var nsLength = 0
+      const rays: Array<S.S<(Node) => void>> = []
+      pith(
+        v => {
+          if (v.R === 'node') {
+            const nIndex = nsLength++
+            let see = S.map(n => {
               var apos = findAppendPosition(nIndex, ns)
               if (apos === -1 || nIndex !== ns[apos][0]) {
                 ++apos
@@ -101,29 +84,32 @@ export function run(pith: NPith): Node => D.Disposable {
                 ns[apos][1] = n.s(childNodes[apos])
               }
             }, v.s)
-          )
-        } else {
-          dmap.set(
-            v,
-            S.run(e => {
-              if (e.R === 'next') e.value(thisNode)
-              else if (e.R === 'end') {
-                dmap.delete(v)
-              } else console.error(e)
-            }, v.s)
-          )
-        }
-      },
-      { ref: S.empty }
-    )
-    const d = S.delay(() => {
-      for (var i = childNodes.length - 1; i >= ns.length; i--) thisNode.removeChild(childNodes[i])
-    })
-    return D.create(() => {
-      dmap.forEach(d => d.dispose())
-      ns.forEach(ni => ni[1].dispose())
-      d.dispose()
-    })
+          } else {
+            rays.push(
+              S.flatMapError(
+                error =>
+                  S.d(node => {
+                    node.textContent = error.message
+                  }),
+                v.s
+              )
+            )
+          }
+        },
+        { ref: S.empty }
+      )
+
+      rays.push(
+        S.d(node => {
+          for (var i = childNodes.length - 1; i >= ns.length; i--)
+            thisNode.removeChild(childNodes[i])
+        })
+      )
+
+      return S.run(e => {
+        if (e.R === 'next') e.value(thisNode)
+      }, S.merge(...rays))
+    }
   }
 }
 
