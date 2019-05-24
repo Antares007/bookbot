@@ -6,6 +6,8 @@ import * as D from './S/Disposable'
 type SRay<+A> = { R: 'next', +value: A } | { R: 'end' } | { R: 'error', error: Error }
 type SPith<+A> = Pith<SRay<A>, void, D.Disposable>
 
+export const delay = Schdlr.delay
+
 export type S<+A> = { T: 's', +pith: SPith<A> }
 
 export function d<A>(a: A, delay: number = 0): S<A> {
@@ -175,6 +177,19 @@ export function switchLatest<A>(ss: S<S<A>>): S<A> {
       return D.create(() => {
         ssd && ssd.dispose()
         sad && sad.dispose()
+      })
+    }
+  }
+}
+
+export function scan<A, B>(f: (B, A) => B, b: B, sa: S<A>): S<B> {
+  return {
+    T: 's',
+    pith: function scanPith(o) {
+      var acc = b
+      return sa.pith(function scanO(e) {
+        if (e.R === 'next') o({ R: 'next', value: (acc = f(acc, e.value)) })
+        else o(e)
       })
     }
   }
