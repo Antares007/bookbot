@@ -31,7 +31,7 @@ const counter = (depth: number) =>
 const rootNode = document.getElementById('root-node')
 const arrays = [[1, 2, 3], [3, 1, 2]]
 if (!rootNode) throw new Error()
-const d = run(o => {
+const s = run(o => {
   o(node(S.map(i => counter(i % 3), S.scan(a => a + 1, -1, S.periodic(400)))))
   o(
     node(
@@ -64,4 +64,7 @@ const d = run(o => {
     )
   )
 })(rootNode)
+const d = S.run(e => {
+  if (e.R === 'next') e.value()
+}, s)
 S.delay(() => d.dispose(), 8000)

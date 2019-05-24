@@ -8,10 +8,10 @@ type NORay = { R: 'patch', s: S.S<(Node) => void> } | { R: 'node', s: S.S<N> }
 type NIRay = { ref: S.S<Node> }
 
 type N =
-  | { T: 'element', tag: string, s: S.S<(Node) => void>, key: ?string }
-  | { T: 'elementNS', tag: string, s: S.S<(Node) => void>, ns: string }
-  | { T: 'text', tag: '#text', s: S.S<(Node) => void> }
-  | { T: 'comment', tag: '#comment', s: S.S<(Node) => void> }
+  | { T: 'element', tag: string, s: Node => S.S<() => void>, key: ?string }
+  | { T: 'elementNS', tag: string, s: Node => S.S<() => void>, ns: string }
+  | { T: 'text', tag: '#text', s: Node => S.S<() => void> }
+  | { T: 'comment', tag: '#comment', s: Node => S.S<() => void> }
 
 type NPith = Pith<NORay, NIRay, void>
 
@@ -35,82 +35,79 @@ export const elmNS = (ns: string, tag: string, pith: NPith): N => ({
 export const text = (ss: SS<string>): N => ({
   T: 'text',
   tag: '#text',
-  s: S.map(
-    text => node => {
-      if (node.textContent !== text) node.textContent = text
-    },
-    typeof ss === 'string' ? S.d(ss) : ss
-  )
+  s: node =>
+    S.map(
+      text => () => {
+        if (node.textContent !== text) node.textContent = text
+      },
+      typeof ss === 'string' ? S.d(ss) : ss
+    )
 })
 export const comment = (ss: SS<string>): N => ({
   T: 'comment',
   tag: '#comment',
-  s: S.map(
-    text => node => {
-      if (node.textContent !== text) node.textContent = text
-    },
-    typeof ss === 'string' ? S.d(ss) : ss
-  )
+  s: node =>
+    S.map(
+      text => () => {
+        if (node.textContent !== text) node.textContent = text
+      },
+      typeof ss === 'string' ? S.d(ss) : ss
+    )
 })
 
-export function run(pith: NPith): S.S<(Node) => void> {
-  return {
+export function run(pith: NPith): Node => S.S<() => void> {
+  return thisNode => ({
     T: 's',
     pith: o => {
+      const childNodes = thisNode.childNodes
       const ns: Array<[number, void]> = []
       var nsLength = 0
-      const rays: Array<S.S<(Node) => void>> = []
+      const rays: Array<S.S<() => void>> = []
       pith(
         v => {
           if (v.R === 'node') {
             const nIndex = nsLength++
-            let see = S.map(n => {
-              var apos = findAppendPosition(nIndex, ns)
-              if (apos === -1 || nIndex !== ns[apos][0]) {
-                ++apos
-                var node = eq(childNodes[apos], n)
-                if (!node) {
-                  var li = null
-                  for (var i = ns.length, l = childNodes.length; i < l; i++)
-                    if ((li = eq(childNodes[i], n))) break
-                  node = li
-                    ? thisNode.insertBefore(li, childNodes[apos])
-                    : thisNode.insertBefore(create(n), childNodes[apos])
-                }
-                ns.splice(apos, 0, [nIndex, n.s(node)])
-              } else {
-                ns[apos][1].dispose()
-                if (!eq(childNodes[apos], n)) thisNode.replaceChild(create(n), childNodes[apos])
-                ns[apos][1] = n.s(childNodes[apos])
-              }
-            }, v.s)
-          } else {
             rays.push(
-              S.flatMapError(
-                error =>
-                  S.d(node => {
-                    node.textContent = error.message
-                  }),
-                v.s
+              S.switchLatest(
+                S.map(n => {
+                  var apos = findAppendPosition(nIndex, ns)
+                  if (apos === -1 || nIndex !== ns[apos][0]) {
+                    ++apos
+                    var node = eq(childNodes[apos], n)
+                    if (!node) {
+                      var li = null
+                      for (var i = ns.length, l = childNodes.length; i < l; i++)
+                        if ((li = eq(childNodes[i], n))) break
+                      node = li
+                        ? thisNode.insertBefore(li, childNodes[apos])
+                        : thisNode.insertBefore(create(n), childNodes[apos])
+                    }
+                    ns.splice(apos, 0, [nIndex, void 0])
+                    return n.s(node)
+                  } else {
+                    if (!eq(childNodes[apos], n)) thisNode.replaceChild(create(n), childNodes[apos])
+                    return n.s(childNodes[apos])
+                  }
+                }, v.s)
               )
             )
+          } else {
+            rays.push(S.map(patch => () => patch(thisNode), v.s))
           }
         },
         { ref: S.empty }
       )
 
       rays.push(
-        S.d(node => {
+        S.d(() => {
           for (var i = childNodes.length - 1; i >= ns.length; i--)
             thisNode.removeChild(childNodes[i])
         })
       )
 
-      return S.run(e => {
-        if (e.R === 'next') e.value(thisNode)
-      }, S.merge(...rays))
+      return S.run(o, S.merge(...rays))
     }
-  }
+  })
 }
 
 function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
