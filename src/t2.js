@@ -4,35 +4,42 @@ import * as D from './S/Disposable'
 import type { Pith } from './pith'
 
 type SS<+A> = S.S<A> | A
-type NORay = { R: 'patch', s: S.S<(Node) => void> } | { R: 'node', s: S.S<N> }
+
+type NORay<R = (Node) => void> =
+  | { R: 'patch', s: S.S<(Node) => void> }
+  | { R: 'node', s: S.S<N<R>> }
+
 type NIRay = { ref: S.S<Node> }
 
-type N =
-  | { T: 'element', tag: string, s: S.S<(Node) => void>, key: ?string }
-  | { T: 'elementNS', tag: string, s: S.S<(Node) => void>, ns: string }
-  | { T: 'text', tag: '#text', s: S.S<(Node) => void> }
-  | { T: 'comment', tag: '#comment', s: S.S<(Node) => void> }
+type N<R = (Node) => void> =
+  | { T: 'element', tag: string, s: S.S<R>, key: ?string }
+  | { T: 'elementNS', tag: string, s: S.S<R>, ns: string }
+  | { T: 'text', tag: '#text', s: S.S<R> }
+  | { T: 'comment', tag: '#comment', s: S.S<R> }
 
-type NPith = Pith<NORay, NIRay, void>
+type NPith = Pith<NORay<>, NIRay, void>
 
 opaque type Patch: (Node) => void = (Node) => void
 
-export const patch = (s: S.S<(Node) => void>): NORay => ({ R: 'patch', s })
-export const node = (ss: SS<N>): NORay => ({ R: 'node', s: ss.T === 's' ? ss : S.d(ss) })
+export const patch = (s: S.S<(Node) => void>): NORay<> => ({ R: 'patch', s })
+export const node = (ss: SS<N<(Node) => void>>): NORay<> => ({
+  R: 'node',
+  s: ss.T === 's' ? ss : S.d(ss)
+})
 
-export const elm = (tag: string, pith: NPith, key?: string): N => ({
+export const elm = (tag: string, pith: NPith, key?: string): N<> => ({
   T: 'element',
   tag: tag.toUpperCase(),
   s: run(pith),
   key
 })
-export const elmNS = (ns: string, tag: string, pith: NPith): N => ({
+export const elmNS = (ns: string, tag: string, pith: NPith): N<> => ({
   T: 'elementNS',
   tag: tag.toUpperCase(),
   s: run(pith),
   ns
 })
-export const text = (ss: SS<string>): N => ({
+export const text = (ss: SS<string>): N<> => ({
   T: 'text',
   tag: '#text',
   s: S.map(
@@ -42,7 +49,7 @@ export const text = (ss: SS<string>): N => ({
     typeof ss === 'string' ? S.d(ss) : ss
   )
 })
-export const comment = (ss: SS<string>): N => ({
+export const comment = (ss: SS<string>): N<> => ({
   T: 'comment',
   tag: '#comment',
   s: S.map(
@@ -134,7 +141,7 @@ function findAppendPosition(n: number, line: Array<number>): number {
   throw new Error('never')
 }
 
-function eq(node: ?Node, n: N): ?Node {
+function eq(node: ?Node, n: N<>): ?Node {
   return !node
     ? node
     : node.nodeName !== n.tag ||
@@ -143,7 +150,7 @@ function eq(node: ?Node, n: N): ?Node {
     : node
 }
 
-function create(n: N): Node {
+function create(n: N<>): Node {
   switch (n.T) {
     case 'element':
       const elm = document.createElement(n.tag)
