@@ -63,6 +63,9 @@ const s = run(o => {
       )
     )
   )
-})(rootNode)
-const d = S.run(console.log.bind(console), s)
+})
+const d = S.run(e => {
+  if (e.R === 'next') e.value(rootNode)
+  else console.info(e)
+}, s)
 S.delay(() => d.dispose(), 8000)
