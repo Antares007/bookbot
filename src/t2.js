@@ -8,10 +8,10 @@ type NORay = { R: 'patch', s: S.S<(Node) => void> } | { R: 'node', s: S.S<N> }
 type NIRay = { ref: S.S<Node> }
 
 type N =
-  | { T: 'element', tag: string, s: Node => S.S<() => void>, key: ?string }
-  | { T: 'elementNS', tag: string, s: Node => S.S<() => void>, ns: string }
-  | { T: 'text', tag: '#text', s: Node => S.S<() => void> }
-  | { T: 'comment', tag: '#comment', s: Node => S.S<() => void> }
+  | { T: 'element', tag: string, s: Node => S.S<void>, key: ?string }
+  | { T: 'elementNS', tag: string, s: Node => S.S<void>, ns: string }
+  | { T: 'text', tag: '#text', s: Node => S.S<void> }
+  | { T: 'comment', tag: '#comment', s: Node => S.S<void> }
 
 type NPith = Pith<NORay, NIRay, void>
 
@@ -37,7 +37,7 @@ export const text = (ss: SS<string>): N => ({
   tag: '#text',
   s: node =>
     S.map(
-      text => () => {
+      text => {
         if (node.textContent !== text) node.textContent = text
       },
       typeof ss === 'string' ? S.d(ss) : ss
@@ -48,21 +48,20 @@ export const comment = (ss: SS<string>): N => ({
   tag: '#comment',
   s: node =>
     S.map(
-      text => () => {
+      text => {
         if (node.textContent !== text) node.textContent = text
       },
       typeof ss === 'string' ? S.d(ss) : ss
     )
 })
 
-export function run(pith: NPith): Node => S.S<() => void> {
-  return thisNode => ({
-    T: 's',
-    pith: o => {
+export function run(pith: NPith): Node => S.S<void> {
+  return thisNode =>
+    S.s(o => {
       const childNodes = thisNode.childNodes
       const ns: Array<[number, void]> = []
       var nsLength = 0
-      const rays: Array<S.S<() => void>> = []
+      const rays: Array<S.S<void>> = []
       pith(
         v => {
           if (v.R === 'node') {
@@ -92,22 +91,21 @@ export function run(pith: NPith): Node => S.S<() => void> {
               )
             )
           } else {
-            rays.push(S.map(patch => () => patch(thisNode), v.s))
+            rays.push(S.map(patch => patch(thisNode), v.s))
           }
         },
         { ref: S.empty }
       )
 
       rays.push(
-        S.d(() => {
+        S.map(() => {
           for (var i = childNodes.length - 1; i >= ns.length; i--)
             thisNode.removeChild(childNodes[i])
-        })
+        }, S.d(void 0))
       )
 
-      return S.run(o, S.merge(...rays))
-    }
-  })
+      return S.run(o, S.filter(Boolean, S.merge(...rays)))
+    })
 }
 
 function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {

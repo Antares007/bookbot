@@ -10,6 +10,21 @@ export const delay = Schdlr.delay
 
 export type S<+A> = { T: 's', +pith: SPith<A> }
 
+export function s<A>(pith: SPith<A>): S<A> {
+  return {
+    T: 's',
+    pith: o => {
+      var d
+      try {
+        d = pith(o)
+      } catch (err) {
+        return throwError(err).pith(o)
+      }
+      return d
+    }
+  }
+}
+
 export function d<A>(a: A, delay: number = 0): S<A> {
   return {
     T: 's',
@@ -23,10 +38,10 @@ export function d<A>(a: A, delay: number = 0): S<A> {
   }
 }
 
-export function throwEror(error: Error): S<empty> {
+export function throwError(error: Error): S<empty> {
   return {
     T: 's',
-    pith: function dPith(o) {
+    pith: function throwErrorPith(o) {
       var d = Schdlr.delay(() => {
         d = null
         o({ R: 'error', error })
@@ -93,6 +108,27 @@ export function map<A, B>(f: A => B, s: S<A>): S<B> {
             return o({ R: 'error', error: err })
           }
           o({ R: 'next', value: b })
+        } else o(e)
+      })
+      return d
+    }
+  }
+}
+
+export function filter<A>(f: A => boolean, s: S<A>): S<A> {
+  return {
+    T: 's',
+    pith: function mapPith(o) {
+      const d = s.pith(function mapO(e) {
+        if (e.R === 'next') {
+          var b
+          try {
+            b = f(e.value)
+          } catch (err) {
+            d.dispose()
+            return o({ R: 'error', error: err })
+          }
+          b && o(e)
         } else o(e)
       })
       return d
