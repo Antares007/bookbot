@@ -55,7 +55,7 @@ export const comment = (ss: SS<string>): N => ({
 
 export function run(pith: NPith): S.S<(Node) => void> {
   return S.s(o => {
-    const ns: Array<[number, void]> = []
+    const ns: Array<number> = []
     var nsLength = 0
     const rays: Array<S.S<(Node) => void>> = []
     pith(
@@ -70,7 +70,7 @@ export function run(pith: NPith): S.S<(Node) => void> {
                   S.d(thisNode => {
                     const childNodes = thisNode.childNodes
                     var apos = findAppendPosition(nIndex, ns)
-                    if (apos === -1 || nIndex !== ns[apos][0]) {
+                    if (apos === -1 || nIndex !== ns[apos]) {
                       ++apos
                       var node = eq(childNodes[apos], n)
                       if (!node) {
@@ -81,7 +81,7 @@ export function run(pith: NPith): S.S<(Node) => void> {
                           ? thisNode.insertBefore(li, childNodes[apos])
                           : thisNode.insertBefore(create(n), childNodes[apos])
                       }
-                      ns.splice(apos, 0, [nIndex, void 0])
+                      ns.splice(apos, 0, nIndex)
                       cIndex = apos
                     } else {
                       if (!eq(childNodes[apos], n))
@@ -112,15 +112,15 @@ export function run(pith: NPith): S.S<(Node) => void> {
   })
 }
 
-function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
+function findAppendPosition(n: number, line: Array<number>): number {
   var l = 0
   var r = line.length
   if (line.length === l) return -1
-  if (line[r - 1][0] <= n) return r - 1
+  if (line[r - 1] <= n) return r - 1
   while (true) {
     if (l < r) {
       const m = ~~((l + r) / 2) | 0
-      if (line[m][0] > n) {
+      if (line[m] > n) {
         r = m
         continue
       } else {
