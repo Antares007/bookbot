@@ -3,7 +3,7 @@ import type { Pith } from './pith'
 import * as Schdlr from './S/scheduler'
 import * as D from './S/Disposable'
 
-export type SRay<+A> = { R: 'next', +value: A } | { R: 'end' } | { R: 'error', error: Error }
+export type SRay<+A> = { T: 'next', +value: A } | { T: 'end' } | { T: 'error', error: Error }
 
 type SPith<+A> = Pith<SRay<A>, void, D.Disposable>
 
@@ -31,8 +31,8 @@ export function d<A>(a: A, delay: number = 0): S<A> {
     T: 's',
     pith: function dPith(o) {
       var d = Schdlr.delay(() => {
-        d = Schdlr.delay(() => o({ R: 'end' }))
-        o({ R: 'next', value: a })
+        d = Schdlr.delay(() => o({ T: 'end' }))
+        o({ T: 'next', value: a })
       }, delay)
       return D.create(() => d.dispose())
     }
@@ -45,7 +45,7 @@ export function throwError(error: Error): S<empty> {
     pith: function throwErrorPith(o) {
       var d = Schdlr.delay(() => {
         d = null
-        o({ R: 'error', error })
+        o({ T: 'error', error })
       })
       return D.create(() => {
         d && d.dispose()
@@ -57,7 +57,7 @@ export function throwError(error: Error): S<empty> {
 export const empty: S<empty> = {
   T: 's',
   pith: function emptyPith(o) {
-    return Schdlr.delay(() => o({ R: 'end' }))
+    return Schdlr.delay(() => o({ T: 'end' }))
   }
 }
 
@@ -74,7 +74,7 @@ export function periodic(period: number): S<void> {
     pith: function periodicPith(o) {
       var d = Schdlr.delay(function periodicNext() {
         d = Schdlr.delay(periodicNext, period)
-        o({ R: 'next', value: void 0 })
+        o({ T: 'next', value: void 0 })
       })
       return D.create(() => d.dispose())
     }
@@ -82,14 +82,14 @@ export function periodic(period: number): S<void> {
 }
 
 export function run<A>(o: (SRay<A>) => void, s: S<A>): D.Disposable {
-  const d = s.pith(function runO(e) {
-    if (e.R === 'error') o(e)
+  const d = s.pith(function runO(r) {
+    if (r.T === 'error') o(r)
     else
       try {
-        o(e)
+        o(r)
       } catch (error) {
         d.dispose()
-        o({ R: 'error', error })
+        o({ T: 'error', error })
       }
   })
   return d
@@ -99,17 +99,17 @@ export function map<A, B>(f: A => B, s: S<A>): S<B> {
   return {
     T: 's',
     pith: function mapPith(o) {
-      const d = s.pith(function mapO(e) {
-        if (e.R === 'next') {
+      const d = s.pith(function mapO(r) {
+        if (r.T === 'next') {
           var b
           try {
-            b = f(e.value)
+            b = f(r.value)
           } catch (error) {
             d.dispose()
-            return o({ R: 'error', error })
+            return o({ T: 'error', error })
           }
-          o({ R: 'next', value: b })
-        } else o(e)
+          o({ T: 'next', value: b })
+        } else o(r)
       })
       return d
     }
@@ -120,17 +120,17 @@ export function filter<A>(f: A => boolean, s: S<A>): S<A> {
   return {
     T: 's',
     pith: function mapPith(o) {
-      const d = s.pith(function mapO(e) {
-        if (e.R === 'next') {
+      const d = s.pith(function mapO(r) {
+        if (r.T === 'next') {
           var b
           try {
-            b = f(e.value)
+            b = f(r.value)
           } catch (error) {
             d.dispose()
-            return o({ R: 'error', error })
+            return o({ T: 'error', error })
           }
-          b && o(e)
-        } else o(e)
+          b && o(r)
+        } else o(r)
       })
       return d
     }
@@ -142,16 +142,16 @@ export function scan<A, B>(f: (B, A) => B, b: B, s: S<A>): S<B> {
     T: 's',
     pith: function scanPith(o) {
       var acc = b
-      const d = s.pith(function scanO(e) {
-        if (e.R === 'next') {
+      const d = s.pith(function scanO(r) {
+        if (r.T === 'next') {
           try {
-            acc = f(acc, e.value)
+            acc = f(acc, r.value)
           } catch (error) {
             d.dispose()
-            return o({ R: 'error', error })
+            return o({ T: 'error', error })
           }
-          o({ R: 'next', value: acc })
-        } else o(e)
+          o({ T: 'next', value: acc })
+        } else o(r)
       })
       return d
     }
@@ -167,12 +167,12 @@ export function merge<A>(...ss: Array<S<A>>): S<A> {
       ss.forEach(s =>
         dmap.set(
           s,
-          s.pith(function mergeO(e) {
-            if (e.R === 'next') o(e)
+          s.pith(function mergeO(r) {
+            if (r.T === 'next') o(r)
             else {
               dmap.delete(s)
-              if (e.R === 'end') dmap.size === 0 && o(e)
-              else d.dispose(), o(e)
+              if (r.T === 'end') dmap.size === 0 && o(r)
+              else d.dispose(), o(r)
             }
           })
         )
@@ -191,21 +191,21 @@ export function switchLatest<A>(so: S<S<A>>): S<A> {
         sid && sid.dispose()
       })
       var sid: ?D.Disposable = null
-      var sod: ?D.Disposable = so.pith(function switchLatestOO(e) {
-        if (e.R === 'next') {
+      var sod: ?D.Disposable = so.pith(function switchLatestOO(r) {
+        if (r.T === 'next') {
           sid && sid.dispose()
-          sid = e.value.pith(function switchLatestIO(e) {
-            if (e.R === 'next') o(e)
+          sid = r.value.pith(function switchLatestIO(r) {
+            if (r.T === 'next') o(r)
             else {
               sid = null
-              if (e.R === 'end') sod || o(e)
-              else d.dispose(), o(e)
+              if (r.T === 'end') sod || o(r)
+              else d.dispose(), o(r)
             }
           })
         } else {
           sod = null
-          if (e.R === 'end') sid || o(e)
-          else d.dispose(), o(e)
+          if (r.T === 'end') sid || o(r)
+          else d.dispose(), o(r)
         }
       })
       return d
@@ -221,30 +221,30 @@ export function flatMap<A, B>(f: A => S<B>, so: S<A>): S<B> {
       const d = D.create(() => dmap.forEach(d => d.dispose()))
       dmap.set(
         so,
-        so.pith(function flatMapOO(e) {
-          if (e.R === 'next') {
+        so.pith(function flatMapOO(r) {
+          if (r.T === 'next') {
             var si
             try {
-              si = f(e.value)
+              si = f(r.value)
             } catch (err) {
               d.dispose()
-              return o({ R: 'error', error: err })
+              return o({ T: 'error', error: err })
             }
             dmap.set(
               si,
-              si.pith(function flatMapIO(e) {
-                if (e.R === 'next') o(e)
+              si.pith(function flatMapIO(r) {
+                if (r.T === 'next') o(r)
                 else {
                   dmap.delete(si)
-                  if (e.R === 'end') dmap.size === 0 && o(e)
-                  else d.dispose(), o(e)
+                  if (r.T === 'end') dmap.size === 0 && o(r)
+                  else d.dispose(), o(r)
                 }
               })
             )
           } else {
             dmap.delete(so)
-            if (e.R === 'end') dmap.size === 0 && o(e)
-            else d.dispose(), o(e)
+            if (r.T === 'end') dmap.size === 0 && o(r)
+            else d.dispose(), o(r)
           }
         })
       )
@@ -257,17 +257,17 @@ export function flatMapEnd<A>(f: () => S<A>, s: S<A>): S<A> {
   return {
     T: 's',
     pith: function flatMapEndPith(o) {
-      var d = s.pith(function flatMapEndO(e) {
-        if (e.R === 'end') {
+      var d = s.pith(function flatMapEndO(r) {
+        if (r.T === 'end') {
           var s
           try {
             s = f()
           } catch (error) {
             d.dispose()
-            return o({ R: 'error', error })
+            return o({ T: 'error', error })
           }
           d = s.pith(o)
-        } else o(e)
+        } else o(r)
       })
       return D.create(() => d.dispose())
     }
@@ -278,17 +278,17 @@ export function flatMapError<A>(f: Error => S<A>, s: S<A>): S<A> {
   return {
     T: 's',
     pith: function flatMapErrorPith(o) {
-      var d = s.pith(function flatMapErrorO(e) {
-        if (e.R === 'error') {
+      var d = s.pith(function flatMapErrorO(r) {
+        if (r.T === 'error') {
           var s
           try {
-            s = f(e.error)
+            s = f(r.error)
           } catch (error) {
             d.dispose()
-            return o({ R: 'error', error })
+            return o({ T: 'error', error })
           }
           d = s.pith(o)
-        } else o(e)
+        } else o(r)
       })
       return D.create(() => d.dispose())
     }

@@ -5,23 +5,23 @@ import type { Pith } from './pith'
 
 type SS<+A> = S.S<A> | A
 
-type NORay = { R: 'patch', s: S.S<(Node) => void> } | { R: 'node', s: S.S<N<>> }
+type NORay = { T: 'patch', s: S.S<(Node) => void> } | { T: 'node', s: S.S<N<>> }
 
 type NIRay = { ref: S.S<Node> }
 
-type N<R = (Node) => void> =
-  | { T: 'element', tag: string, s: S.S<R>, key: ?string }
-  | { T: 'elementNS', tag: string, s: S.S<R>, ns: string }
-  | { T: 'text', tag: '#text', s: S.S<R> }
-  | { T: 'comment', tag: '#comment', s: S.S<R> }
+type N<T = (Node) => void> =
+  | { T: 'element', tag: string, s: S.S<T>, key: ?string }
+  | { T: 'elementNS', tag: string, s: S.S<T>, ns: string }
+  | { T: 'text', tag: '#text', s: S.S<T> }
+  | { T: 'comment', tag: '#comment', s: S.S<T> }
 
 type NPith = Pith<NORay, NIRay, void>
 
 opaque type Patch: (Node) => void = (Node) => void
 
-export const patch = (s: S.S<(Node) => void>): NORay => ({ R: 'patch', s })
+export const patch = (s: S.S<(Node) => void>): NORay => ({ T: 'patch', s })
 export const node = (ss: SS<N<(Node) => void>>): NORay => ({
-  R: 'node',
+  T: 'node',
   s: ss.T === 's' ? ss : S.d(ss)
 })
 
@@ -64,8 +64,8 @@ export function run(pith: NPith): S.S<(Node) => void> {
     var nsLength = 0
     const rays: Array<S.S<(Node) => void>> = []
     pith(
-      v => {
-        if (v.R === 'node') {
+      r => {
+        if (r.T === 'node') {
           const nIndex = nsLength++
           rays.push(
             S.switchLatest(
@@ -95,12 +95,12 @@ export function run(pith: NPith): S.S<(Node) => void> {
                     },
                     n.s
                   ),
-                v.s
+                r.s
               )
             )
           )
         } else {
-          rays.push(v.s)
+          rays.push(r.s)
         }
       },
       { ref: S.empty }
