@@ -5,9 +5,7 @@ import type { Pith } from './pith'
 
 type SS<+A> = S.S<A> | A
 
-type NORay<R = (Node) => void> =
-  | { R: 'patch', s: S.S<(Node) => void> }
-  | { R: 'node', s: S.S<N<R>> }
+type NORay = { R: 'patch', s: S.S<(Node) => void> } | { R: 'node', s: S.S<N<>> }
 
 type NIRay = { ref: S.S<Node> }
 
@@ -17,12 +15,12 @@ type N<R = (Node) => void> =
   | { T: 'text', tag: '#text', s: S.S<R> }
   | { T: 'comment', tag: '#comment', s: S.S<R> }
 
-type NPith = Pith<NORay<>, NIRay, void>
+type NPith = Pith<NORay, NIRay, void>
 
 opaque type Patch: (Node) => void = (Node) => void
 
-export const patch = (s: S.S<(Node) => void>): NORay<> => ({ R: 'patch', s })
-export const node = (ss: SS<N<(Node) => void>>): NORay<> => ({
+export const patch = (s: S.S<(Node) => void>): NORay => ({ R: 'patch', s })
+export const node = (ss: SS<N<(Node) => void>>): NORay => ({
   R: 'node',
   s: ss.T === 's' ? ss : S.d(ss)
 })
@@ -71,34 +69,34 @@ export function run(pith: NPith): S.S<(Node) => void> {
           const nIndex = nsLength++
           rays.push(
             S.switchLatest(
-              S.map(n => {
-                var cIndex = -1
-                return S.merge(
-                  S.d(thisNode => {
-                    const childNodes = thisNode.childNodes
-                    var apos = findAppendPosition(nIndex, ns)
-                    if (apos === -1 || nIndex !== ns[apos]) {
-                      ++apos
-                      var node = eq(childNodes[apos], n)
-                      if (!node) {
-                        var li = null
-                        for (var i = ns.length, l = childNodes.length; i < l; i++)
-                          if ((li = eq(childNodes[i], n))) break
-                        node = li
-                          ? thisNode.insertBefore(li, childNodes[apos])
-                          : thisNode.insertBefore(create(n), childNodes[apos])
+              S.map(
+                n =>
+                  S.map(
+                    patch => thisNode => {
+                      const childNodes = thisNode.childNodes
+                      var apos = findAppendPosition(nIndex, ns)
+                      if (apos === -1 || nIndex !== ns[apos]) {
+                        ++apos
+                        var node = eq(childNodes[apos], n)
+                        if (!node) {
+                          var li = null
+                          for (var i = ns.length, l = childNodes.length; i < l; i++)
+                            if ((li = eq(childNodes[i], n))) break
+                          node = li
+                            ? thisNode.insertBefore(li, childNodes[apos])
+                            : thisNode.insertBefore(create(n), childNodes[apos])
+                        }
+                        ns.splice(apos, 0, nIndex)
+                      } else {
+                        if (!eq(childNodes[apos], n))
+                          thisNode.replaceChild(create(n), childNodes[apos])
                       }
-                      ns.splice(apos, 0, nIndex)
-                      cIndex = apos
-                    } else {
-                      if (!eq(childNodes[apos], n))
-                        thisNode.replaceChild(create(n), childNodes[apos])
-                      cIndex = apos
-                    }
-                  }),
-                  S.map(patch => node => patch(node.childNodes[cIndex]), n.s)
-                )
-              }, v.s)
+                      patch(childNodes[apos])
+                    },
+                    n.s
+                  ),
+                v.s
+              )
             )
           )
         } else {

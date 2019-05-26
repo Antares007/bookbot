@@ -137,12 +137,12 @@ export function filter<A>(f: A => boolean, s: S<A>): S<A> {
   }
 }
 
-export function scan<A, B>(f: (B, A) => B, b: B, sa: S<A>): S<B> {
+export function scan<A, B>(f: (B, A) => B, b: B, s: S<A>): S<B> {
   return {
     T: 's',
     pith: function scanPith(o) {
       var acc = b
-      const d = sa.pith(function scanO(e) {
+      const d = s.pith(function scanO(e) {
         if (e.R === 'next') {
           try {
             acc = f(acc, e.value)
@@ -253,20 +253,20 @@ export function flatMap<A, B>(f: A => S<B>, so: S<A>): S<B> {
   }
 }
 
-export function flatMapEnd<A>(f: () => S<A>, sa: S<A>): S<A> {
+export function flatMapEnd<A>(f: () => S<A>, s: S<A>): S<A> {
   return {
     T: 's',
     pith: function flatMapEndPith(o) {
-      var d = sa.pith(function flatMapEndO(e) {
+      var d = s.pith(function flatMapEndO(e) {
         if (e.R === 'end') {
-          var sn
+          var s
           try {
-            sn = f()
+            s = f()
           } catch (error) {
             d.dispose()
             return o({ R: 'error', error })
           }
-          d = sn.pith(o)
+          d = s.pith(o)
         } else o(e)
       })
       return D.create(() => d.dispose())
@@ -274,20 +274,20 @@ export function flatMapEnd<A>(f: () => S<A>, sa: S<A>): S<A> {
   }
 }
 
-export function flatMapError<A>(f: Error => S<A>, sa: S<A>): S<A> {
+export function flatMapError<A>(f: Error => S<A>, s: S<A>): S<A> {
   return {
     T: 's',
     pith: function flatMapErrorPith(o) {
-      var d = sa.pith(function flatMapErrorO(e) {
+      var d = s.pith(function flatMapErrorO(e) {
         if (e.R === 'error') {
-          var sn
+          var s
           try {
-            sn = f(e.error)
+            s = f(e.error)
           } catch (error) {
             d.dispose()
             return o({ R: 'error', error })
           }
-          d = sn.pith(o)
+          d = s.pith(o)
         } else o(e)
       })
       return D.create(() => d.dispose())
