@@ -3,23 +3,21 @@ import * as S from './t'
 import * as D from './S/Disposable'
 import type { Pith } from './pith'
 
-type SS<+A> = S.S<A> | A
+export type SS<+A> = S.S<A> | A
 
-type NORay = { T: 'patch', s: S.S<(Node) => void> } | { T: 'node', s: S.S<N> }
+export type NORay = { T: 'patch', s: S.S<(Node) => void> } | { T: 'node', s: S.S<N> }
 
-type NIRay = { ref: S.S<Node> }
+export type NIRay = { ref: S.S<Node> }
 
 export opaque type R: { R: 'patch', r: Node => void } = { R: 'patch', r: Node => void }
 
-type N =
+export type N =
   | { T: 'element', tag: string, s: S.S<R>, key: ?string }
   | { T: 'elementNS', tag: string, s: S.S<R>, ns: string }
   | { T: 'text', tag: '#text', s: S.S<string> }
   | { T: 'comment', tag: '#comment', s: S.S<string> }
 
-type NPith = Pith<NORay, NIRay, void>
-
-opaque type Patch: (Node) => void = (Node) => void
+export type NPith = Pith<NORay, NIRay, void>
 
 export const patch = (s: S.S<(Node) => void>): NORay => ({ T: 'patch', s })
 export const node = (ss: SS<N>): NORay => ({
