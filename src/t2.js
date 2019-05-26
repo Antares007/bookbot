@@ -5,60 +5,52 @@ import type { Pith } from './pith'
 
 type SS<+A> = S.S<A> | A
 
-type NORay = { T: 'patch', s: S.S<(Node) => void> } | { T: 'node', s: S.S<N<>> }
+type NORay = { T: 'patch', s: S.S<(Node) => void> } | { T: 'node', s: S.S<N> }
 
 type NIRay = { ref: S.S<Node> }
 
-type N<T = (Node) => void> =
-  | { T: 'element', tag: string, s: S.S<T>, key: ?string }
-  | { T: 'elementNS', tag: string, s: S.S<T>, ns: string }
-  | { T: 'text', tag: '#text', s: S.S<T> }
-  | { T: 'comment', tag: '#comment', s: S.S<T> }
+export opaque type R: { R: 'patch', r: Node => void } = { R: 'patch', r: Node => void }
+
+type N =
+  | { T: 'element', tag: string, s: S.S<R>, key: ?string }
+  | { T: 'elementNS', tag: string, s: S.S<R>, ns: string }
+  | { T: 'text', tag: '#text', s: S.S<string> }
+  | { T: 'comment', tag: '#comment', s: S.S<string> }
 
 type NPith = Pith<NORay, NIRay, void>
 
 opaque type Patch: (Node) => void = (Node) => void
 
 export const patch = (s: S.S<(Node) => void>): NORay => ({ T: 'patch', s })
-export const node = (ss: SS<N<(Node) => void>>): NORay => ({
+export const node = (ss: SS<N>): NORay => ({
   T: 'node',
   s: ss.T === 's' ? ss : S.d(ss)
 })
 
-export const elm = (tag: string, pith: NPith, key?: string): N<> => ({
+export const elm = (tag: string, pith: NPith, key?: string): N => ({
   T: 'element',
   tag: tag.toUpperCase(),
   s: run(pith),
   key
 })
-export const elmNS = (ns: string, tag: string, pith: NPith): N<> => ({
+export const elmNS = (ns: string, tag: string, pith: NPith): N => ({
   T: 'elementNS',
   tag: tag.toUpperCase(),
   s: run(pith),
   ns
 })
-export const text = (ss: SS<string>): N<> => ({
+export const text = (ss: SS<string>): N => ({
   T: 'text',
   tag: '#text',
-  s: S.map(
-    text => node => {
-      if (node.textContent !== text) node.textContent = text
-    },
-    typeof ss === 'string' ? S.d(ss) : ss
-  )
+  s: typeof ss === 'string' ? S.d(ss) : ss
 })
-export const comment = (ss: SS<string>): N<> => ({
+export const comment = (ss: SS<string>): N => ({
   T: 'comment',
   tag: '#comment',
-  s: S.map(
-    text => node => {
-      if (node.textContent !== text) node.textContent = text
-    },
-    typeof ss === 'string' ? S.d(ss) : ss
-  )
+  s: typeof ss === 'string' ? S.d(ss) : ss
 })
 
-export function run(pith: NPith): S.S<(Node) => void> {
+export function run(pith: NPith): S.S<R> {
   return S.s(o => {
     const ns: Array<number> = []
     var nsLength = 0
@@ -74,10 +66,11 @@ export function run(pith: NPith): S.S<(Node) => void> {
                   S.map(
                     patch => thisNode => {
                       const childNodes = thisNode.childNodes
+                      var node
                       var apos = findAppendPosition(nIndex, ns)
                       if (apos === -1 || nIndex !== ns[apos]) {
                         ++apos
-                        var node = eq(childNodes[apos], n)
+                        node = eq(childNodes[apos], n)
                         if (!node) {
                           var li = null
                           for (var i = ns.length, l = childNodes.length; i < l; i++)
@@ -87,11 +80,12 @@ export function run(pith: NPith): S.S<(Node) => void> {
                             : thisNode.insertBefore(create(n), childNodes[apos])
                         }
                         ns.splice(apos, 0, nIndex)
-                      } else {
-                        if (!eq(childNodes[apos], n))
-                          thisNode.replaceChild(create(n), childNodes[apos])
-                      }
-                      patch(childNodes[apos])
+                      } else if (!eq((node = childNodes[apos]), n))
+                        node = thisNode.replaceChild(create(n), node)
+
+                      if (typeof patch === 'string')
+                        node.textContent === patch || (node.textContent = patch)
+                      else patch.r(node)
                     },
                     n.s
                   ),
@@ -113,7 +107,7 @@ export function run(pith: NPith): S.S<(Node) => void> {
       })
     )
 
-    return S.merge(...rays).pith(o)
+    return S.map(r => ({ R: 'patch', r }), S.merge(...rays)).pith(o)
   })
 }
 
@@ -139,7 +133,7 @@ function findAppendPosition(n: number, line: Array<number>): number {
   throw new Error('never')
 }
 
-function eq(node: ?Node, n: N<>): ?Node {
+function eq(node: ?Node, n: N): ?Node {
   return !node
     ? node
     : node.nodeName !== n.tag ||
@@ -148,7 +142,7 @@ function eq(node: ?Node, n: N<>): ?Node {
     : node
 }
 
-function create(n: N<>): Node {
+function create(n: N): Node {
   switch (n.T) {
     case 'element':
       const elm = document.createElement(n.tag)
