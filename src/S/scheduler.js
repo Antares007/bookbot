@@ -61,10 +61,7 @@ function run() {
   }
 }
 
-export function findAppendPosition<T>(
-  n: number,
-  line: Array<[number, T]>
-): number {
+export function findAppendPosition<T>(n: number, line: Array<[number, T]>): number {
   var l = 0
   var r = line.length
   while (true) {
@@ -82,4 +79,14 @@ export function findAppendPosition<T>(
     }
   }
   throw new Error('never')
+}
+
+export function binarySearchRightmost<T>(n: number, sortedArray: Array<number>): number {
+  var l = 0
+  var r = sortedArray.length
+  var m
+  while (l < r)
+    if (sortedArray[(m = ~~((l + r) / 2))] <= n) l = m + 1
+    else r = m
+  return l - 1
 }

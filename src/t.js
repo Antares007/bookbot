@@ -182,6 +182,54 @@ export function merge<A>(...ss: Array<S<A>>): S<A> {
   }
 }
 
+export function combine<A, B>(f: (...Array<A>) => B, ...ss: Array<S<A>>): S<B> {
+  return {
+    T: 's',
+    pith: function combinePith(o) {
+      const dmap = new Map()
+      const d = D.create(() => dmap.forEach(d => d.dispose()))
+      const indices: Array<number> = []
+      const values = new Array(ss.length)
+      var hasallvalues = false
+      ss.forEach((s, index) =>
+        dmap.set(
+          s,
+          s.pith(function combineO(r) {
+            if (r.T === 'next') {
+              values[index] = r.value
+              goto: while (true) {
+                if (hasallvalues) {
+                  var b
+                  try {
+                    b = f(...values)
+                  } catch (error) {
+                    d.dispose()
+                    return o({ T: 'error', error })
+                  }
+                  o({ T: 'next', value: b })
+                  break
+                } else {
+                  const pos = Schdlr.binarySearchRightmost(index, indices)
+                  if (pos === -1 || indices[pos] < index) {
+                    indices.splice(pos + 1, 0, index)
+                    if ((hasallvalues = indices.length === values.length)) continue goto
+                    else break
+                  }
+                }
+              }
+            } else {
+              dmap.delete(s)
+              if (r.T === 'end') dmap.size === 0 && o(r)
+              else d.dispose(), o(r)
+            }
+          })
+        )
+      )
+      return d
+    }
+  }
+}
+
 export function switchLatest<A>(so: S<S<A>>): S<A> {
   return {
     T: 's',
