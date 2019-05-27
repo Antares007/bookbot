@@ -29,43 +29,37 @@ const counter = (depth: number) =>
   )
 
 const rootNode = document.getElementById('root-node')
-const arrays = [[1, 2, 3], [3, 1, 2]]
+const arrays = [[1, 2, 3], [3, 2, 1]]
 if (!rootNode) throw new Error()
 const s = run(o => {
-  o(node(S.map(i => counter(i % 3), S.scan(a => a + 1, -1, S.periodic(400)))))
+  //o(node(S.map(i => counter(i % 3), S.scan(a => a + 1, -1, S.periodic(400)))))
   o(
     node(
       S.map(
         list =>
           elm('ul', o => {
             for (let li of list) {
+              console.log(li)
               o(
                 node(
                   elm(
                     'li',
-                    o =>
-                      o(
-                        node(
-                          S.map(
-                            i => text(li + '.' + i),
-                            S.scan(a => a + 1, -1, S.periodic(li * 30))
-                          )
-                        )
-                      ),
+                    o => {
+                      o(node(text(li + ')')))
+                      o(node(counter(li - 1)))
+                    },
                     'k' + li
                   )
                 )
               )
-              o(node(counter(li)))
             }
           }),
-        S.map(i => arrays[i % 2], S.scan(a => a + 1, -1, S.periodic(500)))
+        S.merge(S.d(arrays[0]), S.d(arrays[1], 1500))
       )
     )
   )
 })
-const d = S.run(r => {
-  if (r.T === 'next') r.value.r(rootNode)
-  else console.info(r)
-}, s)
-S.delay(() => d.dispose(), 8000)
+
+const patcher = linearPatcher(rootNode, 300)
+const d = S.run(console.log.bind(console), S.filter(Boolean, S.map(p => patcher(p.r), s)))
+//S.delay(() => d.dispose(), 1000)

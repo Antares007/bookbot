@@ -40,7 +40,9 @@ export const elmNS = (ns: string, tag: string, pith: NPith): N => ({
 export const text = (ss: SS<string>): N => ({
   T: 'text',
   tag: '#text',
-  s: typeof ss === 'string' ? S.d(ss) : ss
+  s: S.switchLatest(
+    S.d(S.switchLatest(S.d(S.switchLatest(S.d(typeof ss === 'string' ? S.d(ss) : ss)))))
+  )
 })
 export const comment = (ss: SS<string>): N => ({
   T: 'comment',
@@ -57,6 +59,7 @@ export function run(pith: NPith): S.S<R> {
       r => {
         if (r.T === 'node') {
           const nIndex = nsLength++
+
           rays.push(
             S.switchLatest(
               S.map(
@@ -71,8 +74,9 @@ export function run(pith: NPith): S.S<R> {
                         node = eq(childNodes[apos], n)
                         if (!node) {
                           var li = null
-                          for (var i = ns.length, l = childNodes.length; i < l; i++)
+                          for (var i = ns.length, l = childNodes.length; i < l; i++) {
                             if ((li = eq(childNodes[i], n))) break
+                          }
                           node = li
                             ? thisNode.insertBefore(li, childNodes[apos])
                             : thisNode.insertBefore(create(n), childNodes[apos])
@@ -81,9 +85,8 @@ export function run(pith: NPith): S.S<R> {
                       } else if (!eq((node = childNodes[apos]), n))
                         node = thisNode.replaceChild(create(n), node)
 
-                      if (typeof patch === 'string')
-                        node.textContent === patch || (node.textContent = patch)
-                      else patch.r(node)
+                      if (typeof patch !== 'string') patch.r(node)
+                      else node.textContent === patch || (node.textContent = patch)
                     },
                     n.s
                   ),
@@ -99,10 +102,22 @@ export function run(pith: NPith): S.S<R> {
     )
 
     rays.push(
-      S.d(node => {
-        for (var i = node.childNodes.length - 1; i >= ns.length; i--)
-          node.removeChild(node.childNodes[i])
-      })
+      S.switchLatest(
+        S.d(
+          S.switchLatest(
+            S.d(
+              S.switchLatest(
+                S.d(
+                  S.d(node => {
+                    for (var i = node.childNodes.length - 1; i >= ns.length; i--)
+                      console.log('rm', node.removeChild(node.childNodes[i]))
+                  })
+                )
+              )
+            )
+          )
+        )
+      )
     )
 
     return S.map(r => ({ R: 'patch', r }), S.merge(...rays)).pith(o)
@@ -141,6 +156,7 @@ function eq(node: ?Node, n: N): ?Node {
 }
 
 function create(n: N): Node {
+  console.log('c', n.tag)
   switch (n.T) {
     case 'element':
       const elm = document.createElement(n.tag)
