@@ -70,13 +70,8 @@ export function characterDataBark<T: CharacterData>(s: S.S<string>): T => D.Disp
 export function elementBark<Elm: Element>(pith: NPith): Elm => D.Disposable {
   return elm => {
     const indices: Array<number> = []
-    var nds: Array<D.Disposable>
-    const nrays: Array<S.S<boolean>> = []
-    const prays: Array<S.S<void>> = []
-
-    const ns = []
-    var nLength = 0
-
+    const nds: Array<?D.Disposable> = []
+    const rays: Array<S.S<void>> = []
     const find = <B>(f: Node => ?B, fromIndex: number, array: NodeList<Node>): ?B => {
       for (var i = fromIndex, l = array.length; i < l; i++) {
         const mb = f(array[i])
@@ -87,119 +82,82 @@ export function elementBark<Elm: Element>(pith: NPith): Elm => D.Disposable {
     pith(
       r => {
         if (r.T === 'node') {
-          const nIndex = nLength++
-          nrays.push(
+          const nIndex = nds.length++
+          nds.push()
+          rays.push(
             S.map(n => {
-              var pos = binarySearchRightmost(nIndex, indices)
-              if (pos === -1 || indices[pos] < nIndex) indices.splice(++pos, 0, nIndex)
-              const childatpos = elm.childNodes[pos]
               const d = nds[nIndex]
               d && d.dispose()
-              var child
-              var ret = false
-
-              switch (n.T) {
-                case 'element':
-                  child = find(
-                    elm =>
-                      elm instanceof HTMLElement &&
-                      elm.nodeName === n.tag &&
-                      n.key == elm.dataset.key
-                        ? elm
-                        : null,
-                    pos,
-                    elm.childNodes
-                  )
-                  if (!child) {
-                    child = document.createElement(n.tag)
-                    n.key && (child.dataset.key = n.key)
-                  }
-                  nds[nIndex] = n.s(elm.insertBefore(child, childatpos))
-                  break
-                case 'elementNS':
-                  break
-                case 'text':
-                  child = find(node => (node instanceof Text ? node : null), pos, elm.childNodes)
+              var pos = binarySearchRightmost(nIndex, indices)
+              if (pos === -1 || indices[pos] < nIndex) {
+                ++pos
+                if (n.T === 'element') {
                   nds[nIndex] = n.s(
-                    child
-                      ? elm.insertBefore(child, childatpos)
-                      : elm.insertBefore(document.createTextNode('loading...'), childatpos)
+                    elm.insertBefore(
+                      find(x => eqElement(x, n), indices.length, elm.childNodes) ||
+                        createElement(n),
+                      elm.childNodes[pos]
+                    )
                   )
-                  break
-                case 'comment':
-                  break
-                default:
-                  throw new Error(`case [${n.T}] not covered`)
+                } else if (n.T === 'text') {
+                  nds[nIndex] = n.s(
+                    elm.insertBefore(
+                      find(x => eqText(x, n), indices.length, elm.childNodes) || createText(n),
+                      elm.childNodes[pos]
+                    )
+                  )
+                }
+                indices.splice(pos, 0, nIndex)
+              } else {
+                if (n.T === 'element') {
+                  var child = eqElement(elm.childNodes[pos], n)
+                  if (!child) elm.replaceChild((child = createElement(n)), elm.childNodes[pos])
+                  nds[nIndex] = n.s(child)
+                } else if (n.T === 'text') {
+                  var child = eqText(elm.childNodes[pos], n)
+                  if (!child) elm.replaceChild((child = createText(n)), elm.childNodes[pos])
+                  nds[nIndex] = n.s(child)
+                }
               }
-              return child !== childatpos
             }, r.s)
           )
         } else {
-          prays.push(S.map(p => p(elm), r.s))
+          rays.push(S.map(p => p(elm), r.s))
         }
       },
       { ref: S.empty }
     )
-    nds = new Array(nLength)
 
-    const nraysd = S.run(r => {
+    const raysd = S.run(r => {
       if (r.T === 'error') return console.error(r.error)
-      //else if (r.T === 'next')
-      //  S.delay(() => {
-      //    for (var i = elm.childNodes.length - 1; i >= indices.length; i--)
-      //      console.log('rm', elm.removeChild(elm.childNodes[i]))
-      //  })
-    }, S.merge(...nrays))
-
-    const praysd = S.run(r => {
-      if (r.T === 'error') return console.error(r.error)
-    }, S.merge(...prays))
+    }, S.merge(...rays))
+    const rmd = S.delay(() => {
+      for (var i = elm.childNodes.length - 1; i >= indices.length; i--)
+        console.log('rm', elm.removeChild(elm.childNodes[i]))
+    })
 
     return D.create(() => {
       nds.forEach(d => d && d.dispose())
-      nraysd.dispose()
-      praysd.dispose()
+      raysd.dispose()
+      rmd.dispose()
     })
   }
 }
 
-const eqn = (function eq(node, n) {
-  //if (n.T === 'Element' && node instanceof HTMLElement) return node
-  return null
-  //if (node == null) return false
-  //if (node.nodeName !== n.tag) return false
-  //if (n.T === 'element' && node instanceof HTMLElement && n.key && node.dataset.key !== n.key)
-  //  return false
-  //return true
-}: {
-  (?Node, n: NElement): ?HTMLElement,
-  (?Node, n: NElementNS): ?Element,
-  (?Node, n: NText): ?Text,
-  (?Node, n: NComment): ?Comment
-})
-
-function eq(node: ?Node, n: N): ?Node {
-  return node == null
+function eqElement(node: Node, n: NElement): ?HTMLElement {
+  return node instanceof HTMLElement && node.nodeName === n.tag && node.dataset.key == n.key
     ? node
-    : node.nodeName !== n.tag ||
-      (n.T === 'element' && n.key && node instanceof HTMLElement && node.dataset.key !== n.key)
-    ? null
-    : node
+    : null
+}
+function eqText(node: Node, n: NText): ?Text {
+  return node instanceof Text ? node : null
 }
 
-function create(n: N): Node {
-  switch (n.T) {
-    case 'element':
-      const elm = document.createElement(n.tag)
-      if (n.key) elm.dataset.key = n.key
-      return elm
-    case 'elementNS':
-      return document.createElementNS(n.ns, n.tag)
-    case 'text':
-      return document.createTextNode('')
-    case 'comment':
-      return document.createComment('')
-    default:
-      throw new Error('never')
-  }
+function createElement(n: NElement): HTMLElement {
+  const elm = document.createElement(n.tag)
+  if (n.key) elm.dataset.key = n.key
+  return elm
+}
+function createText(n: NText): Text {
+  return document.createTextNode('loading')
 }
