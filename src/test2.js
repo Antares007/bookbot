@@ -32,14 +32,14 @@ const rootNode = document.getElementById('root-node')
 const arrays = [[1, 2, 3], [3, 2, 1]]
 if (!rootNode) throw new Error()
 const s = elementBark(o => {
-  o(
-    node(
-      S.map(i => {
-        console.log(i)
-        return counter(i % 3)
-      }, S.scan(a => a + 1, -1, S.periodic(400)))
-    )
-  )
+  //o(
+  //  node(
+  //    S.map(i => {
+  //      console.log(i)
+  //      return counter(i % 3)
+  //    }, S.scan(a => a + 1, -1, S.periodic(400)))
+  //  )
+  //)
   o(
     node(
       S.map(
