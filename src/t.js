@@ -342,3 +342,31 @@ export function flatMapError<A>(f: Error => S<A>, s: S<A>): S<A> {
     }
   }
 }
+
+export function multicast<A>(s: S<A>): S<A> {
+  var d = null
+  var os = []
+  return {
+    T: 's',
+    pith(o) {
+      os.push(o)
+      if (d == null)
+        d = s.pith(r => {
+          if (r.T === 'next') os.forEach(o => o(r))
+          else {
+            const os_ = os
+            d = null
+            os = []
+            os_.forEach(o => o(r))
+          }
+        })
+      return D.create(() => {
+        const pos = os.indexOf(o)
+        if (pos !== -1) {
+          os.splice(pos, 1)
+          if (os.length === 0 && d) d = d.dispose()
+        }
+      })
+    }
+  }
+}
