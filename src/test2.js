@@ -1,6 +1,6 @@
 // @flow strict
 import * as S from './t'
-import { elm, run, text, node, patch } from './t2'
+import { elm, elementBark, text, node, patch } from './t4'
 import { linearPatcher, animationFramePatcher } from './N/patchers'
 
 const counter = (depth: number) =>
@@ -31,15 +31,21 @@ const counter = (depth: number) =>
 const rootNode = document.getElementById('root-node')
 const arrays = [[1, 2, 3], [3, 2, 1]]
 if (!rootNode) throw new Error()
-const s = run(o => {
-  //o(node(S.map(i => counter(i % 3), S.scan(a => a + 1, -1, S.periodic(400)))))
+const s = elementBark(o => {
+  o(
+    node(
+      S.map(i => {
+        console.log(i)
+        return counter(i % 3)
+      }, S.scan(a => a + 1, -1, S.periodic(400)))
+    )
+  )
   o(
     node(
       S.map(
         list =>
           elm('ul', o => {
             for (let li of list) {
-              console.log(li)
               o(
                 node(
                   elm(
@@ -60,6 +66,5 @@ const s = run(o => {
   )
 })
 
-const patcher = linearPatcher(rootNode, 300)
-const d = S.run(console.log.bind(console), S.filter(Boolean, S.map(p => patcher(p.r), s)))
-//S.delay(() => d.dispose(), 1000)
+const d = s(rootNode)
+S.delay(() => d.dispose(), 8000)

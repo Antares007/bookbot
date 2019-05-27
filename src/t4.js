@@ -1,5 +1,6 @@
 // @flow strict
 import * as S from './t'
+import { binarySearchRightmost } from './S/scheduler'
 import * as D from './S/Disposable'
 import type { Pith } from './pith'
 
@@ -58,16 +59,72 @@ export function characterDataBark<T: CharacterData>(s: S.S<string>): T => D.Disp
 
 export function elementBark<Elm: Element>(pith: NPith): Elm => D.Disposable {
   return elm => {
+    const childNodes = elm.childNodes
+    const indices: Array<number> = []
+    const nds: Array<D.Disposable> = []
+    const rays: Array<S.S<void>> = []
     pith(
       r => {
         if (r.T === 'node') {
-          S.map(n => {}, r.s)
+          const nIndex = nds.length
+          nds.push(D.empty)
+          rays.push(
+            S.map(n => {
+              var node
+              var pos = binarySearchRightmost(nIndex, indices)
+              if (pos === -1 || indices[pos] < nIndex) {
+                if (!eq((node = childNodes[++pos]), n)) {
+                  var li = null
+                  for (var i = indices.length, l = childNodes.length; i < l && li === null; i++)
+                    if (eq(childNodes[i], n)) li = childNodes[i]
+                  node = li ? elm.insertBefore(li, node) : elm.insertBefore(create(n), node)
+                }
+                indices.splice(pos, 0, nIndex)
+              } else if (!eq((node = childNodes[pos]), n)) node = elm.replaceChild(create(n), node)
+              nds[nIndex].dispose()
+              if (n.T === 'element' && node instanceof HTMLElement) nds[nIndex] = n.s(node)
+              else if (n.T === 'text' && node instanceof Text) nds[nIndex] = n.s(node)
+              else if (n.T === 'elementNS' && node instanceof Element) nds[nIndex] = n.s(node)
+              else if (n.T === 'comment' && node instanceof Comment) nds[nIndex] = n.s(node)
+              else throw new Error('cant find correct node')
+            }, r.s)
+          )
         } else {
-          S.run(r => {}, r.s)
+          rays.push(S.map(p => p(elm), r.s))
         }
       },
       { ref: S.empty }
     )
-    return D.empty
+    const raysd = S.run(r => {}, S.merge(...rays))
+    return D.create(() => {
+      nds.forEach(d => d.dispose())
+      raysd.dispose()
+    })
+  }
+}
+
+function eq(node: ?Node, n: N): boolean {
+  return (
+    !!node &&
+    node.nodeName === n.tag &&
+    (n.T !== 'element' || !n.key || !(node instanceof HTMLElement) || node.dataset.key === n.key)
+  )
+}
+
+function create(n: N): Node {
+  console.log('c', n.tag)
+  switch (n.T) {
+    case 'element':
+      const elm = document.createElement(n.tag)
+      if (n.key) elm.dataset.key = n.key
+      return elm
+    case 'elementNS':
+      return document.createElementNS(n.ns, n.tag)
+    case 'text':
+      return document.createTextNode('')
+    case 'comment':
+      return document.createComment('')
+    default:
+      throw new Error('never')
   }
 }
