@@ -129,7 +129,13 @@ export function elementBark<Elm: Element>(pith: NPith): Elm => D.Disposable {
     )
 
     const raysd = S.run(r => {
-      if (r.T === 'error') return console.error(r.error)
+      if (r.T === 'error') {
+        rmd.dispose()
+        const lines = r.error.stack.split('\n')
+        elm.innerHTML = `<div class='error'><div>${lines.shift()}</div><ul>${lines
+          .map(l => `<li>${l}</li>`)
+          .join('')}</ul></div>`
+      }
     }, S.merge(...rays))
     const rmd = S.delay(() => {
       for (var i = elm.childNodes.length - 1; i >= indices.length; i--)

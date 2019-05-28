@@ -11,6 +11,7 @@ const counter = (depth: number) =>
         node(
           elm('button', (o, i) => {
             o(node(text('+')))
+            if (depth === 0) window.a()
             depth > 0 && o(node(counter(depth - 1)))
           })
         )
