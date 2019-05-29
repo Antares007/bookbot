@@ -119,7 +119,7 @@ export function elementBark<Elm: Element>(pith: NPith): Elm => D.Disposable {
                   nds[nIndex] = n.s(child)
                 }
               }
-            }, r.s)
+            }, S.flatMapError(error => S.d(text(error.message)), r.s))
           )
         } else {
           rays.push(S.map(p => p(elm), r.s))

@@ -11,7 +11,6 @@ const counter = (depth: number) =>
         node(
           elm('button', (o, i) => {
             o(node(text('+')))
-            if (depth === 0) window.a()
             depth > 0 && o(node(counter(depth - 1)))
           })
         )
@@ -32,15 +31,10 @@ const counter = (depth: number) =>
 const rootNode = document.getElementById('root-node')
 const arrays = [[1, 2, 3], [3, 2, 1]]
 if (!rootNode) throw new Error()
-const s = elementBark(o => {
-  //o(
-  //  node(
-  //    S.map(i => {
-  //      console.log(i)
-  //      return counter(i % 3)
-  //    }, S.scan(a => a + 1, -1, S.periodic(400)))
-  //  )
-  //)
+const s = elementBark((o, i) => {
+  o(node(S.map(i => counter(i % 3), S.scan(a => a + 1, -1, S.periodic(400)))))
+  const strs = S.map(f => f(), S.d(() => window.a()))
+  o(node(elm('div', o => window.a())))
   o(
     node(
       S.map(
@@ -61,11 +55,10 @@ const s = elementBark(o => {
               )
             }
           }),
-        S.merge(S.d(arrays[0]), S.d(arrays[1], 1500))
+        S.map(i => arrays[i % 2], S.scan(a => a + 1, -1, S.periodic(400)))
       )
     )
   )
 })
 
-const d = s(rootNode)
-S.delay(() => d.dispose(), 8000)
+const d = S.run(e => {}, S.map(p => p(rootNode), s))
