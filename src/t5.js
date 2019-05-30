@@ -17,16 +17,51 @@ export type NPith = Pith<
 
 function bark(pith: NPith): S.S<(Node) => void> {
   return S.s(o => {
-    return S.d(node => {
-      pith(r => {
-        if (typeof r === 'string') {
-          r
-        } else if (r.R === 'element') {
-          r
-        } else {
-          r
-        }
-      }, node)
-    }).pith(o)
+    const dmap = new Map()
+    const d = D.create(() => dmap.forEach(d => d.dispose()))
+    const start = s =>
+      dmap.set(
+        s,
+        S.run(r => {
+          if (r.T === 'next') o(r)
+          else {
+            dmap.delete(s)
+            if (r.T === 'end') dmap.size === 0 && o(r)
+            else d.dispose(), o(r)
+          }
+        }, s)
+      )
+    const stop = s => {
+      const d = dmap.get(s)
+      if (d) {
+        dmap.delete(s)
+        d.dispose()
+      }
+    }
+    start(
+      S.d(node => {
+        const indices: Array<number> = []
+
+        pith(r => {
+          const index = 0
+          var pos = binarySearchRightmost(index, indices)
+          if (typeof r === 'string') {
+            r
+          } else if (r.R === 'element') {
+            r
+          } else {
+            r
+          }
+        }, node)
+      })
+    )
+    return d
   })
+}
+
+function find<N, T>(f: N => ?T, fromIndex: number, array: NodeList<N>): ?T {
+  for (var i = fromIndex, l = array.length; i < l; i++) {
+    const mt = f(array[i])
+    if (mt) return mt
+  }
 }
