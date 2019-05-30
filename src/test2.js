@@ -60,5 +60,3 @@ const s = elementBark((o, i) => {
     )
   )
 })
-
-const d = S.run(e => {}, S.map(p => p(rootNode), s))

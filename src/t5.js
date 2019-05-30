@@ -5,63 +5,83 @@ import * as D from './S/Disposable'
 import type { Pith } from './pith'
 
 export type SS<+A> = S.S<A> | A
+export opaque type B<N: Element> = (N) => void
 
-export type NPith = Pith<
-  | (S.S<S.S<(Node) => void> & { tag: string, key: ?string }> & { R: 'element' })
+export type NPith<N: Element> = Pith<
+  | ({ R: 'Element', tag: string } & B<HTMLElement>)
   | string
-  | (S.S<string> & { R: '#text' })
-  | (S.S<string> & { R: '#comment' }),
-  Node,
+  | number
+  | boolean
+  | Date
+  | {}
+  | Array<string | number | boolean | Date | {}>,
+  N,
   void
 >
 
-function bark(pith: NPith): S.S<(Node) => void> {
-  return S.s(o => {
-    const dmap = new Map()
-    const d = D.create(() => dmap.forEach(d => d.dispose()))
-    const start = s =>
-      dmap.set(
-        s,
-        S.run(r => {
-          if (r.T === 'next') o(r)
-          else {
-            dmap.delete(s)
-            if (r.T === 'end') dmap.size === 0 && o(r)
-            else d.dispose(), o(r)
-          }
-        }, s)
-      )
-    const stop = s => {
-      const d = dmap.get(s)
-      if (d) {
-        dmap.delete(s)
-        d.dispose()
+const elm = (tag, pith) => Object.assign(elementBark(pith), { tag })
+const div = pith => elm('div', pith)
+const h1 = pith => elm('h1', pith)
+const dl = pith => elm('dl', pith)
+const dt = pith => elm('dt', pith)
+const dd = pith => elm('dd', pith)
+const ol = pith => elm('ol', pith)
+const ul = pith => elm('ul', pith)
+const li = pith => elm('li', pith)
+
+function elementBark<N: Element>(pith: NPith<N>): B<N> {
+  return element => {
+    pith(r => {
+      if (typeof r === 'string') {
+        element.appendChild(document.createTextNode(r))
+      } else if (typeof r === 'number') {
+        const span = element.appendChild(document.createElement('span'))
+        span.className = 'number'
+        span.innerText = r + ''
+      } else if (typeof r === 'boolean') {
+        const span = element.appendChild(document.createElement('span'))
+        span.className = 'boolean'
+        span.innerText = JSON.stringify(r)
+      } else if (r instanceof Date) {
+        const span = element.appendChild(document.createElement('span'))
+        span.className = 'date'
+        span.innerText = r.toISOString()
+      } else if (Array.isArray(r)) {
+        const ul = element.appendChild(document.createElement('ul'))
+        ul.className = 'array'
+        elementBark(o => r.forEach(v => o(li(o => o(v)))))(ul)
+      } else if (typeof r === 'object') {
+        const dl = element.appendChild(document.createElement('dl'))
+        dl.className = 'object'
+        elementBark(o =>
+          Object.keys(r).forEach(key => {
+            o(dt(o => o(key)))
+            o(dd(o => o(r[key])))
+          })
+        )(dl)
+      } else {
+        r(element.appendChild(document.createElement(r.tag)))
       }
-    }
-    start(
-      S.d(node => {
-        const indices: Array<number> = []
-
-        pith(r => {
-          const index = 0
-          var pos = binarySearchRightmost(index, indices)
-          if (typeof r === 'string') {
-            r
-          } else if (r.R === 'element') {
-            r
-          } else {
-            r
-          }
-        }, node)
-      })
-    )
-    return d
-  })
-}
-
-function find<N, T>(f: N => ?T, fromIndex: number, array: NodeList<N>): ?T {
-  for (var i = fromIndex, l = array.length; i < l; i++) {
-    const mt = f(array[i])
-    if (mt) return mt
+    }, element)
   }
 }
+
+const rootNode = document.getElementById('root-node')
+if (!rootNode) throw new Error()
+
+elementBark(o => {
+  o('Hello world!')
+
+  o(
+    h1(o => {
+      o('there')
+    })
+  )
+  o(
+    ol(o => {
+      o(li(o => o('a')))
+      o(li(o => o('b')))
+      o(li(o => o('c')))
+    })
+  )
+})(rootNode)
