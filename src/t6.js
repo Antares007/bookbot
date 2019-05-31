@@ -1,25 +1,53 @@
 // @flow strict
 import * as S from './t'
-import * as N from './t5'
+import * as N from './tN'
 import * as D from './S/Disposable'
+type SPith<+A> = S.SPith<A>
 
-export opaque type B<N: Element> = (N) => ?D.Disposable
-
-export type Pith<N: Element> = S.Pith<
+export type Pith = (
   (
-    (
-      S.Pith<
-        | string
-        | { R: 'Element', tag: string, b: B<HTMLElement>, key?: string }
-        | { R: 'ElementNS', tag: string, ns: string, b: B<Element> }
-        | { R: 'Comment', value: string }
-      >
-    ) => void
+    SPith<
+      | { R: 'Text', b: Text => void }
+      | { R: 'Element', tag: string, b: HTMLElement => void }
+      | { R: 'ElementNS', tag: string, ns: string, b: Element => void }
+      | { R: 'Comment', b: Comment => void }
+    >
   ) => void
->
+) => void
 
-function elementBark<N: Element>(pith: Pith<N>): B<N> {
-  return element => {
-    return S.run(e => {}, S.map(pith => {}, pith))
-  }
+function elementBark(pith: Pith): SPith<(HTMLElement) => void> {
+  return S.s(o => {
+    const spiths: Array<
+      SPith<
+        | { R: 'Text', b: Text => void }
+        | { R: 'Element', tag: string, b: HTMLElement => void }
+        | { R: 'ElementNS', tag: string, ns: string, b: Element => void }
+        | { R: 'Comment', b: Comment => void }
+      >
+    > = []
+    pith(r => {
+      spiths.push(r)
+    })
+    return S.run(
+      o,
+      S.combine(
+        (...rs) =>
+          N.elementBark(o => {
+            for (let r of rs) o(r)
+          }),
+        ...spiths.map(spith => S.map(a => a, spith))
+      )
+    )
+  })
 }
+const elm = (tag, pith) => S.map(b => ({ R: 'Element', tag, b }), elementBark(pith))
+
+const s = elementBark(o => {
+  o(S.d({ R: 'Text', b: n => ((n.textContent = 'hello'), void 0) }))
+  o(elm('h1', o => {}))
+})
+
+const rootNode = document.getElementById('root-node')
+if (!rootNode) throw new Error()
+
+S.run(console.log.bind(console), S.map(patch => patch(rootNode), s))

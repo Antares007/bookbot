@@ -2,7 +2,7 @@
 import * as Schdlr from './S/scheduler'
 import * as D from './S/Disposable'
 
-export opaque type Pith<+A> = (
+export opaque type SPith<+A> = (
   ({ T: 'next', +value: A } | { T: 'end' } | { T: 'error', error: Error }) => void
 ) => D.Disposable
 
@@ -12,7 +12,7 @@ export function s<A>(
   pith: (
     ({ T: 'next', +value: A } | { T: 'end' } | { T: 'error', error: Error }) => void
   ) => D.Disposable
-): Pith<A> {
+): SPith<A> {
   return o => {
     var d
     try {
@@ -25,7 +25,7 @@ export function s<A>(
 }
 export function run<A>(
   o: ({ T: 'next', +value: A } | { T: 'end' } | { T: 'error', error: Error }) => void,
-  s: Pith<A>
+  s: SPith<A>
 ): D.Disposable {
   const d = s(function runO(r) {
     if (r.T === 'error') o(r)
@@ -39,7 +39,7 @@ export function run<A>(
   })
   return d
 }
-export function d<A>(a: A, delay: number = 0): Pith<A> {
+export function d<A>(a: A, delay: number = 0): SPith<A> {
   return function dPith(o) {
     var d = Schdlr.delay(() => {
       d = Schdlr.delay(() => o({ T: 'end' }))
@@ -49,7 +49,7 @@ export function d<A>(a: A, delay: number = 0): Pith<A> {
   }
 }
 
-export function throwError(error: Error): Pith<empty> {
+export function throwError(error: Error): SPith<empty> {
   return function throwErrorPith(o) {
     var d = Schdlr.delay(() => {
       d = null
@@ -61,15 +61,15 @@ export function throwError(error: Error): Pith<empty> {
   }
 }
 
-export const empty: Pith<empty> = function emptyPith(o) {
+export const empty: SPith<empty> = function emptyPith(o) {
   return Schdlr.delay(() => o({ T: 'end' }))
 }
 
-export const never: Pith<empty> = function neverPith(o) {
+export const never: SPith<empty> = function neverPith(o) {
   return D.empty
 }
 
-export function periodic(period: number): Pith<void> {
+export function periodic(period: number): SPith<void> {
   return function periodicPith(o) {
     var d = Schdlr.delay(function periodicNext() {
       d = Schdlr.delay(periodicNext, period)
@@ -79,7 +79,7 @@ export function periodic(period: number): Pith<void> {
   }
 }
 
-export function map<A, B>(f: A => B, s: Pith<A>): Pith<B> {
+export function map<A, B>(f: A => B, s: SPith<A>): SPith<B> {
   return function mapPith(o) {
     const d = s(function mapO(r) {
       if (r.T === 'next') {
@@ -97,7 +97,7 @@ export function map<A, B>(f: A => B, s: Pith<A>): Pith<B> {
   }
 }
 
-export function filter<A>(f: A => boolean, s: Pith<A>): Pith<A> {
+export function filter<A>(f: A => boolean, s: SPith<A>): SPith<A> {
   return function mapPith(o) {
     const d = s(function mapO(r) {
       if (r.T === 'next') {
@@ -115,7 +115,7 @@ export function filter<A>(f: A => boolean, s: Pith<A>): Pith<A> {
   }
 }
 
-export function scan<A, B>(f: (B, A) => B, b: B, s: Pith<A>): Pith<B> {
+export function scan<A, B>(f: (B, A) => B, b: B, s: SPith<A>): SPith<B> {
   return function scanPith(o) {
     var acc = b
     const d = s(function scanO(r) {
@@ -133,7 +133,7 @@ export function scan<A, B>(f: (B, A) => B, b: B, s: Pith<A>): Pith<B> {
   }
 }
 
-export function merge<A>(...ss: Array<Pith<A>>): Pith<A> {
+export function merge<A>(...ss: Array<SPith<A>>): SPith<A> {
   return function mergePith(o) {
     const dmap = new Map()
     const d = D.create(() => dmap.forEach(d => d.dispose()))
@@ -154,7 +154,7 @@ export function merge<A>(...ss: Array<Pith<A>>): Pith<A> {
   }
 }
 
-export function combine<A, B>(f: (...Array<A>) => B, ...ss: Array<Pith<A>>): Pith<B> {
+export function combine<A, B>(f: (...Array<A>) => B, ...ss: Array<SPith<A>>): SPith<B> {
   return function combinePith(o) {
     const dmap = new Map()
     const d = D.create(() => dmap.forEach(d => d.dispose()))
@@ -199,7 +199,7 @@ export function combine<A, B>(f: (...Array<A>) => B, ...ss: Array<Pith<A>>): Pit
   }
 }
 
-export function switchLatest<A>(so: Pith<Pith<A>>): Pith<A> {
+export function switchLatest<A>(so: SPith<SPith<A>>): SPith<A> {
   return function switchLatestPith(o) {
     const d = D.create(() => {
       sod && sod.dispose()
@@ -227,7 +227,7 @@ export function switchLatest<A>(so: Pith<Pith<A>>): Pith<A> {
   }
 }
 
-export function flatMap<A, B>(f: A => Pith<B>, so: Pith<A>): Pith<B> {
+export function flatMap<A, B>(f: A => SPith<B>, so: SPith<A>): SPith<B> {
   return function flatMapPith(o) {
     const dmap = new Map()
     const d = D.create(() => dmap.forEach(d => d.dispose()))
@@ -264,7 +264,7 @@ export function flatMap<A, B>(f: A => Pith<B>, so: Pith<A>): Pith<B> {
   }
 }
 
-export function flatMapEnd<A>(f: () => Pith<A>, s: Pith<A>): Pith<A> {
+export function flatMapEnd<A>(f: () => SPith<A>, s: SPith<A>): SPith<A> {
   return function flatMapEndPith(o) {
     var d = s(function flatMapEndO(r) {
       if (r.T === 'end') {
@@ -282,7 +282,7 @@ export function flatMapEnd<A>(f: () => Pith<A>, s: Pith<A>): Pith<A> {
   }
 }
 
-export function flatMapError<A>(f: Error => Pith<A>, s: Pith<A>): Pith<A> {
+export function flatMapError<A>(f: Error => SPith<A>, s: SPith<A>): SPith<A> {
   return function flatMapErrorPith(o) {
     var d = s(function flatMapErrorO(r) {
       if (r.T === 'error') {
@@ -300,7 +300,7 @@ export function flatMapError<A>(f: Error => Pith<A>, s: Pith<A>): Pith<A> {
   }
 }
 
-export function multicast<A>(s: Pith<A>): Pith<A> {
+export function multicast<A>(s: SPith<A>): SPith<A> {
   var d = null
   var os = []
   return function pith(o) {

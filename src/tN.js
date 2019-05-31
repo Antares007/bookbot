@@ -16,7 +16,7 @@ const commentmap = new Map<Comment, (Comment) => void>()
 
 const pithmap = new Map<HTMLElement, Pith>()
 
-function elementBark(pith: Pith): HTMLElement => void {
+export function elementBark(pith: Pith): HTMLElement => void {
   return element => {
     if (pithmap.get(element) === pith) return
     pithmap.set(element, pith)
