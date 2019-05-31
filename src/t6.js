@@ -60,4 +60,21 @@ const s = elementBark(o => {
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error()
 
-S.run(console.log.bind(console), S.map(patch => patch(rootNode), s))
+//S.run(console.log.bind(console), S.map(patch => patch(rootNode), s))
+const counter = (depth: number) =>
+  N.elm('div', o => {
+    o(
+      N.elm('button', o => {
+        o(N.str('+'))
+        depth > 0 && o(counter(depth - 1))
+      })
+    )
+    o(
+      N.elm('button', o => {
+        o(N.str('-'))
+        depth > 0 && o(counter(depth - 1))
+      })
+    )
+    o(N.str('0'))
+  })
+N.elementBark(o => o(counter(3)))(rootNode)
