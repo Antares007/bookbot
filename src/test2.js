@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import * as S from './t'
 import { elm, elementBark, text, node, patch } from './t4'
 import { linearPatcher, animationFramePatcher } from './N/patchers'

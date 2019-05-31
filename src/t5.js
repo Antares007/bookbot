@@ -1,18 +1,17 @@
 // @flow strict
-import type { Pith } from './pith'
 
 export opaque type B<N: Element> = (N) => void
 
-export type NPith<N: Element> = Pith<
-  | string
-  | { R: 'Element', tag: string, b: B<HTMLElement>, key?: string }
-  | { R: 'ElementNS', tag: string, ns: string, b: B<Element> }
-  | { R: 'Comment', value: string },
-  N,
-  void
->
+export type Pith<N: Element> = (
+  (
+    | string
+    | { R: 'Element', tag: string, b: B<HTMLElement>, key?: string }
+    | { R: 'ElementNS', tag: string, ns: string, b: B<Element> }
+    | { R: 'Comment', value: string }
+  ) => void
+) => void
 
-function elementBark<N: Element>(pith: NPith<N>): B<N> {
+function elementBark<N: Element>(pith: Pith<N>): B<N> {
   return element => {
     const { childNodes } = element
     var index = 0
@@ -51,7 +50,7 @@ function elementBark<N: Element>(pith: NPith<N>): B<N> {
           ref.textContent !== r.value && (ref.textContent = r.value)
         else element.insertBefore(document.createComment(r.value), ref)
       }
-    }, element)
+    })
     var n
     while ((n = element.childNodes[index])) element.removeChild(n)
   }
@@ -64,27 +63,27 @@ function find<N, B>(f: N => ?B, fromIndex: number, array: NodeList<N>): ?B {
   }
 }
 
-export const elm = (tag: string, pith: NPith<HTMLElement>, key?: string) => ({
+export const elm = (tag: string, pith: Pith<HTMLElement>, key?: string) => ({
   R: 'Element',
   tag: tag.toUpperCase(),
   b: elementBark<HTMLElement>(pith),
   key
 })
-export const elmNS = (ns: string, tag: string, pith: NPith<Element>) => ({
+export const elmNS = (ns: string, tag: string, pith: Pith<Element>) => ({
   R: 'ElementNS',
   tag: tag.toUpperCase(),
   ns,
   b: elementBark<Element>(pith)
 })
 
-export const div = (pith: NPith<HTMLElement>) => elm('div', pith)
-export const h1 = (pith: NPith<HTMLElement>) => elm('h1', pith)
-export const dl = (pith: NPith<HTMLElement>) => elm('dl', pith)
-export const dt = (pith: NPith<HTMLElement>) => elm('dt', pith)
-export const dd = (pith: NPith<HTMLElement>) => elm('dd', pith)
-export const ol = (pith: NPith<HTMLElement>) => elm('ol', pith)
-export const ul = (pith: NPith<HTMLElement>) => elm('ul', pith)
-export const li = (pith: NPith<HTMLElement>) => elm('li', pith)
+export const div = (pith: Pith<HTMLElement>) => elm('div', pith)
+export const h1 = (pith: Pith<HTMLElement>) => elm('h1', pith)
+export const dl = (pith: Pith<HTMLElement>) => elm('dl', pith)
+export const dt = (pith: Pith<HTMLElement>) => elm('dt', pith)
+export const dd = (pith: Pith<HTMLElement>) => elm('dd', pith)
+export const ol = (pith: Pith<HTMLElement>) => elm('ol', pith)
+export const ul = (pith: Pith<HTMLElement>) => elm('ul', pith)
+export const li = (pith: Pith<HTMLElement>) => elm('li', pith)
 
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error()
@@ -100,7 +99,7 @@ elementBark(o => {
   o(
     ol(o => {
       o(li(o => o('a')))
-      o(li(o => o('b')))
+      o(li(o => o(', elementb')))
       o(li(o => o('c')))
     })
   )

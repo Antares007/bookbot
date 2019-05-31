@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import * as S from './t'
 import { binarySearchRightmost } from './S/scheduler'
 import * as D from './S/Disposable'

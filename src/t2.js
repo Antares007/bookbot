@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import * as S from './t'
 import * as D from './S/Disposable'
 import type { Pith } from './pith'
