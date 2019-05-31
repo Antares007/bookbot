@@ -43,8 +43,18 @@ function elementBark(pith: Pith): SPith<(HTMLElement) => void> {
 const elm = (tag, pith) => S.map(b => ({ R: 'Element', tag, b }), elementBark(pith))
 
 const s = elementBark(o => {
-  o(S.d({ R: 'Text', b: n => ((n.textContent = 'hello'), void 0) }))
-  o(elm('h1', o => {}))
+  o(S.d(N.str('hello')))
+  o(
+    elm('h1', o => {
+      o(
+        S.d(
+          N.elm('div', o => {
+            o(N.str('world'))
+          })
+        )
+      )
+    })
+  )
 })
 
 const rootNode = document.getElementById('root-node')

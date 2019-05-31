@@ -9,6 +9,12 @@ export type Pith = (
   ) => void
 ) => void
 
+export const elm = (tag: string, pith: Pith) => ({ R: 'Element', tag, b: elementBark(pith) })
+export const str = (text: string) => ({
+  R: 'Text',
+  b: (n: Text) => ((n.textContent = text), void 0)
+})
+
 const elementmap = new Map<Element, (Element) => void>()
 const htmlmap = new Map<HTMLElement, (HTMLElement) => void>()
 const textmap = new Map<Text, (Text) => void>()
