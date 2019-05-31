@@ -23,59 +23,46 @@ function elementBark(pith: Pith): HTMLElement => void {
     var index = 0
     pith(r => {
       const ref: ?Node = element.childNodes[index++]
+      const ns = element.childNodes
+      const l = ns.length
+      var i = index
+      var found = null
       if (r.R === 'Text') {
-        let found = null
-        let i = index
-        for (let l = element.childNodes.length; i < l; i++) {
-          const n = element.childNodes[i]
-          if (n instanceof Text && textmap.get(n) === r.b) {
-            found = n
-            break
-          }
-        }
-        if (found) {
-          if (i !== index) element.insertBefore(found, ref)
-        } else {
+        while (i < l && !found)
+          if (ns[i] instanceof Text && textmap.get(ns[i]) === r.b) found = ns[i]
+          else i++
+        if (!found) {
           found = document.createTextNode('')
-          r.b(element.insertBefore(found, ref))
           textmap.set(found, r.b)
-        }
+          r.b(element.insertBefore(found, ref))
+        } else if (i !== index) element.insertBefore(found, ref)
       } else if (r.R === 'Comment') {
-        let found = null
-        let i = index
-        for (let l = element.childNodes.length; i < l; i++) {
-          const n = element.childNodes[i]
-          if (n instanceof Comment && commentmap.get(n) === r.b) {
-            found = n
-            break
-          }
-        }
-        if (found) {
-          if (i !== index) element.insertBefore(found, ref)
-        } else {
+        while (i < l && !found)
+          if (ns[i] instanceof Comment && commentmap.get(ns[i]) === r.b) found = ns[i]
+          else i++
+        if (!found) {
           found = document.createComment('')
-          r.b(element.insertBefore(found, ref))
           commentmap.set(found, r.b)
-        }
-      } else if (r.R === 'Element') {
-        let found = null
-        let i = index
-        for (let l = element.childNodes.length; i < l; i++) {
-          const n = element.childNodes[i]
-          if (n instanceof HTMLElement && htmlmap.get(n) === r.b) {
-            found = n
-            break
-          }
-        }
-        if (found) {
-          if (i !== index) element.insertBefore(found, ref)
-        } else {
-          found = document.createElement(r.tag)
           r.b(element.insertBefore(found, ref))
+        } else if (i !== index) element.insertBefore(found, ref)
+      } else if (r.R === 'Element') {
+        while (i < l && !found)
+          if (ns[i] instanceof HTMLElement && htmlmap.get(ns[i]) === r.b) found = ns[i]
+          else i++
+        if (!found) {
+          found = document.createElement(r.tag)
           htmlmap.set(found, r.b)
-        }
+          r.b(element.insertBefore(found, ref))
+        } else if (i !== index) element.insertBefore(found, ref)
       } else {
-        r
+        while (i < l && !found)
+          if (ns[i] instanceof Element && elementmap.get(ns[i]) === r.b) found = ns[i]
+          else i++
+        if (!found) {
+          found = document.createElementNS(r.ns, r.tag)
+          elementmap.set(found, r.b)
+          r.b(element.insertBefore(found, ref))
+        } else if (i !== index) element.insertBefore(found, ref)
       }
     })
   }
