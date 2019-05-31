@@ -1,70 +1,90 @@
 // @flow strict
-import * as S from './t'
-import { binarySearchRightmost } from './S/scheduler'
-import * as D from './S/Disposable'
 import type { Pith } from './pith'
 
-export type SS<+A> = S.S<A> | A
 export opaque type B<N: Element> = (N) => void
 
 export type NPith<N: Element> = Pith<
-  | ({ R: 'Element', tag: string } & B<HTMLElement>)
   | string
-  | number
-  | boolean
-  | Date
-  | {}
-  | Array<string | number | boolean | Date | {}>,
+  | { R: 'Element', tag: string, b: B<HTMLElement>, key?: string }
+  | { R: 'ElementNS', tag: string, ns: string, b: B<Element> }
+  | { R: 'Comment', value: string },
   N,
   void
 >
 
-const elm = (tag, pith) => Object.assign(elementBark(pith), { tag })
-const div = pith => elm('div', pith)
-const h1 = pith => elm('h1', pith)
-const dl = pith => elm('dl', pith)
-const dt = pith => elm('dt', pith)
-const dd = pith => elm('dd', pith)
-const ol = pith => elm('ol', pith)
-const ul = pith => elm('ul', pith)
-const li = pith => elm('li', pith)
-
 function elementBark<N: Element>(pith: NPith<N>): B<N> {
   return element => {
+    const { childNodes } = element
+    var index = 0
     pith(r => {
+      const ref: ?Node = element.childNodes[index++]
       if (typeof r === 'string') {
-        element.appendChild(document.createTextNode(r))
-      } else if (typeof r === 'number') {
-        const span = element.appendChild(document.createElement('span'))
-        span.className = 'number'
-        span.innerText = r + ''
-      } else if (typeof r === 'boolean') {
-        const span = element.appendChild(document.createElement('span'))
-        span.className = 'boolean'
-        span.innerText = JSON.stringify(r)
-      } else if (r instanceof Date) {
-        const span = element.appendChild(document.createElement('span'))
-        span.className = 'date'
-        span.innerText = r.toISOString()
-      } else if (Array.isArray(r)) {
-        const ul = element.appendChild(document.createElement('ul'))
-        ul.className = 'array'
-        elementBark(o => r.forEach(v => o(li(o => o(v)))))(ul)
-      } else if (typeof r === 'object') {
-        const dl = element.appendChild(document.createElement('dl'))
-        dl.className = 'object'
-        elementBark(o =>
-          Object.keys(r).forEach(key => {
-            o(dt(o => o(key)))
-            o(dd(o => o(r[key])))
-          })
-        )(dl)
+        if (ref && ref.nodeName === '#text') ref.textContent !== r && (ref.textContent = r)
+        else element.insertBefore(document.createTextNode(r), ref)
+      } else if (r.R === 'Element') {
+        const found = find(
+          n =>
+            n instanceof HTMLElement && n.tagName === r.tag && n.dataset.key === r.key ? n : null,
+          index,
+          childNodes
+        )
+        if (found) {
+          if (found !== ref) element.insertBefore(found, ref)
+          r.b(found)
+        } else {
+          const elm = document.createElement(r.tag)
+          if (r.key) elm.dataset.key = r.key
+          r.b(element.insertBefore(elm, ref))
+        }
+      } else if (r.R === 'ElementNS') {
+        const found = find(
+          n => (n instanceof Element && n.tagName === r.tag ? n : null),
+          index,
+          childNodes
+        )
+        if (found) {
+          if (found !== ref) element.insertBefore(found, ref)
+          r.b(found)
+        } else r.b(element.insertBefore(document.createElementNS(r.ns, r.tag), ref))
       } else {
-        r(element.appendChild(document.createElement(r.tag)))
+        if (ref && ref.nodeName === '#comment')
+          ref.textContent !== r.value && (ref.textContent = r.value)
+        else element.insertBefore(document.createComment(r.value), ref)
       }
     }, element)
+    var n
+    while ((n = element.childNodes[index])) element.removeChild(n)
   }
 }
+
+function find<N, B>(f: N => ?B, fromIndex: number, array: NodeList<N>): ?B {
+  for (var i = fromIndex, l = array.length; i < l; i++) {
+    const mb = f(array[i])
+    if (mb) return mb
+  }
+}
+
+export const elm = (tag: string, pith: NPith<HTMLElement>, key?: string) => ({
+  R: 'Element',
+  tag: tag.toUpperCase(),
+  b: elementBark<HTMLElement>(pith),
+  key
+})
+export const elmNS = (ns: string, tag: string, pith: NPith<Element>) => ({
+  R: 'ElementNS',
+  tag: tag.toUpperCase(),
+  ns,
+  b: elementBark<Element>(pith)
+})
+
+export const div = (pith: NPith<HTMLElement>) => elm('div', pith)
+export const h1 = (pith: NPith<HTMLElement>) => elm('h1', pith)
+export const dl = (pith: NPith<HTMLElement>) => elm('dl', pith)
+export const dt = (pith: NPith<HTMLElement>) => elm('dt', pith)
+export const dd = (pith: NPith<HTMLElement>) => elm('dd', pith)
+export const ol = (pith: NPith<HTMLElement>) => elm('ol', pith)
+export const ul = (pith: NPith<HTMLElement>) => elm('ul', pith)
+export const li = (pith: NPith<HTMLElement>) => elm('li', pith)
 
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error()
@@ -84,4 +104,25 @@ elementBark(o => {
       o(li(o => o('c')))
     })
   )
+  o(elmNS('', 'a', o => {}))
 })(rootNode)
+console.log([...rootNode.childNodes])
+
+elementBark(o => {
+  o(
+    ol(o => {
+      o(li(o => o('a')))
+      o(li(o => o('b')))
+      o(li(o => o('c')))
+    })
+  )
+  o(elmNS('', 'a', o => {}))
+  o('Hello world!')
+
+  o(
+    h1(o => {
+      o('there')
+    })
+  )
+})(rootNode)
+console.log([...rootNode.childNodes])
