@@ -1,5 +1,5 @@
 // @flow strict
-import * as S from './t'
+import * as S from './tS'
 import * as N from './tN'
 import * as D from './S/Disposable'
 type SPith<+A> = S.SPith<A>
