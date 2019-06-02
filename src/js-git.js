@@ -3,7 +3,7 @@ const mkdirp = require('mkdirp')
 const fsdb = require('js-git/mixins/fs-db')
 const modes = require('js-git/lib/modes')
 
-module.exports = rootPath => {
+export const mkrepo = rootPath => {
   const repo = { rootPath, modes }
   fsdb(repo, gitfs)
   return repo

@@ -1,17 +1,16 @@
 // @flow strict
-declare type Mode = 33188 | 57344 | 33261 | 33188 | 40960 | 16384
-declare type Tree = {
+export type Mode = 33188 | 57344 | 33261 | 33188 | 40960 | 16384
+export type Tree = {
   [string]: { mode: 33188 | 57344 | 33261 | 33188 | 40960 | 16384, hash: string }
 }
-declare type Person = { name: string, email: string, date: { seconds: number, offset: number } }
-declare type Commit = {
+export type Commit = {
   tree: string,
   parents: Array<string>,
-  author: Person,
-  commiter: Person,
+  author: { name: string, email: string, date: { seconds: number, offset: number } },
+  commiter: { name: string, email: string, date: { seconds: number, offset: number } },
   message: string
 }
-declare type JSGit = {
+export type Repo = {
   loadAs: (('blob', string, (err: ?Error, data: ?Buffer) => void) => void) &
     (('tree', string, (err: ?Error, data: ?Tree) => void) => void) &
     (('commit', string, (err: ?Error, data: ?Commit) => void) => void),
@@ -30,4 +29,4 @@ declare type JSGit = {
     tree: 16384
   }
 }
-declare module.exports: (gitdir: string) => JSGit
+declare export var mkrepo: (gitdir: string) => Repo
