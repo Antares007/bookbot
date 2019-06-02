@@ -34,7 +34,7 @@ export type Pith = (
 export function treeBark(pith: Pith): JSGit.Repo => Promise<TreeHash> {
   return repo =>
     Promise.resolve(pith).then(pith => {
-      const entries = []
+      const entries: Array<{ name: string, mode: JSGit.Mode }> = []
       const hashes = []
       pith(r => {
         entries.push({ name: r.name, mode: repo.modes[r.R] })

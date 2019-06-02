@@ -11,10 +11,10 @@ function bark<S>(pith: Pith<S>): S => S {
 }
 
 bark(o => {
-  o(s => ({ ...s, b: 'a' }))
-  o(
-    bark(o => {
-      o(s => ({ ...s, z: 'a' }))
-    })
-  )
-})({})
+  o(s => ({
+    ...s,
+    l: bark(o => {
+      o(s => ({ z: 'a' }))
+    })({ z: 'a' })
+  }))
+})({ a: 1 })
