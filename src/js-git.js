@@ -1,6 +1,14 @@
 const fs = require('fs')
 const mkdirp = require('mkdirp')
 const fsdb = require('js-git/mixins/fs-db')
+const modes = require('js-git/lib/modes')
+
+module.exports = rootPath => {
+  const repo = { rootPath, modes }
+  fsdb(repo, gitfs)
+  return repo
+}
+
 const gitfs = {
   rename: fs.rename,
   // - readFile(path) => binary
@@ -54,4 +62,3 @@ const gitfs = {
       cb(null, files)
     })
 }
-module.exports = repo => (fsdb(repo, gitfs), repo)

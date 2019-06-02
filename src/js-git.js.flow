@@ -1,0 +1,33 @@
+// @flow strict
+declare type Mode = 33188 | 57344 | 33261 | 33188 | 40960 | 16384
+declare type Tree = {
+  [string]: { mode: 33188 | 57344 | 33261 | 33188 | 40960 | 16384, hash: string }
+}
+declare type Person = { name: string, email: string, date: { seconds: number, offset: number } }
+declare type Commit = {
+  tree: string,
+  parents: Array<string>,
+  author: Person,
+  commiter: Person,
+  message: string
+}
+declare type JSGit = {
+  loadAs: (('blob', string, (err: ?Error, data: ?Buffer) => void) => void) &
+    (('tree', string, (err: ?Error, data: ?Tree) => void) => void) &
+    (('commit', string, (err: ?Error, data: ?Commit) => void) => void),
+  saveAs: (('blob', Buffer, (err: ?Error, hash: string) => void) => void) &
+    (('tree', Tree, (err: ?Error, hash: string) => void) => void) &
+    (('commit', Commit, (err: ?Error, hash: string) => void) => void),
+  modes: {
+    isBlob(Mode): boolean,
+    isFile(Mode): boolean,
+    toType(Mode): 'blob' | 'tree' | 'commit',
+    blob: 33188,
+    commit: 57344,
+    exec: 33261,
+    file: 33188,
+    sym: 40960,
+    tree: 16384
+  }
+}
+declare module.exports: (gitdir: string) => JSGit

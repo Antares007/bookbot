@@ -1,6 +1,6 @@
 // @flow strict
 export type Repo = {}
-
+import repo from './js-git'
 export opaque type BlobHash = string
 export opaque type TreeHash = string
 
@@ -18,4 +18,10 @@ export function treeBark(pith: Pith): Repo => Promise<TreeHash> {
 treeBark(o => {
   o({ R: 'Blob', name: 'a', b: repo => Promise.resolve('a') })
   o({ R: 'Tree', name: 'b', b: treeBark(o => {}) })
+})
+const r = repo(__dirname + '/../.git')
+window.r = r
+
+r.loadAs('tree', '496d34d1c13f5a11d1cbd99743d1f0f34768c998', (e, d) => {
+  console.log(d)
 })
