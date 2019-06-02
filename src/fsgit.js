@@ -54,11 +54,4 @@ const gitfs = {
       cb(null, files)
     })
 }
-const repo = { rootPath: __dirname + '/../.git' }
-module.exports
-console.log(fsdb(repo, gitfs))
-console.log(repo)
-window.repo = repo
-repo.loadAs('commit', 'e8f5924ff3febc3771d23b9ee9515890897af4ea', (err, data) =>
-  console.log({ err, data })
-)
+module.exports = repo => (fsdb(repo, gitfs), repo)
