@@ -16,29 +16,21 @@ export type Pith = (
 ) => void
 
 function elementBark(pith: Pith): SPith<(HTMLElement) => void> {
-  return S.s(o => {
-    const spiths: Array<
-      SPith<
-        | { R: 'Text', b: Text => void }
-        | { R: 'Element', tag: string, b: HTMLElement => void }
-        | { R: 'ElementNS', tag: string, ns: string, b: Element => void }
-        | { R: 'Comment', b: Comment => void }
-      >
-    > = []
+  return S.flatMap(pith => {
+    const rays: Array<$Call<<R>(((R) => void) => void) => R, Pith>> = []
+
     pith(r => {
-      spiths.push(r)
+      rays.push(r)
     })
-    return S.run(
-      o,
-      S.combine(
-        (...rs) =>
-          N.elementBark(o => {
-            for (let r of rs) o(r)
-          }),
-        ...spiths.map(spith => S.map(a => a, spith))
-      )
+
+    return S.combine(
+      (...rays) =>
+        N.elementBark(o => {
+          for (var r of rays) o(r)
+        }),
+      ...rays
     )
-  })
+  }, S.d(pith))
 }
 const elm = (tag, pith) => S.map(b => ({ R: 'Element', tag, b }), elementBark(pith))
 
