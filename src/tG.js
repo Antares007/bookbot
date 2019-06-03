@@ -54,6 +54,33 @@ export function treeBark(pith: Pith): JSGit.Repo => Promise<TreeHash> {
       })
     })
 }
+import * as S from './tS'
+
+function bmap<R, B>(
+  bark: (((R) => void) => void) => B
+): (((S.SPith<R>) => void) => void) => S.SPith<B> {
+  return pith =>
+    S.flatMap(pith => {
+      const rays: Array<S.SPith<R>> = []
+
+      pith(r => {
+        rays.push(r)
+      })
+
+      return S.combine(
+        (...rays) =>
+          bark(o => {
+            for (var r of rays) o(r)
+          }),
+        ...rays
+      )
+    }, S.d(pith))
+}
+
+export const see = bmap<
+  $Call<<R>(((R) => void) => void) => R, Pith>,
+  (JSGit.Repo) => Promise<TreeHash>
+>(treeBark)
 
 const blob = (name: string, data: Buffer) => ({
   R: 'blob',

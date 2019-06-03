@@ -32,6 +32,7 @@ function elementBark(pith: Pith): SPith<(HTMLElement) => void> {
     )
   }, S.d(pith))
 }
+
 const elm = (tag, pith) => S.map(b => ({ R: 'Element', tag, b }), elementBark(pith))
 
 const s = elementBark(o => {
