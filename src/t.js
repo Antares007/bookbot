@@ -1,8 +1,9 @@
 // @flow strict
 type Pith<S> = (((S) => S) => void) => void
+
 function bark<S>(pith: Pith<S>): S => S {
-  return ms => {
-    var s = ms
+  return ps => {
+    var s = ps
     pith(r => {
       s = r(s)
     })
@@ -10,11 +11,21 @@ function bark<S>(pith: Pith<S>): S => S {
   }
 }
 
-bark(o => {
-  o(s => ({
-    ...s,
-    l: bark(o => {
-      o(s => ({ z: 'a' }))
-    })({ z: 'a' })
+function n<B, A: {}>(k: string, b: B, pith: Pith<B>): A => A {
+  return a => ({
+    ...a,
+    [k]: bark(pith)(a[k] || b)
+  })
+}
+
+const rez = bark(o => {
+  o(n('k', { a: 42 }, o => {}))
+  o(a => ({
+    ...a,
+    c: bark(o => {
+      o(s => s)
+    })(a.c || { j: 1 })
   }))
-})({ a: 1 })
+})({})
+
+console.log(rez)
