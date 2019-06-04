@@ -3,14 +3,14 @@ import * as Schdlr from './S/scheduler'
 import * as D from './S/Disposable'
 import * as S from './tS'
 
-export type Rvalue<+A> = { R: 'value', +value: A }
-export type Rerror = { R: 'error', error: Error }
+export type RValue<+A> = { R: 'value', +value: A }
+export type RError = { R: 'error', error: Error }
 
-export opaque type PPith<+A> = ((Rvalue<A> | Rerror) => void) => void
+export opaque type PPith<+A> = ((RValue<A> | RError) => void) => void
 
-export function p<A>(pith: ((Rvalue<A> | Rerror) => void) => void): PPith<A> {
-  var last: ?(Rvalue<A> | Rerror) = null
-  var os: ?Array<(Rvalue<A> | Rerror) => void> = null
+export function p<A>(pith: ((RValue<A> | RError) => void) => void): PPith<A> {
+  var last: ?(RValue<A> | RError) = null
+  var os: ?Array<(RValue<A> | RError) => void> = null
   return function(o) {
     if (last) {
       const r = last
