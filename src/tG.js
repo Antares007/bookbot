@@ -99,10 +99,11 @@ const tree = (name: string, pith: Pith) => ({
   b: treeBark(pith)
 })
 
-treeBark(o => {
-  o(blob('file1.txt', Buffer.from('a')))
-  o(tree('folder', o => {}))
-})(JSGit.mkrepo(__dirname + '/../.git')).then(
-  console.log.bind(console),
-  console.error.bind(console)
-)
+const s = see(o => {
+  o(S.d(blob('file1.txt', Buffer.from('a'))))
+  o(S.d(tree('folder', o => {})))
+})
+//(JSGit.mkrepo(__dirname + '/../.git')).then(
+//  console.log.bind(console),
+//  console.error.bind(console)
+//)
