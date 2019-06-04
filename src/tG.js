@@ -19,25 +19,21 @@ export opaque type BlobHash = string
 export opaque type TreeHash = string
 
 import * as JSGit from './js-git'
+import * as P from './tP'
 
 export type Pith = (
   (
-    | { R: 'blob', name: string, b: ((BlobHash | Error) => void, JSGit.Repo) => void }
-    | { R: 'file', name: string, b: ((BlobHash | Error) => void, JSGit.Repo) => void }
-    | { R: 'exec', name: string, b: ((BlobHash | Error) => void, JSGit.Repo) => void }
-    | { R: 'sym', name: string, b: ((BlobHash | Error) => void, JSGit.Repo) => void }
-    | { R: 'tree', name: string, b: ((TreeHash | Error) => void, JSGit.Repo) => void }
-    | { R: 'commit', name: string, b: ((CommitHash | Error) => void, JSGit.Repo) => void }
+    | { R: 'blob', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
+    | { R: 'file', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
+    | { R: 'exec', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
+    | { R: 'sym', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
+    | { R: 'tree', name: string, b: JSGit.Repo => P.PPith<TreeHash> }
+    | { R: 'commit', name: string, b: JSGit.Repo => P.PPith<CommitHash> }
   ) => void
 ) => void
 
-export function treeBark(pith: Pith): ((TreeHash | Error) => void, JSGit.Repo) => void {
-  return (cb, repo) => {
-    try {
-    } catch (error) {
-      cb(error instanceof Error ? error : new Error())
-    }
-  }
+export function treeBark(pith: Pith): JSGit.Repo => P.PPith<BlobHash> {
+  return repo => P.p(o => {})
   //Promise.resolve(pith).then(pith => {
   //  const entries: Array<{ name: string, mode: JSGit.Mode }> = []
   //  const hashes = []

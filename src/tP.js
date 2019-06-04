@@ -12,25 +12,30 @@ export function p<A>(pith: ((RValue<A> | RError) => void) => void): PPith<A> {
   var last: ?(RValue<A> | RError) = null
   var os: ?Array<(RValue<A> | RError) => void> = null
   return function(o) {
-    if (last != null) {
+    if (last) {
       const r = last
       Schdlr.delay(() => o(r))
-    } else if (os != null) {
+    } else if (os) {
       os.push(o)
     } else {
       os = []
       try {
         pith(r => {
-          if (last != null || os == null) return
+          if (last || !os) return
+          os.forEach(o => Schdlr.delay(() => o(r)))
           last = r
-          const os_ = os
           os = null
-          os_.forEach(o => Schdlr.delay(() => o(r)))
         })
       } catch (error) {
         Schdlr.delay(() => o(error))
       }
     }
+  }
+}
+
+export function combine<A, B>(f: (...Array<A>) => B, ...ps: Array<PPith<A>>): PPith<B> {
+  return o => {
+    //
   }
 }
 
