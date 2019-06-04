@@ -12,10 +12,10 @@ export function p<A>(pith: ((RValue<A> | RError) => void) => void): PPith<A> {
   var last: ?(RValue<A> | RError) = null
   var os: ?Array<(RValue<A> | RError) => void> = null
   return function(o) {
-    if (last) {
+    if (last != null) {
       const r = last
       Schdlr.delay(() => o(r))
-    } else if (last == null && os != null) {
+    } else if (os != null) {
       os.push(o)
     } else {
       os = []
