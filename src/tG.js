@@ -33,27 +33,31 @@ export type Pith = (
 ) => void
 
 export function treeBark(pith: Pith): JSGit.Repo => P.PPith<BlobHash> {
-  return repo => P.p(o => {})
-  //Promise.resolve(pith).then(pith => {
-  //  const entries: Array<{ name: string, mode: JSGit.Mode }> = []
-  //  const hashes = []
-  //  pith(r => {
-  //    entries.push({ name: r.name, mode: repo.modes[r.R] })
-  //    hashes.push(r.b(repo))
-  //  })
-  //  if (entries.length === 0) return '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
-  //  return Promise.all(hashes).then(hashes => {
-  //    const tree: JSGit.Tree = {}
-  //    for (var i = 0; i < hashes.length; i++)
-  //      tree[entries[i].name] = { mode: entries[i].mode, hash: hashes[i] }
-  //    return new Promise((resolve, reject) => {
-  //      repo.saveAs('tree', tree, (err, hash) => {
-  //        if (err) reject(err)
-  //        else resolve(hash)
-  //      })
-  //    })
-  //  })
-  //})
+  return repo =>
+    P.flatMap(
+      ([entries, hashes]) => {
+        return P.flatMap(hashes => {
+          const tree: JSGit.Tree = {}
+          for (var i = 0; i < hashes.length; i++)
+            tree[entries[i].name] = { mode: entries[i].mode, hash: hashes[i] }
+          return P.p(o => {
+            repo.saveAs('tree', tree, (error, hash) => {
+              if (error) o(P.reject(error))
+              else o(P.resolve(hash))
+            })
+          })
+        }, P.all(hashes))
+      },
+      P.p(o => {
+        const entries: Array<{ name: string, mode: JSGit.Mode }> = []
+        const hashes: Array<P.PPith<BlobHash | CommitHash | TreeHash>> = []
+        pith(r => {
+          entries.push({ name: r.name, mode: repo.modes[r.R] })
+          hashes.push(r.b(repo))
+        })
+        o(P.resolve([entries, hashes]))
+      })
+    )
 }
 import * as S from './tS'
 
@@ -83,28 +87,19 @@ function bmap<R, B>(
 //  (JSGit.Repo) => Promise<TreeHash>
 //>(treeBark)
 //
-//const blob = (name: string, data: Buffer) => ({
-//  R: 'blob',
-//  name,
-//  b: repo =>
-//    new Promise((resolve, reject) => {
-//      repo.saveAs('blob', data, (err, hash) => {
-//        if (err) reject(err)
-//        else resolve(hash)
-//      })
-//    })
-//})
-//const tree = (name: string, pith: Pith) => ({
-//  R: 'tree',
-//  name,
-//  b: treeBark(pith)
-//})
-//
-//const s = see(o => {
-//  o(S.d(blob('file1.txt', Buffer.from('a'))))
-//  o(S.d(tree('folder', o => {})))
-//})
-//(JSGit.mkrepo(__dirname + '/../.git')).then(
-//  console.log.bind(console),
-//  console.error.bind(console)
-//)
+const blob = (name: string, data: Buffer) => ({
+  R: 'blob',
+  name,
+  b: repo =>
+    P.p(o => repo.saveAs('blob', data, (err, hash) => o(err ? P.reject(err) : P.resolve(hash))))
+})
+const tree = (name: string, pith: Pith) => ({
+  R: 'tree',
+  name,
+  b: treeBark(pith)
+})
+
+const s = treeBark(o => {
+  o(blob('file1.txt', Buffer.from('a')))
+  o(tree('folder', o => {}))
+})(JSGit.mkrepo(__dirname + '/../.git'))(console.log.bind(console))

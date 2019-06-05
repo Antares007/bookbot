@@ -6,7 +6,7 @@ import * as S from './tS'
 export type RValue<+A> = { +R: 'value', +value: A }
 export type RError = { +R: 'error', +error: Error }
 
-export opaque type PPith<+A> = ((RValue<A> | RError) => void) => void
+export type PPith<+A> = ((RValue<A> | RError) => void) => void
 
 export function p<A>(pith: ((RValue<A> | RError) => void) => void): PPith<A> {
   var result: ?(RValue<A> | RError) = null
@@ -36,6 +36,12 @@ export function p<A>(pith: ((RValue<A> | RError) => void) => void): PPith<A> {
     }
   }
 }
+export function resolve<A>(a: A): RValue<A> {
+  return { R: 'value', value: a }
+}
+export function reject(error: Error): RError {
+  return { R: 'error', error }
+}
 
 export function map<A, B>(f: A => B, ps: PPith<A>): PPith<B> {
   return p(o =>
@@ -53,8 +59,25 @@ export function map<A, B>(f: A => B, ps: PPith<A>): PPith<B> {
   )
 }
 
+export function flatMap<A, B>(f: A => PPith<B>, ps: PPith<A>): PPith<B> {
+  return p(o =>
+    ps(r => {
+      if (r.R === 'value') {
+        var result
+        try {
+          result = f(r.value)
+        } catch (error) {
+          return o({ R: 'error', error })
+        }
+        result(o)
+      } else o(r)
+    })
+  )
+}
+
 export function all<A>(ps: Array<PPith<A>>): PPith<Array<A>> {
   var count = 0
+  if (ps.length === 0) return p(o => o(resolve([])))
   var results = new Array(ps.length)
   return p(o =>
     ps.forEach((p, i) =>
