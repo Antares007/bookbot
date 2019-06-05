@@ -3,49 +3,67 @@ import * as Schdlr from './S/scheduler'
 import * as D from './S/Disposable'
 import * as S from './tS'
 
-export type RValue<+A> = { R: 'value', +value: A }
-export type RError = { R: 'error', error: Error }
+export type RValue<+A> = { +R: 'value', +value: A }
+export type RError = { +R: 'error', +error: Error }
 
 export opaque type PPith<+A> = ((RValue<A> | RError) => void) => void
 
 export function p<A>(pith: ((RValue<A> | RError) => void) => void): PPith<A> {
-  var last: ?(RValue<A> | RError) = null
+  var result: ?(RValue<A> | RError) = null
   var os: ?Array<(RValue<A> | RError) => void> = null
   return function(o) {
-    if (last) {
-      const r = last
+    if (result) {
+      const r = result
       Schdlr.delay(() => o(r))
     } else if (os) {
       os.push(o)
     } else {
-      os = []
+      os = [o]
       try {
         pith(r => {
-          if (last || !os) return
-          os.forEach(o => Schdlr.delay(() => o(r)))
-          last = r
-          os = null
+          if (!result && os) {
+            os.forEach(o => Schdlr.delay(() => o(r)))
+            result = r
+            os = null
+          }
         })
       } catch (error) {
-        Schdlr.delay(() => o(error))
+        const err = { R: 'error', error }
+        result = err
+        os = null
+        Schdlr.delay(() => o(err))
       }
     }
   }
 }
 
-export function combine<A, B>(f: (...Array<A>) => B, ...ps: Array<PPith<A>>): PPith<B> {
-  return o => {
-    //
-  }
+export function map<A, B>(f: A => B, ps: PPith<A>): PPith<B> {
+  return p(o =>
+    ps(r => {
+      if (r.R === 'value') {
+        var result
+        try {
+          result = f(r.value)
+        } catch (error) {
+          return o({ R: 'error', error })
+        }
+        o({ R: 'value', value: result })
+      } else o(r)
+    })
+  )
 }
 
-function spmap<A, B>(f: A => B, sp: S.SPith<Promise<A>>): S.SPith<Promise<B>> {
-  return S.map(p => p.then(f), sp)
-}
-
-function spcombine<A, B>(
-  f: (...Array<A>) => B,
-  ...sps: Array<S.SPith<Promise<A>>>
-): S.SPith<Promise<B>> {
-  return S.combine((...ps) => Promise.all(ps).then(x => f(...x)), ...sps)
+export function all<A>(ps: Array<PPith<A>>): PPith<Array<A>> {
+  var count = 0
+  var results = new Array(ps.length)
+  return p(o =>
+    ps.forEach((p, i) =>
+      p(r => {
+        if (r.R === 'value') {
+          results[i] = r.value
+          if (++count === results.length) o({ R: 'value', value: results })
+        } else o(r)
+      })
+    )
+  )
 }
