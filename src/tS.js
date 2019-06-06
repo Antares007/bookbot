@@ -324,3 +324,14 @@ export function multicast<A>(s: SPith<A>): SPith<A> {
     })
   }
 }
+
+export function proxy<A>(): [(A) => void, SPith<A>] {
+  return [
+    a => {},
+    function pith(o) {
+      return D.create(() => {
+        //
+      })
+    }
+  ]
+}
