@@ -1,4 +1,7 @@
 // @flow strict
+import * as S from './tS'
+import * as JSGit from './js-git'
+import * as P from './tP'
 
 export type Tree = {
   [string]:
@@ -18,9 +21,6 @@ export opaque type CommitHash = string
 export opaque type BlobHash = string
 export opaque type TreeHash = string
 
-import * as JSGit from './js-git'
-import * as P from './tP'
-
 export type Pith = (
   (
     | { R: 'blob', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
@@ -33,33 +33,30 @@ export type Pith = (
 ) => void
 
 export function treeBark(pith: Pith): JSGit.Repo => P.PPith<BlobHash> {
-  return repo =>
-    P.flatMap(
-      ([entries, hashes]) => {
-        return P.flatMap(hashes => {
-          const tree: JSGit.Tree = {}
-          for (var i = 0; i < hashes.length; i++)
-            tree[entries[i].name] = { mode: entries[i].mode, hash: hashes[i] }
-          return P.p(o => {
-            repo.saveAs('tree', tree, (error, hash) => {
-              if (error) o(P.reject(error))
-              else o(P.resolve(hash))
-            })
-          })
-        }, P.all(hashes))
-      },
-      P.p(o => {
-        const entries: Array<{ name: string, mode: JSGit.Mode }> = []
-        const hashes: Array<P.PPith<BlobHash | CommitHash | TreeHash>> = []
-        pith(r => {
-          entries.push({ name: r.name, mode: repo.modes[r.R] })
-          hashes.push(r.b(repo))
-        })
-        o(P.resolve([entries, hashes]))
+  return repo => {
+    const entries: Array<{ name: string, mode: JSGit.Mode }> = []
+    const hashes: Array<P.PPith<BlobHash | CommitHash | TreeHash>> = []
+    try {
+      pith(r => {
+        entries.push({ name: r.name, mode: repo.modes[r.R] })
+        hashes.push(r.b(repo))
       })
-    )
+    } catch (error) {
+      return P.reject(error)
+    }
+    return P.flatMap(hashes => {
+      const tree: JSGit.Tree = {}
+      for (var i = 0; i < hashes.length; i++)
+        tree[entries[i].name] = { mode: entries[i].mode, hash: hashes[i] }
+      return P.p(o => {
+        repo.saveAs('tree', tree, (error, hash) => {
+          if (error) o(P.rError(error))
+          else o(P.rValue(hash))
+        })
+      })
+    }, P.all(hashes))
+  }
 }
-import * as S from './tS'
 
 function bmap<R, B>(
   bark: (((R) => void) => void) => B
@@ -91,7 +88,7 @@ const blob = (name: string, data: Buffer) => ({
   R: 'blob',
   name,
   b: repo =>
-    P.p(o => repo.saveAs('blob', data, (err, hash) => o(err ? P.reject(err) : P.resolve(hash))))
+    P.p(o => repo.saveAs('blob', data, (err, hash) => o(err ? P.rError(err) : P.rValue(hash))))
 })
 const tree = (name: string, pith: Pith) => ({
   R: 'tree',

@@ -36,10 +36,19 @@ export function p<A>(pith: ((RValue<A> | RError) => void) => void): PPith<A> {
     }
   }
 }
-export function resolve<A>(a: A): RValue<A> {
+
+export function resolve<A>(a: A): PPith<A> {
+  return p(o => o(rValue(a)))
+}
+
+export function reject(error: Error): PPith<empty> {
+  return p(o => o(rError(error)))
+}
+
+export function rValue<A>(a: A): RValue<A> {
   return { R: 'value', value: a }
 }
-export function reject(error: Error): RError {
+export function rError(error: Error): RError {
   return { R: 'error', error }
 }
 
@@ -77,7 +86,7 @@ export function flatMap<A, B>(f: A => PPith<B>, ps: PPith<A>): PPith<B> {
 
 export function all<A>(ps: Array<PPith<A>>): PPith<Array<A>> {
   var count = 0
-  if (ps.length === 0) return p(o => o(resolve([])))
+  if (ps.length === 0) return p(o => o(rValue([])))
   var results = new Array(ps.length)
   return p(o =>
     ps.forEach((p, i) =>

@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import * as JSGit from './js-git'
 import * as G from './tG'
 import * as S from './tS'
