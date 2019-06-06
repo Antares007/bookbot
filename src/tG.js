@@ -21,16 +21,15 @@ export opaque type CommitHash = string
 export opaque type BlobHash = string
 export opaque type TreeHash = string
 
-export type Pith = (
-  (
-    | { R: 'blob', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
-    | { R: 'file', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
-    | { R: 'exec', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
-    | { R: 'sym', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
-    | { R: 'tree', name: string, b: JSGit.Repo => P.PPith<TreeHash> }
-    | { R: 'commit', name: string, b: JSGit.Repo => P.PPith<CommitHash> }
-  ) => void
-) => void
+export type Rays =
+  | { R: 'blob', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
+  | { R: 'file', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
+  | { R: 'exec', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
+  | { R: 'sym', name: string, b: JSGit.Repo => P.PPith<BlobHash> }
+  | { R: 'tree', name: string, b: JSGit.Repo => P.PPith<TreeHash> }
+  | { R: 'commit', name: string, b: JSGit.Repo => P.PPith<CommitHash> }
+
+export type Pith = ((Rays) => void) => void
 
 export function treeBark(pith: Pith): JSGit.Repo => P.PPith<BlobHash> {
   return repo => {
@@ -58,32 +57,6 @@ export function treeBark(pith: Pith): JSGit.Repo => P.PPith<BlobHash> {
   }
 }
 
-function bmap<R, B>(
-  bark: (((R) => void) => void) => B
-): (((S.SPith<R>) => void) => void) => S.SPith<B> {
-  return pith =>
-    S.flatMap(pith => {
-      const rays: Array<S.SPith<R>> = []
-
-      pith(r => {
-        rays.push(r)
-      })
-
-      return S.combine(
-        (...rays) =>
-          bark(o => {
-            for (var r of rays) o(r)
-          }),
-        ...rays
-      )
-    }, S.d(pith))
-}
-
-//export const see = bmap<
-//  $Call<<R>(((R) => void) => void) => R, Pith>,
-//  (JSGit.Repo) => Promise<TreeHash>
-//>(treeBark)
-//
 const blob = (name: string, data: Buffer) => ({
   R: 'blob',
   name,

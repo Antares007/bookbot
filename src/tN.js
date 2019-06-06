@@ -1,13 +1,11 @@
 // @flow strict
 
-export type Pith = (
-  (
-    | { R: 'Text', b: Text => void }
-    | { R: 'Element', tag: string, b: HTMLElement => void }
-    | { R: 'ElementNS', tag: string, ns: string, b: Element => void }
-    | { R: 'Comment', b: Comment => void }
-  ) => void
-) => void
+export type Rays =
+  | { R: 'Text', b: Text => void }
+  | { R: 'Element', tag: string, b: HTMLElement => void }
+  | { R: 'ElementNS', tag: string, ns: string, b: Element => void }
+  | { R: 'Comment', b: Comment => void }
+export type Pith = ((Rays) => void) => void
 
 export const elm = (tag: string, pith: Pith) => ({ R: 'Element', tag, b: elementBark(pith) })
 export const str = (text: string) => ({
