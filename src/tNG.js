@@ -92,7 +92,6 @@ const sbark = bmap<Rays, *>(bark)
 const rGElement = (
   tag: string,
   name: string,
-  initTree: JSGit.Repo => P.PPith<G.TreeHash>,
   pith: ((S.SPith<Rays>) => void, S.On) => void
 ): S.SPith<{
   R: 'ElementTree',
@@ -117,25 +116,39 @@ const rGElement = (
   )
 }
 
-const s = sbark(o => {
-  o(
-    rGElement('div', 'counter', G.treeBark(o => {}), (o, on) => {
-      o(
-        rGElement('button', '+', G.treeBark(o => {}), (o, on) => {
-          o(S.d(N.str('+')))
-        })
-      )
-      o(
-        rGElement('button', '-', G.treeBark(o => {}), (o, on) => {
-          o(S.d(N.str('-')))
-        })
-      )
-    })
-  )
-})
+const [stateO, state] = S.proxy()
+
+const counter = (depth: number, state: S.SPith<G.TreeHash>) =>
+  sbark(o => {
+    o(
+      rGElement('div', 'counter', (o, on) => {
+        o(
+          rGElement('button', '+', (o, on) => {
+            o(S.d(N.str('+')))
+          })
+        )
+        o(
+          rGElement('button', '-', (o, on) => {
+            o(S.d(N.str('-')))
+          })
+        )
+      })
+    )
+  })
+
+const s = counter(3, state)
 
 const repo = JSGit.mkrepo(__dirname + '/../.git')
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error()
 
-S.run(console.log.bind(console), S.map(g => g(rootNode, repo)(console.log.bind(console)), s))
+const d = S.run(r => {
+  if (r.T === 'next') {
+    r.value(e => {
+      if (e.R === 'value') {
+        console.log(e.value)
+        stateO(e.value)
+      } else console.error(e.error)
+    })
+  } else r.T === 'error' ? console.error(r.error) : console.info(r.T)
+}, S.map(g => g(rootNode, repo), s))
