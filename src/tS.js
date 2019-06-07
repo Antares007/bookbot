@@ -2,9 +2,8 @@
 import * as Schdlr from './S/scheduler'
 import * as D from './S/Disposable'
 
-export opaque type SPith<+A> = (
-  ({ T: 'next', +value: A } | { T: 'end' } | { T: 'error', error: Error }) => void
-) => D.Disposable
+export type Ray<+A> = { T: 'next', +value: A } | { T: 'end' } | { T: 'error', error: Error }
+export opaque type SPith<+A> = ((Ray<A>) => void) => D.Disposable
 
 export const delay = Schdlr.delay
 
@@ -326,11 +325,25 @@ export function multicast<A>(s: SPith<A>): SPith<A> {
 }
 
 export function proxy<A>(): [(A) => void, SPith<A>] {
+  const os: Array<[(Ray<A>) => void, ?D.Disposable]> = []
+  var lastA: A
   return [
-    a => {},
+    a => {
+      lastA = a
+      os.forEach(p => {
+        const d = p[1]
+        if (!d) p[1] = delay(() => p[0]({ T: 'next', value: lastA }))
+      })
+    },
     function pith(o) {
+      const p = [o, lastA ? delay(() => o({ T: 'next', value: lastA })) : null]
+      os.push(p)
       return D.create(() => {
-        //
+        const pos = os.indexOf(p)
+        if (pos > -1) {
+          const d = os.splice(pos, 1)[0][1]
+          d && d.dispose()
+        }
       })
     }
   ]

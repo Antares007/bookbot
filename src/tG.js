@@ -68,8 +68,3 @@ const tree = (name: string, pith: Pith) => ({
   name,
   b: treeBark(pith)
 })
-
-const s = treeBark(o => {
-  o(blob('file1.txt', Buffer.from('a')))
-  o(tree('folder', o => {}))
-})(JSGit.mkrepo(__dirname + '/../.git'))(console.log.bind(console))
