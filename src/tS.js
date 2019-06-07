@@ -348,3 +348,27 @@ export function proxy<A>(): [(A) => void, SPith<A>] {
     }
   ]
 }
+
+export class On {
+  ets: SPith<HTMLElement>
+  constructor(ets: SPith<HTMLElement>) {
+    this.ets = ets
+  }
+  event(name: string) {
+    return flatMap(
+      et =>
+        s(o => {
+          const handler = (e: Event) => o({ T: 'next', value: e })
+          et.addEventListener(name, handler)
+          return D.create(() => et.removeEventListener(name, handler))
+        }),
+      this.ets
+    )
+  }
+  click() {
+    return this.event('click')
+  }
+  input() {
+    return this.event('input')
+  }
+}

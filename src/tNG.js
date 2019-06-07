@@ -92,63 +92,45 @@ const sbark = bmap<Rays, *>(bark)
 const rGElement = (
   tag: string,
   name: string,
-  pith: ((S.SPith<Rays>) => void, S.SPith<HTMLElement>) => void
+  initTree: JSGit.Repo => P.PPith<G.TreeHash>,
+  pith: ((S.SPith<Rays>) => void, S.On) => void
 ): S.SPith<{
   R: 'ElementTree',
   tag: string,
   name: string,
   b: (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHash>
 }> => {
-  const [po, proxy] = S.proxy()
+  const [proxyO, proxy] = S.proxy()
   return S.map(
     b => ({
       R: 'ElementTree',
       tag,
       name,
-      b: (e, r) => (po(e), b(e, r))
+      b: (e, r) => {
+        proxyO(e)
+        return b(e, r)
+      }
     }),
     sbark(o => {
-      pith(o, proxy)
+      pith(o, new S.On(proxy))
     })
   )
 }
+
 const s = sbark(o => {
   o(
-    rGElement('div', 'aa', (o, pe) => {
-      //      o(S.d({ R: 'Text', b: n => ((n.textContent = '+'), void 0) }))
-      S.run(r => console.log(1, r), pe)
+    rGElement('div', 'counter', G.treeBark(o => {}), (o, on) => {
+      o(
+        rGElement('button', '+', G.treeBark(o => {}), (o, on) => {
+          o(S.d(N.str('+')))
+        })
+      )
+      o(
+        rGElement('button', '-', G.treeBark(o => {}), (o, on) => {
+          o(S.d(N.str('-')))
+        })
+      )
     })
-  )
-  o(
-    S.map(
-      b => ({
-        R: 'ElementTree',
-        tag: 'div',
-        name: 'counter',
-        b: (e, r) => (console.log('b'), b(e, r))
-      }),
-      sbark(o => {
-        console.log('p>')
-        o(
-          S.map(
-            b => ({ R: 'ElementTree', tag: 'button', name: '+', b: (e, r) => b(e, r) }),
-            sbark(o => {
-              o(S.d({ R: 'Text', b: n => ((n.textContent = '+'), void 0) }))
-            })
-          )
-        )
-        o(
-          S.map(
-            b => ({ R: 'ElementTree', tag: 'button', name: '-', b }),
-            sbark(o => {
-              o(S.d({ R: 'Text', b: n => ((n.textContent = '-'), void 0) }))
-            })
-          )
-        )
-
-        console.log('p<')
-      })
-    )
   )
 })
 

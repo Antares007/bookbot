@@ -31,7 +31,7 @@ export type Rays =
 
 export type Pith = ((Rays) => void) => void
 
-export function treeBark(pith: Pith): JSGit.Repo => P.PPith<BlobHash> {
+export function treeBark(pith: Pith): JSGit.Repo => P.PPith<TreeHash> {
   return repo => {
     const entries: Array<{ name: string, mode: JSGit.Mode }> = []
     const hashes: Array<P.PPith<BlobHash | CommitHash | TreeHash>> = []
