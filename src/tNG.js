@@ -77,15 +77,14 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<JSGit.Tre
   }
 }
 
-function bmap<R, B>(
+function bmap<R: {}, B>(
   bark: (((R) => void) => void) => B
-): (((S.SPith<R>) => void) => void) => S.SPith<B> {
+): (((S.SPith<R> | R) => void) => void) => S.SPith<B> {
   return pith =>
     S.flatMap(pith => {
       const rays: Array<S.SPith<R>> = []
-
       pith(r => {
-        rays.push(r)
+        rays.push(typeof r === 'object' ? S.d(r) : r)
       })
       if (rays.length === 0) return S.d(bark(o => {}))
       return S.combine(
@@ -102,7 +101,7 @@ const sbark = bmap<Rays, *>(bark)
 
 const rGElement = (
   tag: string,
-  pith: ((S.SPith<Rays>) => void, S.On) => void,
+  pith: ((S.SPith<Rays> | Rays) => void, S.On) => void,
   name?: string
 ): S.SPith<{
   R: 'ElementTree',
@@ -133,6 +132,7 @@ const counter = (depth: number, key: string, state: S.SPith<JSGit.TreeHash>) =>
   rGElement(
     'div',
     (o, on) => {
+      o({ R: '100644', name: 'file.txt', b: r => r.saveBlob(Buffer.from('hi\n')) })
       o(
         rGElement('button', (o, on) => {
           o(S.d(N.str('+')))
