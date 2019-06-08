@@ -137,18 +137,22 @@ const counter = (depth: number, key: string, state: S.SPith<JSGit.TreeHash>) =>
         rGElement('button', (o, on) => {
           o(S.d(N.str('+')))
           depth > 0 && o(counter(depth - 1, key + '+', state))
+          o({ R: '100755', name: 'file2', b: r => r.saveBlob(Buffer.from('hi\n')) })
         })
       )
       o(
         rGElement('button', (o, on) => {
           o(S.d(N.str('-')))
+          S.map(a => a, on.click())
           depth > 0 && o(counter(depth - 1, key + '-', state))
         })
       )
+      //S.map(hash => P.map(a => a, repo.loadTree(hash)), state)
     },
     key
   )
 
+stateO(JSGit.emptyTreeHash)
 const s = sbark(o => o(counter(3, 'counter', state)))
 
 const repo = JSGit.mkrepo(__dirname + '/../.git')
