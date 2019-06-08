@@ -1,32 +1,33 @@
 // @flow strict
-export type Mode = 33188 | 57344 | 33261 | 33188 | 40960 | 16384
+import type { PPith } from './tP'
+
+export opaque type CommitHash: string = string
+export opaque type BlobHash: string = string
+export opaque type TreeHash: string = string
+
 export type Tree = {
-  [string]: { mode: 33188 | 57344 | 33261 | 33188 | 40960 | 16384, hash: string }
+  [string]:
+    | { mode: '100644' | '100755' | '120000', hash: BlobHash }
+    | { mode: '40000', hash: TreeHash }
+    | { mode: '160000', hash: CommitHash }
 }
+
 export type Commit = {
-  tree: string,
-  parents: Array<string>,
+  tree: TreeHash,
+  parents: Array<CommitHash>,
   author: { name: string, email: string, date: { seconds: number, offset: number } },
   commiter: { name: string, email: string, date: { seconds: number, offset: number } },
   message: string
 }
+
 export type Repo = {
-  loadAs: (('blob', string, (err: ?Error, data: ?Buffer) => void) => void) &
-    (('tree', string, (err: ?Error, data: ?Tree) => void) => void) &
-    (('commit', string, (err: ?Error, data: ?Commit) => void) => void),
-  saveAs: (('blob', Buffer, (err: ?Error, hash: string) => void) => void) &
-    (('tree', Tree, (err: ?Error, hash: string) => void) => void) &
-    (('commit', Commit, (err: ?Error, hash: string) => void) => void),
-  modes: {
-    isBlob(Mode): boolean,
-    isFile(Mode): boolean,
-    toType(Mode): 'blob' | 'tree' | 'commit',
-    blob: 33188,
-    commit: 57344,
-    exec: 33261,
-    file: 33188,
-    sym: 40960,
-    tree: 16384
-  }
+  loadBlob(string): PPith<Buffer>,
+  loadTree(string): PPith<Tree>,
+  loadCommit(string): PPith<Commit>,
+  saveBlob(Buffer): PPith<BlobHash>,
+  saveTree(Tree): PPith<TreeHash>,
+  saveCommit(Commit): PPith<CommitHash>
 }
+
+declare export var emptyTreeHash: TreeHash
 declare export var mkrepo: (gitdir: string) => Repo
