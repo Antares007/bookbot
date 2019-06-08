@@ -3,7 +3,6 @@ import * as N from './tN'
 import * as G from './tG'
 import * as P from './tP'
 import * as S from './tS'
-import * as JSGit from './js-git'
 
 export type Rays =
   | N.Rays
@@ -11,22 +10,23 @@ export type Rays =
   | {
       R: 'ElementTree',
       tag: string,
-      name: string,
-      b: (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHash>
+      name?: string,
+      b: (HTMLElement, G.Repo) => P.PPith<G.TreeHash>
     }
   | {
       R: 'ElementNSTree',
       tag: string,
       ns: string,
-      name: string,
-      b: (Element, JSGit.Repo) => P.PPith<G.TreeHash>
+      name?: string,
+      b: (Element, G.Repo) => P.PPith<G.TreeHash>
     }
 export type Pith = ((Rays) => void) => void
 
-export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHash> {
+export function bark(pith: Pith): (HTMLElement, G.Repo) => P.PPith<G.TreeHash> {
   return (element, repo) => {
     const nrays: Array<N.Rays> = []
     const grays: Array<G.Rays> = []
+    const ps: Array<P.PPith<G.TreeHash>> = []
     pith(r => {
       switch (r.R) {
         case 'Text':
@@ -41,7 +41,8 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHas
             tag: r.tag,
             b: element => {
               const p = r.b(element, repo)
-              grays.push({ R: 'tree', name: r.name, b: () => p })
+              if (r.name) grays.push({ R: 'tree', name: r.name, b: () => p })
+              else ps.push(p)
             }
           })
           break
@@ -52,7 +53,8 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHas
             ns: r.ns,
             b: element => {
               const p = r.b(element, repo)
-              grays.push({ R: 'tree', name: r.name, b: () => p })
+              if (r.name) grays.push({ R: 'tree', name: r.name, b: () => p })
+              else ps.push(p)
             }
           })
           break
@@ -61,8 +63,17 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHas
           break
       }
     })
+
     N.elementBark(o => nrays.forEach(o))(element)
-    return G.treeBark(o => grays.forEach(o))(repo)
+
+    if (grays.length) ps.push(G.treeBark(o => grays.forEach(o))(repo))
+    if (ps.length === 0) return P.resolve(G.emptyTreeHash)
+    if (ps.length === 1) return ps[0]
+    return P.flatMap((forest: Array<G.Tree>) => {
+      var tree: G.Tree = {}
+      for (var t of forest) tree = Object.assign(tree, t)
+      return repo.saveTree(tree)
+    }, P.all(ps.map(p => P.flatMap(h => repo.loadTree(h), p))))
   }
 }
 
@@ -91,13 +102,13 @@ const sbark = bmap<Rays, *>(bark)
 
 const rGElement = (
   tag: string,
-  name: string,
-  pith: ((S.SPith<Rays>) => void, S.On) => void
+  pith: ((S.SPith<Rays>) => void, S.On) => void,
+  name?: string
 ): S.SPith<{
   R: 'ElementTree',
   tag: string,
-  name: string,
-  b: (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHash>
+  name?: string,
+  b: (HTMLElement, G.Repo) => P.PPith<G.TreeHash>
 }> => {
   const [proxyO, proxy] = S.proxy()
   return S.map(
@@ -121,24 +132,38 @@ const [stateO, state] = S.proxy()
 const counter = (depth: number, state: S.SPith<G.TreeHash>) =>
   sbark(o => {
     o(
-      rGElement('div', 'counter', (o, on) => {
-        o(
-          rGElement('button', '+', (o, on) => {
-            o(S.d(N.str('+')))
-          })
-        )
-        o(
-          rGElement('button', '-', (o, on) => {
-            o(S.d(N.str('-')))
-          })
-        )
-      })
+      rGElement(
+        'div',
+        (o, on) => {
+          o(
+            rGElement(
+              'button',
+              (o, on) => {
+                o(S.d(N.str('+')))
+                depth > 0 &&
+                  o(S.map(b => ({ R: 'ElementTree', tag: 'div', b }), counter(depth - 1, state)))
+              },
+              '+'
+            )
+          )
+          o(
+            rGElement(
+              'button',
+              (o, on) => {
+                o(S.d(N.str('-')))
+              },
+              '-'
+            )
+          )
+        },
+        'counter'
+      )
     )
   })
 
 const s = counter(3, state)
 
-const repo = JSGit.mkrepo(__dirname + '/../.git')
+const repo = G.makeRepo(__dirname + '/../.git')
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error()
 
