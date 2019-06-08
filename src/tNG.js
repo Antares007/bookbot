@@ -64,8 +64,7 @@ export function bark(pith: Pith): (HTMLElement, G.Repo) => P.PPith<G.TreeHash> {
       }
     })
 
-    N.elementBark(o => nrays.forEach(o))(element)
-
+    if (nrays.length) N.elementBark(o => nrays.forEach(o))(element)
     if (grays.length) ps.push(G.treeBark(o => grays.forEach(o))(repo))
     if (ps.length === 0) return P.resolve(G.emptyTreeHash)
     if (ps.length === 1) return ps[0]
@@ -129,39 +128,27 @@ const rGElement = (
 
 const [stateO, state] = S.proxy()
 
-const counter = (depth: number, state: S.SPith<G.TreeHash>) =>
-  sbark(o => {
-    o(
-      rGElement(
-        'div',
-        (o, on) => {
-          o(
-            rGElement(
-              'button',
-              (o, on) => {
-                o(S.d(N.str('+')))
-                depth > 0 &&
-                  o(S.map(b => ({ R: 'ElementTree', tag: 'div', b }), counter(depth - 1, state)))
-              },
-              '+'
-            )
-          )
-          o(
-            rGElement(
-              'button',
-              (o, on) => {
-                o(S.d(N.str('-')))
-              },
-              '-'
-            )
-          )
-        },
-        'counter'
+const counter = (depth: number, key: string, state: S.SPith<G.TreeHash>) =>
+  rGElement(
+    'div',
+    (o, on) => {
+      o(
+        rGElement('button', (o, on) => {
+          o(S.d(N.str('+')))
+          depth > 0 && o(counter(depth - 1, key + '+', state))
+        })
       )
-    )
-  })
+      o(
+        rGElement('button', (o, on) => {
+          o(S.d(N.str('-')))
+          depth > 0 && o(counter(depth - 1, key + '-', state))
+        })
+      )
+    },
+    key
+  )
 
-const s = counter(3, state)
+const s = sbark(o => o(counter(3, 'counter', state)))
 
 const repo = G.makeRepo(__dirname + '/../.git')
 const rootNode = document.getElementById('root-node')

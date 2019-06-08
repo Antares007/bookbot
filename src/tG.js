@@ -139,16 +139,16 @@ export function makeRepo(gitDir: string): Repo {
       ),
     loadCommit: (hash: string) =>
       P.p(o =>
-        repo.loadAs('commit', hash, (err, buffer) => {
+        repo.loadAs('commit', hash, (err, commit) => {
           if (err) o(P.rError(err))
-          else if (buffer)
+          else if (commit)
             o(
               P.rValue({
-                tree: buffer.tree,
-                parents: buffer.parents.map(a => a),
-                author: buffer.author,
-                commiter: buffer.commiter,
-                message: buffer.message
+                tree: commit.tree,
+                parents: commit.parents.map(a => a),
+                author: commit.author,
+                commiter: commit.commiter,
+                message: commit.message
               })
             )
           else o(P.rError(new Error(`hash ${hash} not found`)))
