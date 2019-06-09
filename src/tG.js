@@ -32,6 +32,14 @@ export function treeBark(pith: Pith): JSGit.Repo => P.PPith<JSGit.TreeHash> {
   }
 }
 
+export function rTreeBark(pith: Pith, init: JSGit.TreeHash): JSGit.Repo => P.PPith<JSGit.TreeHash> {
+  return treeBark(o => {
+    pith(r => {
+      o(r)
+    })
+  })
+}
+
 const blob = (name: string, data: Buffer) => ({
   R: '100644',
   name,

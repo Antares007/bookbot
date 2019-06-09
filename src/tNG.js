@@ -77,15 +77,21 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<JSGit.Tre
   }
 }
 
-function bmap<R: {}, B>(
-  bark: (((R) => void) => void) => B
-): (((S.SPith<R> | R) => void) => void) => S.SPith<B> {
+function bmap<R: {}, B, C, D>(
+  bark: (((R) => void) => void) => B,
+  c: C,
+  d: D
+): (((S.SPith<R> | R) => void, C, D) => void) => S.SPith<B> {
   return pith =>
     S.flatMap(pith => {
       const rays: Array<S.SPith<R>> = []
-      pith(r => {
-        rays.push(typeof r === 'object' ? S.d(r) : r)
-      })
+      pith(
+        r => {
+          rays.push(typeof r === 'object' ? S.d(r) : r)
+        },
+        c,
+        d
+      )
       if (rays.length === 0) return S.d(bark(o => {}))
       return S.combine(
         (...rays) =>
@@ -97,7 +103,7 @@ function bmap<R: {}, B>(
     }, S.d(pith))
 }
 
-const sbark = bmap<Rays, *>(bark)
+const sbark = bmap<Rays, *, *, *>(bark)
 
 const gelm = (
   tag: string,
@@ -157,7 +163,7 @@ const counter = (depth: number, key: string, state: S.SPith<JSGit.TreeHash>) =>
   )
 
 stateO(JSGit.emptyTreeHash)
-const s = sbark(o => o(counter(3, 'counter', state)))
+const s = sbark(o => o(counter(2, 'counter', state)))
 
 const repo = JSGit.mkrepo(__dirname + '/../.git')
 const rootNode = document.getElementById('root-node')
