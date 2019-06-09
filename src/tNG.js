@@ -99,7 +99,7 @@ function bmap<R: {}, B>(
 
 const sbark = bmap<Rays, *>(bark)
 
-const rGElement = (
+const gelm = (
   tag: string,
   pith: ((S.SPith<Rays> | Rays) => void, S.On) => void,
   name?: string
@@ -129,19 +129,23 @@ const rGElement = (
 const [stateO, state] = S.proxy()
 
 const counter = (depth: number, key: string, state: S.SPith<JSGit.TreeHash>) =>
-  rGElement(
+  gelm(
     'div',
     (o, on) => {
       o({ R: '100644', name: 'file.txt', b: r => r.saveBlob(Buffer.from('hi\n')) })
       o(
-        rGElement('button', (o, on) => {
+        gelm('button', (o, on) => {
           o(S.d(N.str('+')))
           depth > 0 && o(counter(depth - 1, key + '+', state))
-          o({ R: '100755', name: 'file2', b: r => r.saveBlob(Buffer.from('hi\n')) })
+          o({
+            R: '100755',
+            name: 'file2',
+            b: r => r.saveBlob(Buffer.from(JSON.stringify({ n: 0 })))
+          })
         })
       )
       o(
-        rGElement('button', (o, on) => {
+        gelm('button', (o, on) => {
           o(S.d(N.str('-')))
           S.map(a => a, on.click())
           depth > 0 && o(counter(depth - 1, key + '-', state))
