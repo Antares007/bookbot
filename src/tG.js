@@ -18,7 +18,28 @@ export type Rays =
   | { R: 'sym', name: string, b: B<BlobHash> }
   | { R: 'commit', name: string, b: B<CommitHash> }
 
-export type Pith = ((Rays) => void) => void
+export type Pith = (
+  (Rays) => void,
+  { [string]: 'tree' | 'blob' | 'exec' | 'sym' | 'commit' }
+) => void
+
+export const blobBark = (f: (?Buffer) => Buffer): B<BlobHash> => (repo, ohash) =>
+  P.flatMap(
+    mbuffer =>
+      P.p(o =>
+        repo.saveAs('blob', f(mbuffer), (err, hash) => {
+          if (err) o(P.rError(err))
+          else o(P.rValue(hash))
+        })
+      ),
+    ohash
+      ? P.p(o =>
+          repo.loadAs('blob', ohash, (err, buffer) => {
+            o(P.rValue(buffer))
+          })
+        )
+      : P.resolve(null)
+  )
 
 export function treeBark(pith: Pith): B<TreeHash> {
   return (repo, initHash) => {
@@ -26,13 +47,29 @@ export function treeBark(pith: Pith): B<TreeHash> {
       otree => {
         const rays: Array<Rays> = []
 
-        pith(r => {
-          rays.push(r)
-        })
+        pith(
+          r => {
+            rays.push(r)
+          },
+          Object.keys(otree).reduce((t, name) => {
+            const m = otree[name].mode
+            t[name] =
+              m === 16384
+                ? 'tree'
+                : m === 33188
+                ? 'blob'
+                : m === 33261
+                ? 'exec'
+                : m === 40960
+                ? 'sym'
+                : 'commit'
+            return t
+          }, {})
+        )
 
         return P.flatMap(
           hashes => {
-            const ntree = otree
+            const ntree = {}
             for (var i = 0, l = hashes.length; i < l; i++)
               ntree[rays[i].name] = { mode: JSGit.modes[rays[i].R], hash: hashes[i] }
             return P.p(o =>
@@ -58,4 +95,12 @@ export function treeBark(pith: Pith): B<TreeHash> {
       })
     )
   }
+}
+
+function runPith<R>(pith: ((R) => void) => void): Array<R> {
+  const rays: Array<R> = []
+  pith(r => {
+    rays.push(r)
+  })
+  return rays
 }

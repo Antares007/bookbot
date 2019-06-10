@@ -2,7 +2,7 @@
 import type { PPith } from './tP'
 
 export type Tree = {
-  [string]: ?{ mode: 16384 | 33188 | 33261 | 40960 | 57344, hash: string }
+  [string]: { mode: 16384 | 33188 | 33261 | 40960 | 57344, hash: string }
 }
 
 export type Commit = {
