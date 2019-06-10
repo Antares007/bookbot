@@ -12,22 +12,22 @@ export type Rays =
       R: 'ElementTree',
       tag: string,
       name?: string,
-      b: (HTMLElement, JSGit.Repo) => P.PPith<JSGit.TreeHash>
+      b: (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHash>
     }
   | {
       R: 'ElementNSTree',
       tag: string,
       ns: string,
       name?: string,
-      b: (Element, JSGit.Repo) => P.PPith<JSGit.TreeHash>
+      b: (Element, JSGit.Repo) => P.PPith<G.TreeHash>
     }
 export type Pith = ((Rays) => void) => void
 
-export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<JSGit.TreeHash> {
+export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHash> {
   return (element, repo) => {
     const nrays: Array<N.Rays> = []
     const grays: Array<G.Rays> = []
-    const ps: Array<P.PPith<JSGit.TreeHash>> = []
+    const ps: Array<P.PPith<G.TreeHash>> = []
     pith(r => {
       switch (r.R) {
         case 'Text':
@@ -67,7 +67,7 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<JSGit.Tre
 
     if (nrays.length) N.elementBark(o => nrays.forEach(o))(element)
     if (grays.length) ps.push(G.treeBark(o => grays.forEach(o))(repo))
-    if (ps.length === 0) return P.resolve(JSGit.emptyTreeHash)
+    if (ps.length === 0) return P.resolve(G.emptyTreeHash)
     if (ps.length === 1) return ps[0]
     return P.flatMap((forest: Array<JSGit.Tree>) => {
       var tree: JSGit.Tree = {}

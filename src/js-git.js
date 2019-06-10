@@ -1,63 +1,13 @@
 const fs = require('fs')
 const mkdirp = require('mkdirp')
 const fsdb = require('js-git/mixins/fs-db')
-const modes = require('js-git/lib/modes')
-const P = require('./tP')
 
-export const emptyTreeHash = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+export const modes = require('js-git/lib/modes')
 
 export const mkrepo = rootPath => {
   const repo = { rootPath, modes }
   fsdb(repo, gitfs)
-  return {
-    saveBlob: buffer =>
-      P.p(o =>
-        repo.saveAs('blob', buffer, (err, hash) => (err ? o(P.rError(err)) : o(P.rValue(hash))))
-      ),
-    saveTree: tree =>
-      P.p(o => {
-        const jstree = {}
-        for (var name in tree) {
-          const e = tree[name]
-          jstree[name] = { mode: parseInt(e.mode, 8), hash: e.hash }
-        }
-        repo.saveAs('tree', jstree, (err, hash) => (err ? o(P.rError(err)) : o(P.rValue(hash))))
-      }),
-    saveCommit: commit =>
-      P.p(o =>
-        repo.saveAs('commit', commit, (err, hash) => (err ? o(P.rError(err)) : o(P.rValue(hash))))
-      ),
-    loadBlob: hash =>
-      P.p(o =>
-        repo.loadAs('blob', hash, (err, buffer) => {
-          if (err) o(P.rError(err))
-          else if (buffer) o(P.rValue(buffer))
-          else o(P.rError(new Error(`hash ${hash} not found`)))
-        })
-      ),
-    loadTree: hash =>
-      P.p(o =>
-        repo.loadAs('tree', hash, (err, jstree) => {
-          if (err) o(P.rError(err))
-          else if (jstree) {
-            const tree = {}
-            for (var name in jstree) {
-              const e = jstree[name]
-              tree[name] = { mode: e.mode.toString(8), hash: e.hash }
-            }
-            o(P.rValue(tree))
-          } else o(P.rError(new Error(`hash ${hash} not found`)))
-        })
-      ),
-    loadCommit: hash =>
-      P.p(o =>
-        repo.loadAs('commit', hash, (err, commit) => {
-          if (err) o(P.rError(err))
-          else if (commit) o(P.rValue(commit))
-          else o(P.rError(new Error(`hash ${hash} not found`)))
-        })
-      )
-  }
+  return repo
 }
 
 const gitfs = {
