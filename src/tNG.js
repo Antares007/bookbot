@@ -42,7 +42,7 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHas
             tag: r.tag,
             b: element => {
               const p = r.b(element, repo)
-              if (r.name) grays.push({ R: '40000', name: r.name, b: () => p })
+              if (r.name) grays.push({ R: 'tree', name: r.name, b: () => p })
               else ps.push(p)
             }
           })
@@ -54,7 +54,7 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHas
             ns: r.ns,
             b: element => {
               const p = r.b(element, repo)
-              if (r.name) grays.push({ R: '40000', name: r.name, b: () => p })
+              if (r.name) grays.push({ R: 'tree', name: r.name, b: () => p })
               else ps.push(p)
             }
           })
@@ -72,26 +72,25 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHas
     return P.flatMap((forest: Array<JSGit.Tree>) => {
       var tree: JSGit.Tree = {}
       for (var t of forest) tree = Object.assign(tree, t)
-      return repo.saveTree(tree)
+      return P.p(o =>
+        repo.saveAs('tree', tree, (err, hash) => {
+          if (err) o(P.rError(err))
+          else o(P.rValue(hash))
+        })
+      )
     }, P.all(ps.map(p => P.flatMap(h => repo.loadTree(h), p))))
   }
 }
 
-function bmap<R: {}, B, C, D>(
-  bark: (((R) => void) => void) => B,
-  c: C,
-  d: D
-): (((S.SPith<R> | R) => void, C, D) => void) => S.SPith<B> {
+function bmap<R: {}, B>(
+  bark: (((R) => void) => void) => B
+): (((S.SPith<R> | R) => void) => void) => S.SPith<B> {
   return pith =>
     S.flatMap(pith => {
       const rays: Array<S.SPith<R>> = []
-      pith(
-        r => {
-          rays.push(typeof r === 'object' ? S.d(r) : r)
-        },
-        c,
-        d
-      )
+      pith(r => {
+        rays.push(typeof r === 'object' ? S.d(r) : r)
+      })
       if (rays.length === 0) return S.d(bark(o => {}))
       return S.combine(
         (...rays) =>

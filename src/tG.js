@@ -3,7 +3,38 @@ import * as S from './tS'
 import * as JSGit from './js-git'
 import * as P from './tP'
 
-export type B<Hash> = (JSGit.Repo, ?Hash) => P.PPith<Hash>
+export type B<Hash> = (JSGit.Repo, ?Hash) => P.PPith<?Hash>
+
+const a = 0100644
+
+class Hashish {
+  p: JSGit.Repo => P.PPith<string>
+  constructor(p: JSGit.Repo => P.PPith<string>) {
+    this.p = p
+  }
+}
+type Tree = { [string]: { mode: '40000', hashish: TreeH } }
+
+class TreeH extends Hashish {
+  map(f: JSGit.Tree => JSGit.Tree): TreeH {
+    return new TreeH(repo =>
+      P.flatMap(
+        hash =>
+          P.p(o =>
+            repo.loadAs('tree', hash, (err, mtree) => {
+              if (err || !mtree) o(P.rError(err || new Error('tree not found')))
+              else
+                repo.saveAs('tree', f(mtree), (err, hash) => {
+                  if (err) o(P.rError(err))
+                  else o(P.rValue(hash))
+                })
+            })
+          ),
+        this.p(repo)
+      )
+    )
+  }
+}
 
 export opaque type CommitHash: string = string
 export opaque type BlobHash: string = string
@@ -54,13 +85,13 @@ export function treeBark(pith: Pith): B<TreeHash> {
           Object.keys(otree).reduce((t, name) => {
             const m = otree[name].mode
             t[name] =
-              m === 16384
+              m === JSGit.modes.tree
                 ? 'tree'
-                : m === 33188
+                : m === JSGit.modes.blob
                 ? 'blob'
-                : m === 33261
+                : m === JSGit.modes.exec
                 ? 'exec'
-                : m === 40960
+                : m === JSGit.modes.sym
                 ? 'sym'
                 : 'commit'
             return t
@@ -69,9 +100,10 @@ export function treeBark(pith: Pith): B<TreeHash> {
 
         return P.flatMap(
           hashes => {
-            const ntree = {}
+            const ntree = Object.assign({}, otree)
             for (var i = 0, l = hashes.length; i < l; i++)
-              ntree[rays[i].name] = { mode: JSGit.modes[rays[i].R], hash: hashes[i] }
+              if (hashes[i]) ntree[rays[i].name] = { mode: JSGit.modes[rays[i].R], hash: hashes[i] }
+              else delete ntree[rays[i].name]
             return P.p(o =>
               repo.saveAs('tree', ntree, (err, hash) => {
                 if (err) o(P.rError(err))
