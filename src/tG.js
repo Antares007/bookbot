@@ -13,7 +13,14 @@ class Hashish {
     this.p = p
   }
 }
-type Tree = { [string]: { mode: '40000', hashish: TreeH } }
+type Tree = {
+  [string]:
+    | { mode: '40000', hashish: TreeH }
+    | { mode: '100644', hashish: BlobH }
+    | { mode: '100755', hashish: BlobH }
+    | { mode: '120000', hashish: BlobH }
+    | { mode: '160000', hashish: CommitH }
+}
 
 class TreeH extends Hashish {
   map(f: JSGit.Tree => JSGit.Tree): TreeH {
@@ -23,11 +30,26 @@ class TreeH extends Hashish {
           P.p(o =>
             repo.loadAs('tree', hash, (err, mtree) => {
               if (err || !mtree) o(P.rError(err || new Error('tree not found')))
-              else
+              else {
+                const tree: Tree = Object.keys(mtree).reduce((t, name) => {
+                  const e = mtree[name]
+                  const mode = e.mode.toString(8)
+                  t[name] = {
+                    mode,
+                    hashish:
+                      mode === '40000'
+                        ? new TreeH(() => P.resolve(hash))
+                        : mode === '160000'
+                        ? new CommitH(() => P.resolve(e.hash))
+                        : new BlobH(() => P.resolve(e.hash))
+                  }
+                  return t
+                }, {})
                 repo.saveAs('tree', f(mtree), (err, hash) => {
                   if (err) o(P.rError(err))
                   else o(P.rValue(hash))
                 })
+              }
             })
           ),
         this.p(repo)
@@ -35,7 +57,8 @@ class TreeH extends Hashish {
     )
   }
 }
-
+class BlobH extends Hashish {}
+class CommitH extends Hashish {}
 export opaque type CommitHash: string = string
 export opaque type BlobHash: string = string
 export opaque type TreeHash: string = string
