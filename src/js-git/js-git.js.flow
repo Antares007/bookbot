@@ -1,0 +1,29 @@
+// @flow strict
+import type { Tree, Commit } from './types'
+
+type CB<A> = (err: ?Error, A) => void
+
+export type Repo = {
+  loadAs: (('tree', string, CB<?Tree>) => void) &
+    (('blob', string, CB<?Buffer>) => void) &
+    (('commit', string, CB<?Commit>) => void) &
+    (('tree', string) => (CB<?Tree>) => void) &
+    (('blob', string) => (CB<?Buffer>) => void) &
+    (('commit', string) => (CB<?Commit>) => void),
+  saveAs: (('tree', Tree, CB<string>) => void) &
+    (('blob', Buffer, CB<string>) => void) &
+    (('commit', Commit, CB<string>) => void) &
+    (('tree', Tree) => (CB<string>) => void) &
+    (('blob', Buffer) => (CB<string>) => void) &
+    (('commit', Commit) => (CB<string>) => void)
+}
+
+declare export var modes: {
+  tree: 16384,
+  blob: 33188,
+  exec: 33261,
+  sym: 40960,
+  commit: 57344
+}
+
+declare export var mkrepo: (gitdir: string) => Repo

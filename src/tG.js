@@ -1,64 +1,10 @@
-// @flow strict
+// flow strict
 import * as S from './tS'
 import * as JSGit from './js-git'
 import * as P from './tP'
 
 export type B<Hash> = (JSGit.Repo, ?Hash) => P.PPith<?Hash>
 
-const a = 0100644
-
-class Hashish {
-  p: JSGit.Repo => P.PPith<string>
-  constructor(p: JSGit.Repo => P.PPith<string>) {
-    this.p = p
-  }
-}
-type Tree = {
-  [string]:
-    | { mode: '40000', hashish: TreeH }
-    | { mode: '100644', hashish: BlobH }
-    | { mode: '100755', hashish: BlobH }
-    | { mode: '120000', hashish: BlobH }
-    | { mode: '160000', hashish: CommitH }
-}
-
-class TreeH extends Hashish {
-  map(f: JSGit.Tree => JSGit.Tree): TreeH {
-    return new TreeH(repo =>
-      P.flatMap(
-        hash =>
-          P.p(o =>
-            repo.loadAs('tree', hash, (err, mtree) => {
-              if (err || !mtree) o(P.rError(err || new Error('tree not found')))
-              else {
-                const tree: Tree = Object.keys(mtree).reduce((t, name) => {
-                  const e = mtree[name]
-                  const mode = e.mode.toString(8)
-                  t[name] = {
-                    mode,
-                    hashish:
-                      mode === '40000'
-                        ? new TreeH(() => P.resolve(hash))
-                        : mode === '160000'
-                        ? new CommitH(() => P.resolve(e.hash))
-                        : new BlobH(() => P.resolve(e.hash))
-                  }
-                  return t
-                }, {})
-                repo.saveAs('tree', f(mtree), (err, hash) => {
-                  if (err) o(P.rError(err))
-                  else o(P.rValue(hash))
-                })
-              }
-            })
-          ),
-        this.p(repo)
-      )
-    )
-  }
-}
-class BlobH extends Hashish {}
-class CommitH extends Hashish {}
 export opaque type CommitHash: string = string
 export opaque type BlobHash: string = string
 export opaque type TreeHash: string = string
@@ -79,20 +25,8 @@ export type Pith = (
 
 export const blobBark = (f: (?Buffer) => Buffer): B<BlobHash> => (repo, ohash) =>
   P.flatMap(
-    mbuffer =>
-      P.p(o =>
-        repo.saveAs('blob', f(mbuffer), (err, hash) => {
-          if (err) o(P.rError(err))
-          else o(P.rValue(hash))
-        })
-      ),
-    ohash
-      ? P.p(o =>
-          repo.loadAs('blob', ohash, (err, buffer) => {
-            o(P.rValue(buffer))
-          })
-        )
-      : P.resolve(null)
+    mbuffer => P.map(h => h, repo.saveBlob(f(mbuffer))),
+    ohash ? repo.loadBlob(ohash) : P.resolve(null)
   )
 
 export function treeBark(pith: Pith): B<TreeHash> {
