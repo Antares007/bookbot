@@ -126,7 +126,7 @@ const gelm = (
 }
 
 const [stateO, state] = S.proxy()
-
+var i = 0
 const counter = (depth: number, key: string, state: S.SPith<G.Hash>) =>
   gelm(
     'div',
@@ -136,11 +136,17 @@ const counter = (depth: number, key: string, state: S.SPith<G.Hash>) =>
         gelm('button', (o, on) => {
           o(S.d(N.str('+')))
           depth > 0 && o(counter(depth - 1, key + '+', state))
-          o({
-            R: 'blob',
-            name: 'file2',
-            b: r => r.saveBlob(Buffer.from(JSON.stringify({ n: 0 })))
-          })
+
+          o(
+            S.map(
+              e => ({
+                R: 'blob',
+                name: 'file2',
+                b: (r, p) => r.saveBlob(Buffer.from(JSON.stringify({ n: i++ })))
+              }),
+              S.merge(S.d(null), on.click())
+            )
+          )
         })
       )
       o(

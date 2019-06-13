@@ -69,5 +69,7 @@ export function elementBark(pith: Pith): HTMLElement => void {
         } else if (i !== index) element.insertBefore(found, ref)
       }
     })
+    for (var i = element.childNodes.length - 1; i >= index; i--)
+      element.removeChild(element.childNodes[i])
   }
 }
