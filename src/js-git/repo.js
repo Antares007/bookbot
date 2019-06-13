@@ -3,8 +3,8 @@ import type { Tree, Commit, Repo } from './types'
 import * as JSGit from './js-git'
 import * as P from '../tP'
 
-const toP = <A>(f: ((?Error, A) => void) => void): P.PPith<A> =>
-  P.p(o => f((err, a) => (err ? o(P.rError(err)) : o(P.rValue(a)))))
+const toP = <A>(f: ((?Error, ?A) => void) => void): P.PPith<A> =>
+  P.p(o => f((err, a) => (err || !a ? o(P.rError(err || new Error('na'))) : o(P.rValue(a)))))
 
 export function mkrepo(gitdir: string): Repo {
   const repo = JSGit.mkrepo(gitdir)

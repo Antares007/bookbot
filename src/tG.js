@@ -2,8 +2,7 @@
 import * as S from './tS'
 import * as JSGit from './js-git'
 import * as P from './tP'
-
-export type B<Hash> = (JSGit.Repo, ?Hash) => P.PPith<?Hash>
+import * as VH from './hashish'
 
 export opaque type CommitHash: string = string
 export opaque type BlobHash: string = string
@@ -12,7 +11,7 @@ export opaque type TreeHash: string = string
 export const emptyTreeHash: TreeHash = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 export type Rays =
-  | { R: 'tree', name: string, b: B<TreeHash> }
+  | { R: 'tree', name: string, b: VH.HTree => VH.HTree }
   | { R: 'blob', name: string, b: B<BlobHash> }
   | { R: 'exec', name: string, b: B<BlobHash> }
   | { R: 'sym', name: string, b: B<BlobHash> }
@@ -23,11 +22,11 @@ export type Pith = (
   { [string]: 'tree' | 'blob' | 'exec' | 'sym' | 'commit' }
 ) => void
 
-export const blobBark = (f: (?Buffer) => Buffer): B<BlobHash> => (repo, ohash) =>
-  P.flatMap(
-    mbuffer => P.map(h => h, repo.saveBlob(f(mbuffer))),
-    ohash ? repo.loadBlob(ohash) : P.resolve(null)
-  )
+//export const blobBark = (f: (?Buffer) => Buffer): B<BlobHash> => (repo, ohash) =>
+//  P.flatMap(
+//    mbuffer => P.map(h => h, repo.saveBlob(f(mbuffer))),
+//    ohash ? repo.loadBlob(ohash) : P.resolve(null)
+//  )
 
 export function treeBark(pith: Pith): B<TreeHash> {
   return (repo, initHash) => {

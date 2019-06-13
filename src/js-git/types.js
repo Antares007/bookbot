@@ -14,9 +14,9 @@ export type Commit = {
 }
 
 export type Repo = {
-  loadTree: string => PPith<?Tree>,
-  loadBlob: string => PPith<?Buffer>,
-  loadCommit: string => PPith<?Commit>,
+  loadTree: string => PPith<Tree>,
+  loadBlob: string => PPith<Buffer>,
+  loadCommit: string => PPith<Commit>,
   saveTree: Tree => PPith<string>,
   saveBlob: Buffer => PPith<string>,
   saveCommit: Commit => PPith<string>
