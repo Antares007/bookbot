@@ -1,9 +1,8 @@
-// flow strict
+// @flow strict
 import * as N from './tN'
 import * as G from './tG'
 import * as P from './tP'
 import * as S from './tS'
-import * as JSGit from './js-git'
 
 export type Rays =
   | N.Rays
@@ -12,22 +11,22 @@ export type Rays =
       R: 'ElementTree',
       tag: string,
       name?: string,
-      b: (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHash>
+      b: (HTMLElement, G.Repo, ?G.Hash) => P.PPith<G.Hash>
     }
   | {
       R: 'ElementNSTree',
       tag: string,
       ns: string,
       name?: string,
-      b: (Element, JSGit.Repo) => P.PPith<G.TreeHash>
+      b: (Element, G.Repo, ?G.Hash) => P.PPith<G.Hash>
     }
 export type Pith = ((Rays) => void) => void
 
-export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHash> {
-  return (element, repo) => {
+export function bark(pith: Pith): (HTMLElement, G.Repo, ?G.Hash) => P.PPith<G.Hash> {
+  return (element, repo, initHash) => {
     const nrays: Array<N.Rays> = []
     const grays: Array<G.Rays> = []
-    const ps: Array<P.PPith<G.TreeHash>> = []
+    const ps: Array<P.PPith<G.Hash>> = []
     pith(r => {
       switch (r.R) {
         case 'Text':
@@ -41,7 +40,7 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHas
             R: 'Element',
             tag: r.tag,
             b: element => {
-              const p = r.b(element, repo)
+              const p = r.b(element, repo, initHash)
               if (r.name) grays.push({ R: 'tree', name: r.name, b: () => p })
               else ps.push(p)
             }
@@ -53,7 +52,7 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHas
             tag: r.tag,
             ns: r.ns,
             b: element => {
-              const p = r.b(element, repo)
+              const p = r.b(element, repo, initHash)
               if (r.name) grays.push({ R: 'tree', name: r.name, b: () => p })
               else ps.push(p)
             }
@@ -69,15 +68,10 @@ export function bark(pith: Pith): (HTMLElement, JSGit.Repo) => P.PPith<G.TreeHas
     if (grays.length) ps.push(G.treeBark(o => grays.forEach(o))(repo))
     if (ps.length === 0) return P.resolve(G.emptyTreeHash)
     if (ps.length === 1) return ps[0]
-    return P.flatMap((forest: Array<JSGit.Tree>) => {
-      var tree: JSGit.Tree = {}
+    return P.flatMap((forest: Array<?G.Tree>) => {
+      var tree: G.Tree = {}
       for (var t of forest) tree = Object.assign(tree, t)
-      return P.p(o =>
-        repo.saveAs('tree', tree, (err, hash) => {
-          if (err) o(P.rError(err))
-          else o(P.rValue(hash))
-        })
-      )
+      return repo.saveTree(tree)
     }, P.all(ps.map(p => P.flatMap(h => repo.loadTree(h), p))))
   }
 }
@@ -112,7 +106,7 @@ const gelm = (
   R: 'ElementTree',
   tag: string,
   name?: string,
-  b: (HTMLElement, JSGit.Repo) => P.PPith<JSGit.TreeHash>
+  b: (HTMLElement, G.Repo, ?G.Hash) => P.PPith<G.Hash>
 }> => {
   const [proxyO, proxy] = S.proxy()
   return S.map(
@@ -120,9 +114,9 @@ const gelm = (
       R: 'ElementTree',
       tag,
       name,
-      b: (e, r) => {
+      b: (e, r, i) => {
         proxyO(e)
-        return b(e, r)
+        return b(e, r, i)
       }
     }),
     sbark(o => {
@@ -133,17 +127,17 @@ const gelm = (
 
 const [stateO, state] = S.proxy()
 
-const counter = (depth: number, key: string, state: S.SPith<JSGit.TreeHash>) =>
+const counter = (depth: number, key: string, state: S.SPith<G.Hash>) =>
   gelm(
     'div',
     (o, on) => {
-      o({ R: '100644', name: 'file.txt', b: r => r.saveBlob(Buffer.from('hi\n')) })
+      o({ R: 'blob', name: 'file.txt', b: r => r.saveBlob(Buffer.from('hi\n')) })
       o(
         gelm('button', (o, on) => {
           o(S.d(N.str('+')))
           depth > 0 && o(counter(depth - 1, key + '+', state))
           o({
-            R: '100755',
+            R: 'blob',
             name: 'file2',
             b: r => r.saveBlob(Buffer.from(JSON.stringify({ n: 0 })))
           })
@@ -161,10 +155,10 @@ const counter = (depth: number, key: string, state: S.SPith<JSGit.TreeHash>) =>
     key
   )
 
-stateO(JSGit.emptyTreeHash)
+stateO(G.emptyTreeHash)
 const s = sbark(o => o(counter(2, 'counter', state)))
 
-const repo = JSGit.mkrepo(__dirname + '/../.git')
+const repo = G.mkrepo(__dirname + '/../.git')
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error()
 
