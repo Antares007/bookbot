@@ -2,8 +2,11 @@
 import * as Schdlr from './S/scheduler'
 import * as D from './S/Disposable'
 
-export type Ray<+A> = { T: 'next', +value: A } | { T: 'end' } | { T: 'error', error: Error }
-export opaque type SPith<+A> = ((Ray<A>) => void) => D.Disposable
+export type RValue<+A> = { T: 'next', +value: A }
+export type REnd = { T: 'end' }
+export type RError = { T: 'error', error: Error }
+
+export opaque type SPith<+A> = ((RValue<A> | REnd | RError) => void) => D.Disposable
 
 export const delay = Schdlr.delay
 
@@ -22,10 +25,7 @@ export function s<A>(
     return d
   }
 }
-export function run<A>(
-  o: ({ T: 'next', +value: A } | { T: 'end' } | { T: 'error', error: Error }) => void,
-  s: SPith<A>
-): D.Disposable {
+export function run<A>(o: (RValue<A> | REnd | RError) => void, s: SPith<A>): D.Disposable {
   const d = s(function runO(r) {
     if (r.T === 'error') o(r)
     else
@@ -324,27 +324,32 @@ export function multicast<A>(s: SPith<A>): SPith<A> {
   }
 }
 
-export function proxy<A>(): [(A) => void, SPith<A>] {
-  const os: Array<[(Ray<A>) => void, ?D.Disposable]> = []
-  var lastA: A
+export function proxy<A>(): [(RValue<A> | REnd | RError) => void, SPith<A>] {
+  var proxyOs: ?Array<(RValue<A> | REnd | RError) => void> = []
+  var last: REnd | RError
   return [
-    a => {
-      lastA = a
-      os.forEach(p => {
-        const d = p[1]
-        if (!d) p[1] = delay(() => p[0]({ T: 'next', value: lastA }))
-      })
+    function proxyO(r) {
+      if (proxyOs) {
+        if (r.T === 'next') proxyOs.forEach(o => o(r))
+        else {
+          const os = proxyOs
+          last = r
+          proxyOs = null
+          os.forEach(o => o(last))
+        }
+      }
     },
     function pith(o) {
-      const p = [o, lastA ? delay(() => o({ T: 'next', value: lastA })) : null]
-      os.push(p)
-      return D.create(() => {
-        const pos = os.indexOf(p)
-        if (pos > -1) {
-          const d = os.splice(pos, 1)[0][1]
-          d && d.dispose()
-        }
-      })
+      if (proxyOs) {
+        const os = proxyOs
+        proxyOs.push(o)
+        return D.create(() => {
+          const pos = os.indexOf(o)
+          if (-1 < pos) os.splice(pos, 1)
+        })
+      } else {
+        return Schdlr.delay(() => o(last))
+      }
     }
   ]
 }

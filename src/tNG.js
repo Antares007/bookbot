@@ -87,25 +87,28 @@ export function bark(pith: Pith<HTMLElement>): (HTMLElement, G.Repo, ?G.Hash) =>
 function bmap<R: {}, B, C, D>(
   bark: (((R) => void, C, D) => void) => B
 ): (((S.SPith<R> | R) => void, S.SPith<C>, S.SPith<D>) => void) => S.SPith<B> {
-  return pith =>
-    S.flatMap(pith => {
-      const rays: Array<S.SPith<R>> = []
-      pith(
-        r => {
-          rays.push(typeof r === 'object' ? S.d(r) : r)
-        },
-        S.empty,
-        S.empty
-      )
-      if (rays.length === 0) return S.d(bark(o => {}))
-      return S.combine(
-        (...rays) =>
-          bark((o, c, d) => {
-            for (var r of rays) o(r)
-          }),
-        ...rays
-      )
-    }, S.d(pith))
+  return function sbark(pith) {
+    const rays: Array<S.SPith<R>> = []
+    const pC = S.proxy()
+    const pD = S.proxy()
+    pith(
+      r => {
+        rays.push(typeof r === 'object' ? S.d(r) : r)
+      },
+      pC[1],
+      pD[1]
+    )
+    if (rays.length === 0) return S.d(bark(o => {}))
+    return S.combine(
+      (...rays) =>
+        bark((o, c, d) => {
+          pC[0]({ T: 'next', value: c })
+          pD[0]({ T: 'next', value: d })
+          for (var r of rays) o(r)
+        }),
+      ...rays
+    )
+  }
 }
 
 const sbark = bmap<Rays, *, *, *>(bark)
@@ -142,12 +145,10 @@ const counter = (depth: number, key: string, state: S.SPith<G.Hash>) =>
           depth > 0 && o(counter(depth - 1, key + '-', state))
         })
       )
-      //S.map(hash => P.map(a => a, repo.loadTree(hash)), state)
     },
     key
   )
 
-stateO(G.emptyTreeHash)
 const s = sbark(o => o(counter(2, 'counter', state)))
 
 const repo = G.mkrepo(__dirname + '/../.git')
@@ -159,7 +160,6 @@ const d = S.run(r => {
     r.value(e => {
       if (e.R === 'value') {
         console.log(e.value)
-        stateO(e.value)
       } else console.error(e.error)
     })
   } else r.T === 'error' ? console.error(r.error) : console.info(r.T)

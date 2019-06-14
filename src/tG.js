@@ -42,7 +42,7 @@ export const blobBark = (f: (?Buffer) => Buffer): B => (repo, ohash) =>
 export function treeBark(pith: Pith): B {
   return (repo, initHash) =>
     P.flatMap(
-      (otree: Tree) => {
+      otree => {
         const rays: Array<Rays> = []
         pith(
           r => {
