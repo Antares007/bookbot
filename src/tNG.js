@@ -65,7 +65,7 @@ export function bark(pith: Pith): (HTMLElement, G.Repo, ?G.Hash) => P.PPith<G.Ha
     })
 
     if (nrays.length) N.elementBark(o => nrays.forEach(o))(element)
-    if (grays.length) ps.push(G.treeBark(o => grays.forEach(o))(repo))
+    if (grays.length) ps.push(G.treeBark(o => grays.forEach(o))(repo, initHash))
     if (ps.length === 0) return P.resolve(G.emptyTreeHash)
     if (ps.length === 1) return ps[0]
     return P.flatMap((forest: Array<?G.Tree>) => {
@@ -96,7 +96,7 @@ function bmap<R: {}, B>(
     }, S.d(pith))
 }
 
-const sbark = bmap<Rays, *, *, *>(bark)
+const sbark = bmap<Rays, *>(bark)
 
 const gelm = (
   tag: string,
