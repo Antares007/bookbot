@@ -74,7 +74,6 @@ export function bark(pith: Pith<HTMLElement>): (HTMLElement, G.Repo, ?G.Hash) =>
         )
       )(element)
     )(repo, initHash)
-    phash(r => {})
     if (ps.length === 0) return phash
     ps.push(phash)
     return P.flatMap((forest: Array<?G.Tree>) => {
@@ -85,19 +84,23 @@ export function bark(pith: Pith<HTMLElement>): (HTMLElement, G.Repo, ?G.Hash) =>
   }
 }
 
-function bmap<R: {}, B>(
-  bark: (((R) => void) => void) => B
-): (((S.SPith<R> | R) => void) => void) => S.SPith<B> {
+function bmap<R: {}, B, C, D>(
+  bark: (((R) => void, C, D) => void) => B
+): (((S.SPith<R> | R) => void, S.SPith<C>, S.SPith<D>) => void) => S.SPith<B> {
   return pith =>
     S.flatMap(pith => {
       const rays: Array<S.SPith<R>> = []
-      pith(r => {
-        rays.push(typeof r === 'object' ? S.d(r) : r)
-      })
+      pith(
+        r => {
+          rays.push(typeof r === 'object' ? S.d(r) : r)
+        },
+        S.empty,
+        S.empty
+      )
       if (rays.length === 0) return S.d(bark(o => {}))
       return S.combine(
         (...rays) =>
-          bark(o => {
+          bark((o, c, d) => {
             for (var r of rays) o(r)
           }),
         ...rays
@@ -105,11 +108,11 @@ function bmap<R: {}, B>(
     }, S.d(pith))
 }
 
-const sbark = bmap<Rays, *>(bark)
+const sbark = bmap<Rays, *, *, *>(bark)
 
 const gelm = (
   tag: string,
-  pith: ((S.SPith<Rays> | Rays) => void, S.On) => void,
+  pith: ((S.SPith<Rays> | Rays) => void, S.SPith<*>, S.SPith<*>) => void,
   name?: string
 ): S.SPith<{
   R: 'ElementTree',
@@ -117,21 +120,7 @@ const gelm = (
   name?: string,
   b: (HTMLElement, G.Repo, ?G.Hash) => P.PPith<G.Hash>
 }> => {
-  const [proxyO, proxy] = S.proxy()
-  return S.map(
-    b => ({
-      R: 'ElementTree',
-      tag,
-      name,
-      b: (e, r, i) => {
-        proxyO(e)
-        return b(e, r, i)
-      }
-    }),
-    sbark(o => {
-      pith(o, new S.On(proxy))
-    })
-  )
+  return S.map(b => ({ R: 'ElementTree', tag, name, b }), sbark(pith))
 }
 
 const [stateO, state] = S.proxy()
@@ -139,29 +128,17 @@ var i = 0
 const counter = (depth: number, key: string, state: S.SPith<G.Hash>) =>
   gelm(
     'div',
-    (o, on) => {
+    (o, c, d) => {
       o({ R: 'blob', name: 'file.txt', b: r => r.saveBlob(Buffer.from('hi\n')) })
       o(
-        gelm('button', (o, on) => {
+        gelm('button', (o, c, d) => {
           o(S.d(N.str('+')))
           depth > 0 && o(counter(depth - 1, key + '+', state))
-
-          o(
-            S.map(
-              e => ({
-                R: 'blob',
-                name: 'file2',
-                b: (r, p) => r.saveBlob(Buffer.from(JSON.stringify({ n: i++ })))
-              }),
-              S.merge(S.d(null), on.click())
-            )
-          )
         })
       )
       o(
-        gelm('button', (o, on) => {
+        gelm('button', (o, c, d) => {
           o(S.d(N.str('-')))
-          S.map(a => a, on.click())
           depth > 0 && o(counter(depth - 1, key + '-', state))
         })
       )

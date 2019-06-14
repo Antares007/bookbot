@@ -9,31 +9,24 @@ export type RError = { +R: 'error', +error: Error }
 export type PPith<+A> = ((RValue<A> | RError) => void) => void
 
 export function p<A>(pith: ((RValue<A> | RError) => void) => void): PPith<A> {
-  var result: ?(RValue<A> | RError) = null
-  var os: ?Array<(RValue<A> | RError) => void> = null
-  return function(o) {
-    if (result) {
-      const r = result
-      Schdlr.delay(() => o(r))
-    } else if (os) {
-      os.push(o)
-    } else {
-      os = [o]
-      try {
-        pith(r => {
-          if (!result && os) {
-            os.forEach(o => Schdlr.delay(() => o(r)))
-            result = r
-            os = null
-          }
-        })
-      } catch (error) {
-        const err = { R: 'error', error }
-        result = err
-        os = null
-        Schdlr.delay(() => o(err))
+  var result: RValue<A> | RError
+  var Os: ?Array<(RValue<A> | RError) => void> = []
+  try {
+    pith(r => {
+      if (Os) {
+        const os = Os
+        result = r
+        Os = null
+        Schdlr.delay(() => os.forEach(o => o(r)))
       }
-    }
+    })
+  } catch (error) {
+    result = { R: 'error', error }
+    Os = null
+  }
+  return function(o) {
+    if (Os) Os.push(o)
+    else Schdlr.delay(() => o(result))
   }
 }
 
