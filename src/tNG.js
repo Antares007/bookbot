@@ -20,54 +20,63 @@ export type Rays =
       name?: string,
       b: (Element, G.Repo, ?G.Hash) => P.PPith<G.Hash>
     }
-export type Pith = ((Rays) => void) => void
 
-export function bark(pith: Pith): (HTMLElement, G.Repo, ?G.Hash) => P.PPith<G.Hash> {
+export type Pith<N: Element> = (
+  (Rays) => void,
+  N,
+  { [string]: 'tree' | 'blob' | 'exec' | 'sym' | 'commit' }
+) => void
+
+export function bark(pith: Pith<HTMLElement>): (HTMLElement, G.Repo, ?G.Hash) => P.PPith<G.Hash> {
   return (element, repo, initHash) => {
-    const nrays: Array<N.Rays> = []
-    const grays: Array<G.Rays> = []
     const ps: Array<P.PPith<G.Hash>> = []
-    pith(r => {
-      switch (r.R) {
-        case 'Text':
-        case 'Element':
-        case 'ElementNS':
-        case 'Comment':
-          nrays.push(r)
-          break
-        case 'ElementTree':
-          nrays.push({
-            R: 'Element',
-            tag: r.tag,
-            b: element => {
-              const p = r.b(element, repo, initHash)
-              if (r.name) grays.push({ R: 'tree', name: r.name, b: () => p })
-              else ps.push(p)
+    let phash = G.treeBark((gO, dir) =>
+      N.elementBark((nO, element) =>
+        pith(
+          r => {
+            switch (r.R) {
+              case 'Text':
+              case 'Element':
+              case 'ElementNS':
+              case 'Comment':
+                nO(r)
+                break
+              case 'ElementTree':
+                nO({
+                  R: 'Element',
+                  tag: r.tag,
+                  b: element => {
+                    const p = r.b(element, repo, initHash)
+                    if (r.name) gO({ R: 'tree', name: r.name, b: () => p })
+                    else ps.push(p)
+                  }
+                })
+                break
+              case 'ElementNSTree':
+                nO({
+                  R: 'ElementNS',
+                  tag: r.tag,
+                  ns: r.ns,
+                  b: element => {
+                    const p = r.b(element, repo, initHash)
+                    if (r.name) gO({ R: 'tree', name: r.name, b: () => p })
+                    else ps.push(p)
+                  }
+                })
+                break
+              default:
+                gO(r)
+                break
             }
-          })
-          break
-        case 'ElementNSTree':
-          nrays.push({
-            R: 'ElementNS',
-            tag: r.tag,
-            ns: r.ns,
-            b: element => {
-              const p = r.b(element, repo, initHash)
-              if (r.name) grays.push({ R: 'tree', name: r.name, b: () => p })
-              else ps.push(p)
-            }
-          })
-          break
-        default:
-          grays.push((r: G.Rays))
-          break
-      }
-    })
-
-    if (nrays.length) N.elementBark(o => nrays.forEach(o))(element)
-    if (grays.length) ps.push(G.treeBark(o => grays.forEach(o))(repo, initHash))
-    if (ps.length === 0) return P.resolve(G.emptyTreeHash)
-    if (ps.length === 1) return ps[0]
+          },
+          element,
+          dir
+        )
+      )(element)
+    )(repo, initHash)
+    phash(r => {})
+    if (ps.length === 0) return phash
+    ps.push(phash)
     return P.flatMap((forest: Array<?G.Tree>) => {
       var tree: G.Tree = {}
       for (var t of forest) tree = Object.assign(tree, t)
