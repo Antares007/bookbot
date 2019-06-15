@@ -130,6 +130,23 @@ export function filter<A>(f: A => boolean, s: SPith<A>): SPith<A> {
   }
 }
 
+export function take<A>(n: number, as: SPith<A>): SPith<A> {
+  if (n <= 0) return empty
+  return function takePith(o) {
+    var i = 0
+    const d = run(function takeO(e) {
+      if (e.T === 'next') {
+        o(e)
+        if (++i === n) {
+          d.dispose()
+          o({ T: 'end' })
+        }
+      } else o(e)
+    }, as)
+    return d
+  }
+}
+
 export function scan<A, B>(f: (B, A) => B, b: B, s: SPith<A>): SPith<B> {
   return function scanPith(o) {
     var acc = b

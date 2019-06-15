@@ -41,6 +41,7 @@ export function elementBark(pith: Pith<HTMLElement>): HTMLElement => void {
           found = document.createTextNode('')
           r.b(element.insertBefore(found, ref))
         } else if (i !== index) r.b(element.insertBefore(found, ref))
+        else r.b(found)
       } else if (r.R === 'Comment') {
         while (i < l && !found)
           if (ns[i] instanceof Comment) found = ns[i]
@@ -49,6 +50,7 @@ export function elementBark(pith: Pith<HTMLElement>): HTMLElement => void {
           found = document.createComment('')
           r.b(element.insertBefore(found, ref))
         } else if (i !== index) r.b(element.insertBefore(found, ref))
+        else r.b(found)
       } else if (r.R === 'Element') {
         while (i < l && !found)
           if (ns[i] instanceof HTMLElement) found = ns[i]
@@ -57,6 +59,7 @@ export function elementBark(pith: Pith<HTMLElement>): HTMLElement => void {
           found = document.createElement(r.tag)
           r.b(element.insertBefore(found, ref))
         } else if (i !== index) r.b(element.insertBefore(found, ref))
+        else r.b(found)
       } else {
         while (i < l && !found)
           if (ns[i] instanceof Element) found = ns[i]
@@ -65,6 +68,7 @@ export function elementBark(pith: Pith<HTMLElement>): HTMLElement => void {
           found = document.createElementNS(r.ns, r.tag)
           r.b(element.insertBefore(found, ref))
         } else if (i !== index) r.b(element.insertBefore(found, ref))
+        else r.b(found)
       }
     }, element)
     for (var i = element.childNodes.length - 1; i >= index; i--)
