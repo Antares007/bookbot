@@ -3,6 +3,7 @@ import * as N from './tN'
 import * as G from './tG'
 import * as P from './tP'
 import * as S from './tS'
+import { liftBark } from './liftbark'
 
 export type Rays =
   | N.Rays
@@ -84,34 +85,7 @@ export function bark(pith: Pith<HTMLElement>): (HTMLElement, G.Repo, ?G.Hash) =>
   }
 }
 
-function bmap<R: {}, B, C, D>(
-  bark: (((R) => void, C, D) => void) => B
-): (((S.SPith<R> | R) => void, S.SPith<C>, S.SPith<D>) => void) => S.SPith<B> {
-  return function sbark(pith) {
-    const rays: Array<S.SPith<R>> = []
-    const pC = S.proxy()
-    const pD = S.proxy()
-    pith(
-      r => {
-        rays.push(typeof r === 'object' ? S.d(r) : r)
-      },
-      pC[1],
-      pD[1]
-    )
-    if (rays.length === 0) return S.d(bark(o => {}))
-    return S.combine(
-      (...rays) =>
-        bark((o, c, d) => {
-          pC[0]({ T: 'next', value: c })
-          pD[0]({ T: 'next', value: d })
-          for (var r of rays) o(r)
-        }),
-      ...rays
-    )
-  }
-}
-
-const sbark = bmap<Rays, *, *, *>(bark)
+const sbark = liftBark<Rays, *, *, *>(bark)
 
 const gelm = (
   tag: string,
