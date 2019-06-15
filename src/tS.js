@@ -96,6 +96,22 @@ export function map<A, B>(f: A => B, s: SPith<A>): SPith<B> {
   }
 }
 
+export function tap<A>(f: A => void, s: SPith<A>): SPith<A> {
+  return function tapPith(o) {
+    const d = s(function tapO(r) {
+      if (r.T === 'next') {
+        try {
+          f(r.value)
+        } catch (error) {
+          d.dispose()
+          return o({ T: 'error', error })
+        }
+        o(r)
+      } else o(r)
+    })
+    return d
+  }
+}
 export function filter<A>(f: A => boolean, s: SPith<A>): SPith<A> {
   return function mapPith(o) {
     const d = s(function mapO(r) {
@@ -360,14 +376,16 @@ export class On {
     this.ets = ets
   }
   event(name: string) {
-    return flatMap(
-      et =>
-        s(o => {
-          const handler = (e: Event) => o({ T: 'next', value: e })
-          et.addEventListener(name, handler)
-          return D.create(() => et.removeEventListener(name, handler))
-        }),
-      this.ets
+    return switchLatest(
+      map(
+        et =>
+          s(o => {
+            const handler = (e: Event) => o({ T: 'next', value: e })
+            et.addEventListener(name, handler)
+            return D.create(() => et.removeEventListener(name, handler))
+          }),
+        this.ets
+      )
     )
   }
   click() {

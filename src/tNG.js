@@ -132,6 +132,18 @@ const counter = (depth: number, key: string, state: S.SPith<G.Hash>) =>
   gelm(
     'div',
     (o, c, d) => {
+      const on = new S.On(S.tap(console.log.bind(console, 'elm'), c))
+
+      o(
+        S.map(
+          e => ({
+            R: 'blob',
+            name: 's.json',
+            b: (repo, hash) => repo.saveBlob(Buffer.from(i++ + ''))
+          }),
+          S.merge(on.click(), S.d(null))
+        )
+      )
       o({ R: 'blob', name: 'file.txt', b: r => r.saveBlob(Buffer.from('hi\n')) })
       o(
         gelm('button', (o, c, d) => {
@@ -149,7 +161,7 @@ const counter = (depth: number, key: string, state: S.SPith<G.Hash>) =>
     key
   )
 
-const s = sbark(o => o(counter(2, 'counter', state)))
+const s = sbark(o => o(counter(1, 'counter', state)))
 
 const repo = G.mkrepo(__dirname + '/../.git')
 const rootNode = document.getElementById('root-node')
