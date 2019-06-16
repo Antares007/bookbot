@@ -21,6 +21,7 @@ export function liftBark<R: {}, B, C, D>(
         bark((o, c, d) => {
           pC[0]({ T: 'next', value: c })
           pD[0]({ T: 'next', value: d })
+          console.log(rays)
           for (var r of rays) o(r)
         }),
       ...rays

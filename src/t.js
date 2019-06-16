@@ -18,25 +18,50 @@ function bark(pith: Pith): Node => void {
       } else if (i > index) n.insertBefore(found, childNodes[index])
       r.b(found)
     })
-    for (var i = childNodes.length - 1; i >= index; i--) n.removeChild(childNodes[i])
+    for (var i = childNodes.length - 1; i >= index; i--)
+      console.log('rm', n.removeChild(childNodes[i]))
   }
 }
 
-bark(o => {
-  o({
-    R: 'node',
-    create: () => document.createTextNode(''),
-    eq: n => null,
-    b: n => {
-      n.textContent
-    }
-  })
-  o({
-    R: 'node',
-    create: () => document.createElement('div'),
-    eq: n => (n instanceof HTMLElement ? n : null),
-    b: bark(o => {
-      //
-    })
-  })
+import * as S from './tS'
+import { liftBark } from './liftbark'
+
+const sbark = liftBark(bark)
+const s = sbark(o => {
+  var i = 0
+  o(
+    S.map(
+      () => ({
+        R: 'node',
+        create: () => document.createTextNode(''),
+        eq: n => (n.nodeName === '#text' ? n : null),
+        b: n => {
+          n.textContent = 'hello' + i++
+        }
+      }),
+      S.take(3, S.periodic(1000))
+    )
+  )
+  o(
+    S.map(
+      b => ({
+        R: 'node',
+        create: () => document.createElement('h1'),
+        eq: n => (n instanceof HTMLElement && n.nodeName === 'H1' ? n : null),
+        b
+      }),
+      S.d(n => {
+        n.textContent = i + ''
+        console.log('patch ' + i)
+      })
+    )
+  )
 })
+
+const rootNode = document.getElementById('root-node')
+if (!rootNode) throw new Error()
+
+S.run(r => {
+  if (r.T === 'next') r.value(rootNode)
+  else console.info(r)
+}, s)
