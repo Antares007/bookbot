@@ -1,5 +1,5 @@
 // @flow strict
-import * as S from './tS'
+import * as S from './S'
 
 export function liftBark<R: {}, B, C, D>(
   bark: (((R) => void, C, D) => void) => B

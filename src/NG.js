@@ -1,8 +1,8 @@
 // @flow strict
-import * as N from './t'
-import * as G from './tG'
-import * as P from './tP'
-import * as S from './tS'
+import * as N from './N'
+import * as G from './G'
+import * as P from './P'
+import * as S from './S'
 import * as M from './memoize'
 import { liftBark } from './liftbark'
 

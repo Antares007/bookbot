@@ -1,7 +1,6 @@
 // @flow strict
 import * as Schdlr from './S/scheduler'
 import * as D from './S/Disposable'
-import * as S from './tS'
 
 export type RValue<+A> = { +R: 'value', +value: A }
 export type RError = { +R: 'error', +error: Error }

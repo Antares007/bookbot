@@ -1,7 +1,7 @@
 // @flow strict
-import * as S from './tS'
+import * as S from './S'
 import * as JSGit from './js-git/js-git'
-import * as P from './tP'
+import * as P from './P'
 
 export type Tree = {
   [string]: { mode: 'tree' | 'blob' | 'exec' | 'sym' | 'commit', hash: Hash }
