@@ -24,17 +24,9 @@ export const emptyTreeHash: Hash = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 export type B = (Repo, ?Hash) => P.PPith<Hash>
 
-export type Rays =
-  | { R: 'tree', name: string, b: B }
-  | { R: 'blob', name: string, b: B }
-  | { R: 'exec', name: string, b: B }
-  | { R: 'sym', name: string, b: B }
-  | { R: 'commit', name: string, b: B }
+export type Rays = { R: 'tree' | 'blob' | 'exec' | 'sym' | 'commit', name: string, b: B }
 
-export type Pith = (
-  (Rays) => void,
-  { [string]: 'tree' | 'blob' | 'exec' | 'sym' | 'commit' }
-) => void
+export type Pith = ((Rays) => void, Tree) => void
 
 export const blobBark = (f: (?Buffer) => Buffer): B => (repo, ohash) =>
   P.flatMap(mbuffer => repo.saveBlob(f(mbuffer)), ohash ? repo.loadBlob(ohash) : P.resolve(null))
@@ -44,15 +36,9 @@ export function treeBark(pith: Pith): B {
     P.flatMap(
       otree => {
         const rays: Array<Rays> = []
-        pith(
-          r => {
-            rays.push(r)
-          },
-          Object.keys(otree).reduce((t, name) => {
-            t[name] = otree[name].mode
-            return t
-          }, {})
-        )
+        pith(r => {
+          rays.push(r)
+        }, otree || {})
         return P.flatMap(
           hashes =>
             repo.saveTree(

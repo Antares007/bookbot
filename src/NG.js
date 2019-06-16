@@ -17,16 +17,12 @@ export type Rays =
       b: (Node, G.Repo, ?G.Hash) => P.PPith<G.Hash>
     }
 
-export type Pith = (
-  (Rays) => void,
-  Node,
-  { [string]: 'tree' | 'blob' | 'exec' | 'sym' | 'commit' }
-) => void
+export type Pith = ((Rays) => void, Node, G.Tree) => void
 
 export function nodeGitBark(pith: Pith): (Node, G.Repo, ?G.Hash) => P.PPith<G.Hash> {
   return (n, repo, initHash) => {
     const ps = []
-    const phash = G.treeBark((oG, dir) =>
+    const phash = G.treeBark((oG, tree) =>
       N.nodeBark((oN, n) =>
         pith(
           r => {
@@ -36,8 +32,7 @@ export function nodeGitBark(pith: Pith): (Node, G.Repo, ?G.Hash) => P.PPith<G.Ha
                 create: r.create,
                 eq: r.eq,
                 b: n => {
-                  const p = r.b(n, repo, initHash)
-                  console.log(r.name)
+                  const p = r.b(n, repo, r.name && tree[r.name] ? tree[r.name].hash : null)
                   if (r.name) oG({ R: 'tree', name: r.name, b: () => p })
                   else ps.push(p)
                 }
@@ -46,18 +41,20 @@ export function nodeGitBark(pith: Pith): (Node, G.Repo, ?G.Hash) => P.PPith<G.Ha
             else oG(r)
           },
           n,
-          dir
+          tree
         )
       )(n)
     )(repo, initHash)
-
-    if (ps.length === 0) return phash
-    ps.push(phash)
-    return P.flatMap((forest: Array<?G.Tree>) => {
-      var tree: G.Tree = {}
-      for (var t of forest) tree = Object.assign(tree, t)
-      return repo.saveTree(tree)
-    }, P.all(ps.map(p => P.flatMap(h => repo.loadTree(h), p))))
+    return P.flatMap(hash => {
+      if (ps.length === 0) return P.resolve(hash)
+      const pforest = ps.map(p => P.flatMap(h => repo.loadTree(h), p))
+      pforest.push(repo.loadTree(hash))
+      return P.flatMap((forest: Array<?G.Tree>) => {
+        var tree: G.Tree = {}
+        for (var t of forest) tree = Object.assign(tree, t)
+        return repo.saveTree(tree)
+      }, P.all(pforest))
+    }, phash)
   }
 }
 
@@ -81,7 +78,7 @@ const gelm = (
       create: () => document.createElement(TAG),
       eq: n => n.nodeName === TAG,
       name,
-      b: b
+      b: M.memoize3(b)
     }),
     sbark(pith)
   )
@@ -96,21 +93,22 @@ const str = (text: string) => ({
 
 const [stateO, state] = S.proxy()
 var i = 0
-const counter = (depth: number, key: string, state: S.SPith<G.Hash>) =>
-  gelm(
+const counter = (depth: number, key: string, state: S.SPith<G.Hash>) => {
+  console.log(key)
+  return gelm(
     'div',
     (o, c, d) => {
-      //const on = new S.On(S.tap(console.log.bind(console, 'elm'), c))
-      //o(
-      //  S.map(
-      //    e => ({
-      //      R: 'blob',
-      //      name: 's.json',
-      //      b: M.memoize2((repo, hash) => repo.saveBlob(Buffer.from(i++ + '')))
-      //    }),
-      //    S.merge(on.click(), S.d(null))
-      //  )
-      //)
+      const on = new S.On(S.tap(console.log.bind(console, 'elm'), c))
+      o(
+        S.map(
+          e => ({
+            R: 'blob',
+            name: 's.json',
+            b: M.memoize2((repo, hash) => repo.saveBlob(Buffer.from(i++ + '')))
+          }),
+          S.merge(on.click(), S.d(null))
+        )
+      )
       o({ R: 'blob', name: 'file.txt', b: r => r.saveBlob(Buffer.from('hi\n')) })
       o(
         gelm('button', (o, c, d) => {
@@ -127,6 +125,7 @@ const counter = (depth: number, key: string, state: S.SPith<G.Hash>) =>
     },
     key
   )
+}
 
 const s = sbark(o => o(counter(2, 'counter', state)))
 
