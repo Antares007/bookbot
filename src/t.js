@@ -2,7 +2,7 @@
 
 export type RNode = { R: 'node', create: () => Node, eq: Node => boolean, b: Node => void }
 
-export function nodeBark(pith: ((RNode) => void) => void): Node => void {
+export function nodeBark(pith: ((RNode) => void, Node) => void): Node => void {
   return function rb(n) {
     const { childNodes } = n
     var index = 0
@@ -16,7 +16,7 @@ export function nodeBark(pith: ((RNode) => void) => void): Node => void {
       if (!found) n.insertBefore((found = r.create()), childNodes[index])
       else if (i > index) n.insertBefore(found, childNodes[index])
       r.b(found)
-    })
+    }, n)
     for (var i = childNodes.length - 1; i >= index; i--)
       console.log('rm', n.removeChild(childNodes[i]))
   }

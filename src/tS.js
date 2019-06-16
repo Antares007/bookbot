@@ -388,8 +388,8 @@ export function proxy<A>(): [(RValue<A> | REnd | RError) => void, SPith<A>] {
 }
 
 export class On {
-  ets: SPith<HTMLElement>
-  constructor(ets: SPith<HTMLElement>) {
+  ets: SPith<Node>
+  constructor(ets: SPith<Node>) {
     this.ets = ets
   }
   event(name: string) {
