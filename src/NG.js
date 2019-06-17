@@ -90,28 +90,25 @@ const str = (text: string) => ({
   eq: n => n.nodeName === '#text' && n.textContent === text,
   b: n => {}
 })
-
+const rblob = (name: string, f: (?Buffer) => Buffer): G.Rays => ({
+  R: 'blob',
+  name,
+  b: M.memoize2((r, h) =>
+    h ? P.flatMap(b => repo.saveBlob(f(b)), repo.loadBlob(h)) : repo.saveBlob(f())
+  )
+})
 const [stateO, state] = S.proxy()
-var i = 0
+
 const counter = (depth: number, key: string, state: S.SPith<G.Hash>) => {
   console.log(key)
   return gelm(
     'div',
     (o, c, d) => {
-      const on = new S.On(S.tap(console.log.bind(console, 'elm'), c))
-      o(
-        S.map(
-          e => ({
-            R: 'blob',
-            name: 's.json',
-            b: M.memoize2((repo, hash) => repo.saveBlob(Buffer.from(i++ + '')))
-          }),
-          S.merge(on.click(), S.d(null))
-        )
-      )
-      o({ R: 'blob', name: 'file.txt', b: r => r.saveBlob(Buffer.from('hi\n')) })
+      const f = b => Buffer.from('a')
       o(
         gelm('button', (o, c, d) => {
+          const on = new S.On(c)
+          o(rblob('hi', b => Buffer.from('a')))
           o(S.d(str('+')))
           depth > 0 && o(counter(depth - 1, key + '+', state))
         })
@@ -127,7 +124,7 @@ const counter = (depth: number, key: string, state: S.SPith<G.Hash>) => {
   )
 }
 
-const s = sbark(o => o(counter(2, 'counter', state)))
+const s = sbark(o => o(counter(1, 'counter', state)))
 
 const repo = G.mkrepo(__dirname + '/../.git')
 const rootNode = document.getElementById('root-node')
