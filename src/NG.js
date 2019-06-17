@@ -13,16 +13,15 @@ export type Rays =
       R: 'nodeTree',
       create: () => Node,
       eq: Node => boolean,
-      name?: string,
+      name: string,
       b: (Node, G.Repo, ?G.Hash) => P.PPith<G.Hash>
     }
 
 export type Pith = ((Rays) => void, Node, G.Tree) => void
 
 export function nodeGitBark(pith: Pith): (Node, G.Repo, ?G.Hash) => P.PPith<G.Hash> {
-  return (n, repo, initHash) => {
-    const ps = []
-    const phash = G.treeBark((oG, tree) =>
+  return (n, repo, initHash) =>
+    G.treeBark((oG, tree) =>
       N.nodeBark((oN, n) =>
         pith(
           r => {
@@ -32,9 +31,8 @@ export function nodeGitBark(pith: Pith): (Node, G.Repo, ?G.Hash) => P.PPith<G.Ha
                 create: r.create,
                 eq: r.eq,
                 b: n => {
-                  const p = r.b(n, repo, r.name && tree[r.name] ? tree[r.name].hash : null)
-                  if (r.name) oG({ R: 'tree', name: r.name, b: () => p })
-                  else ps.push(p)
+                  const p = r.b(n, repo, tree[r.name] ? tree[r.name].hash : null)
+                  oG({ R: 'tree', name: r.name, b: () => p })
                 }
               })
             } else if (r.R === 'node') oN(r)
@@ -45,30 +43,19 @@ export function nodeGitBark(pith: Pith): (Node, G.Repo, ?G.Hash) => P.PPith<G.Ha
         )
       )(n)
     )(repo, initHash)
-    return P.flatMap(hash => {
-      if (ps.length === 0) return P.resolve(hash)
-      const pforest = ps.map(p => P.flatMap(h => repo.loadTree(h), p))
-      pforest.push(repo.loadTree(hash))
-      return P.flatMap((forest: Array<?G.Tree>) => {
-        var tree: G.Tree = {}
-        for (var t of forest) tree = Object.assign(tree, t)
-        return repo.saveTree(tree)
-      }, P.all(pforest))
-    }, phash)
-  }
 }
 
 const sbark = liftBark<Rays, *, *, *>(nodeGitBark)
 
 const gelm = (
   tag: string,
-  pith: ((S.SPith<Rays> | Rays) => void, S.SPith<Node>, S.SPith<*>) => void,
-  name?: string
+  name: string,
+  pith: ((S.SPith<Rays> | Rays) => void, S.SPith<Node>, S.SPith<*>) => void
 ): S.SPith<{
   R: 'nodeTree',
   create: () => Node,
   eq: Node => boolean,
-  name?: string,
+  name: string,
   b: (Node, G.Repo, ?G.Hash) => P.PPith<G.Hash>
 }> => {
   const TAG = tag.toUpperCase()
@@ -90,6 +77,7 @@ const str = (text: string) => ({
   eq: n => n.nodeName === '#text' && n.textContent === text,
   b: n => {}
 })
+
 const rblob = (name: string, f: (?Buffer) => Buffer): G.Rays => ({
   R: 'blob',
   name,
@@ -97,34 +85,35 @@ const rblob = (name: string, f: (?Buffer) => Buffer): G.Rays => ({
     h ? P.flatMap(b => repo.saveBlob(f(b)), repo.loadBlob(h)) : repo.saveBlob(f())
   )
 })
+
 const [stateO, state] = S.proxy()
 
-const counter = (depth: number, key: string, state: S.SPith<G.Hash>) => {
-  console.log(key)
-  return gelm(
-    'div',
-    (o, c, d) => {
-      const f = b => Buffer.from('a')
-      o(
-        gelm('button', (o, c, d) => {
-          const on = new S.On(c)
-          o(rblob('hi', b => Buffer.from('a')))
-          o(S.d(str('+')))
-          depth > 0 && o(counter(depth - 1, key + '+', state))
-        })
-      )
-      o(
-        gelm('button', (o, c, d) => {
-          o(S.d(str('-')))
-          depth > 0 && o(counter(depth - 1, key + '-', state))
-        })
-      )
-    },
-    key
-  )
-}
+const counter = (depth: number, state: S.SPith<G.Hash>) =>
+  gelm('div', 'counter', (o, c, d) => {
+    const f = b => Buffer.from('a')
+    const p1 = S.proxy()
+    const p2 = S.proxy()
+    o(p1[1])
+    o(p2[1])
+    o(
+      gelm('button', '+', (o, c, d) => {
+        const on = new S.On(c)
+        S.run(p1[0], S.map(() => rblob('hi', b => Buffer.from('a')), S.merge(S.d(), on.click())))
+        o(S.d(str('+')))
+        depth > 0 && o(counter(depth - 1, state))
+      })
+    )
+    o(
+      gelm('button', '-', (o, c, d) => {
+        const on = new S.On(c)
+        S.run(p2[0], S.map(() => rblob('hi', b => Buffer.from('a')), S.merge(S.d(), on.click())))
+        o(S.d(str('-')))
+        depth > 0 && o(counter(depth - 1, state))
+      })
+    )
+  })
 
-const s = sbark(o => o(counter(1, 'counter', state)))
+const s = sbark(o => o(counter(1, state)))
 
 const repo = G.mkrepo(__dirname + '/../.git')
 const rootNode = document.getElementById('root-node')
