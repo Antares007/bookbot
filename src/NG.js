@@ -3,7 +3,7 @@ import * as N from './N'
 import * as G from './G'
 import * as P from './P'
 import * as S from './S'
-import * as M from './memoize'
+import * as M from './M'
 import { liftBark } from './liftbark'
 
 export type Rays =
@@ -65,7 +65,7 @@ const gelm = (
       create: () => document.createElement(TAG),
       eq: n => n.nodeName === TAG,
       name,
-      b: M.memoize3(b)
+      b: M.m3(b)
     }),
     sbark(pith)
   )
@@ -81,13 +81,13 @@ const str = (text: string) => ({
 const rblob = (name: string, f: (?Buffer) => Buffer): G.Rays => ({
   R: 'blob',
   name,
-  b: M.memoize2((r, h) =>
+  b: M.m2((r, h) =>
     h ? P.flatMap(b => repo.saveBlob(f(b)), repo.loadBlob(h)) : repo.saveBlob(f())
   )
 })
 
 const [stateO, state] = S.proxy()
-
+var i = 0
 const counter = (depth: number, state: S.SPith<G.Hash>) =>
   gelm('div', 'counter', (o, c, d) => {
     const f = b => Buffer.from('a')
@@ -98,7 +98,10 @@ const counter = (depth: number, state: S.SPith<G.Hash>) =>
     o(
       gelm('button', '+', (o, c, d) => {
         const on = new S.On(c)
-        S.run(p1[0], S.map(() => rblob('hi', b => Buffer.from('a')), S.merge(S.d(), on.click())))
+        S.run(
+          p1[0],
+          S.map(() => rblob('hi', b => Buffer.from('a' + i++)), S.merge(S.d(), on.click()))
+        )
         o(S.d(str('+')))
         depth > 0 && o(counter(depth - 1, state))
       })

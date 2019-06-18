@@ -2,7 +2,7 @@
 export class Disposable {
   disposed: boolean
   dispose: () => void
-  constructor(dispose: $PropertyType<Disposable, 'dispose'>) {
+  constructor(dispose: () => void) {
     this.disposed = false
     this.dispose = dispose
   }

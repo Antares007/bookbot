@@ -332,29 +332,53 @@ export function flatMapError<A>(f: Error => SPith<A>, s: SPith<A>): SPith<A> {
   }
 }
 
-export function multicast<A>(s: SPith<A>): SPith<A> {
-  var d = null
-  var os = []
+import * as M from './M'
+
+export function multicast<A>(source: SPith<A>): SPith<A> {
+  var d: D.Disposable
+  var os: Array<(RValue<A> | REnd | RError) => void> = []
+  function b(r) {
+    if (r.T === 'next') os.forEach(o => o(r))
+    else {
+      if (r.T === 'error') d.dispose()
+      const os_ = os
+      os = []
+      msource = M.ab(source)
+      os_.forEach(o => o(r))
+    }
+  }
+  var msource = M.ab(source)
   return function pith(o) {
     os.push(o)
-    if (d == null)
-      d = s(r => {
-        if (r.T === 'next') os.forEach(o => o(r))
-        else {
-          const os_ = os
-          d = null
-          os = []
-          os_.forEach(o => o(r))
-        }
-      })
+    d = msource(b)
     return D.create(() => {
       const pos = os.indexOf(o)
-      if (pos !== -1) {
+      if (pos > -1) {
         os.splice(pos, 1)
-        if (os.length === 0 && d) d = d.dispose()
+        if (os.length === 0) {
+          d.dispose()
+          msource = M.ab(source)
+        }
       }
     })
   }
+}
+
+export function subject<A>(): [(RValue<A> | REnd | RError) => void, SPith<A>] {
+  var O
+  return [
+    r => {
+      if (O) O(r)
+    },
+    multicast(
+      s(o => {
+        O = o
+        return D.create(() => {
+          O = null
+        })
+      })
+    )
+  ]
 }
 
 export function proxy<A>(): [(RValue<A> | REnd | RError) => void, SPith<A>] {
