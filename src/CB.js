@@ -26,29 +26,27 @@ export const seqBark = <A>(pith: CPith<A>): CB<A> => {
     pith(r => {
       rays.push(r)
     })
-    if (rays.length === 0) o()
-    else {
-      var a: ?A
-      const runNext = () => {
-        const cbf = rays.shift()
-        var firstCall = true
-        try {
-          cbf((mErr, mA) => {
-            if (firstCall) {
-              firstCall = false
-              a = mA
-              if (mErr) o(mErr, a)
-              else if (rays.length > 0) runNext()
-              else o(void 0, a)
-            }
-          })
-        } catch (err) {
-          o(new RunCBError(cbf.toString(), err), a)
-        }
+    if (rays.length === 0) return o()
+    var a: ?A
+    const runNext = () => {
+      const cbf = rays.shift()
+      var firstCall = true
+      try {
+        cbf((mErr, mA) => {
+          if (firstCall) {
+            firstCall = false
+            a = mA
+            if (mErr) o(mErr, a)
+            else if (rays.length > 0) runNext()
+            else o(void 0, a)
+          }
+        })
+      } catch (err) {
+        o(new RunCBError(cbf.toString(), err), a)
       }
-      runNext()
-      o = o_
     }
+    runNext()
+    o = o_
   }
 }
 
