@@ -15,9 +15,24 @@ export class RunCBError extends Error {
   }
 }
 
-export const pbark = <A>(pith: CPith<A>): CB<A> => {
-  return cb => {}
+export const parBark = <A>(pith: CPith<A>): CB<Array<A>> => {
+  return o => {
+    pith(r => {
+      r((mErr, mA) => {
+        //
+      })
+    })
+  }
 }
+
+parBark(o => {
+  o(cb => {
+    cb(null, null)
+  })
+  o(cb => {
+    cb(null, 2)
+  })
+})((err, a) => {})
 
 export const seqBark = <A>(pith: CPith<A>): CB<A> => {
   return o_ => {
