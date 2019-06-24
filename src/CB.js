@@ -17,11 +17,8 @@ export class RunCBError extends Error {
 
 export const parBark = <A>(pith: CPith<A>): CB<Array<A>> => {
   return o_ => {
-    const noop = (e, a) => {}
-    var o = (err, a) => {
-      o = noop
-      onNextFrame(() => o_(err, a))
-    }
+    const noop = (_1, _2) => {}
+    var o = (err, a) => ((o = noop), onNextFrame(() => o_(err, a)))
     const rays: Array<CB<A>> = []
     try {
       pith(r => {
@@ -40,7 +37,7 @@ export const parBark = <A>(pith: CPith<A>): CB<Array<A>> => {
           if (firstCall) {
             firstCall = false
             rez[i] = mA
-            if (mErr) o(mErr, [])
+            if (mErr) o(mErr, rez)
             else if (!--left) o(null, rez)
           }
         })
@@ -48,21 +45,9 @@ export const parBark = <A>(pith: CPith<A>): CB<Array<A>> => {
     } catch (err) {
       return o(err, [])
     }
-    o = (e, a) => {
-      o = noop
-      o_(e, a)
-    }
+    o = (e, a) => ((o = noop), o_(e, a))
   }
 }
-
-parBark(o => {
-  o(cb => {
-    cb(null, null)
-  })
-  o(cb => {
-    cb(null, 2)
-  })
-})((err, a) => {})
 
 export const seqBark = <A>(pith: CPith<?A>): CB<?A> => {
   return o_ => {
@@ -98,24 +83,3 @@ export const seqBark = <A>(pith: CPith<?A>): CB<?A> => {
     o = o_
   }
 }
-
-import * as fs from 'fs'
-
-const see: string => string => CB<?Buffer> = rootPath => hash =>
-  seqBark(o => {
-    var mbuffer
-    o(cb => {
-      fs.readFile('', (err, buffer) => {
-        if (err) cb(err)
-        else mbuffer = buffer
-      })
-    })
-    o(cb => {
-      if (!mbuffer) cb(new Error('never'))
-      mbuffer
-    })
-  })
-
-see('rootPath')('hash')((err, buffer) => {
-  console.log({ err, buffer })
-})
