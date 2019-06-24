@@ -6,6 +6,10 @@ export type RValue<+A> = { +R: 'value', +value: A }
 export type RError = { +R: 'error', +error: Error }
 
 export type PPith<+A> = ((RValue<A> | RError) => void) => void
+export const bark = <A>(pith: PPith<A>): PPith<A> => {
+  pith(r => {})
+  throw new Error()
+}
 
 export function p<A>(pith: ((RValue<A> | RError) => void) => void): PPith<A> {
   var result: RValue<A> | RError

@@ -14,8 +14,11 @@ export const mkrepo: string => { load: Hash => P.PPith<OC.Tree | OC.Blob | OC.Co
       load: M.ab(hash =>
         P.p(o => {
           fs.readFile(hashToPath(hash), (err, buffer) => {
-            if (err) o(P.rError(err))
-            else {
+            if (err) {
+              if (err.code !== 'ENOENT') o(P.rError(err))
+              else {
+              }
+            } else {
               zlib.inflate(buffer, (err, buffer) => {
                 if (err) o(P.rError(err))
                 else o(P.rValue(OC.deframe(buffer)))
