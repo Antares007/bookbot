@@ -7,14 +7,6 @@ export const onNextFrame = (f: () => void): void => {
   setTimeout(f, 0)
 }
 
-export class RunCBError extends Error {
-  innerError: Error
-  constructor(message: string, innerError: Error) {
-    super(message)
-    this.innerError = innerError
-  }
-}
-
 export const parBark = <A>(pith: CPith<A>): CB<Array<A>> => {
   return o_ => {
     const noop = (_1, _2) => {}
@@ -36,9 +28,10 @@ export const parBark = <A>(pith: CPith<A>): CB<Array<A>> => {
         cbf((mErr, mA) => {
           if (firstCall) {
             firstCall = false
+            left--
             rez[i] = mA
-            if (mErr) o(mErr, rez)
-            else if (!--left) o(null, rez)
+            if (mErr) o(mErr, left ? rez.slice() : rez)
+            else if (!left) o(null, rez)
           }
         })
       })
@@ -76,7 +69,7 @@ export const seqBark = <A>(pith: CPith<?A>): CB<?A> => {
           }
         })
       } catch (err) {
-        o(new RunCBError(cbf.toString(), err), a)
+        o(err, a)
       }
     }
     runNext()
