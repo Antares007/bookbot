@@ -7,9 +7,10 @@ export const onNextFrame = (f: () => void): void => {
   setTimeout(f, 0)
 }
 
+const noop = (_1, _2) => {}
+
 export const parBark = <A>(pith: CPith<A>): CB<Array<A>> => {
   return o_ => {
-    const noop = (_1, _2) => {}
     var o = (err, a) => ((o = noop), onNextFrame(() => o_(err, a)))
     const rays: Array<CB<A>> = []
     try {
@@ -26,13 +27,12 @@ export const parBark = <A>(pith: CPith<A>): CB<Array<A>> => {
       rays.forEach((cbf, i) => {
         var firstCall = true
         cbf((mErr, mA) => {
-          if (firstCall) {
-            firstCall = false
-            left--
-            rez[i] = mA
-            if (mErr) o(mErr, left ? rez.slice() : rez)
-            else if (!left) o(null, rez)
-          }
+          if (!firstCall) return
+          firstCall = false
+          left--
+          rez[i] = mA
+          if (mErr) o(mErr, left ? rez.slice() : rez)
+          else if (!left) o(null, rez)
         })
       })
     } catch (err) {
@@ -60,13 +60,12 @@ export const seqBark = <A>(pith: CPith<?A>): CB<?A> => {
       var firstCall = true
       try {
         cbf((mErr, mA) => {
-          if (firstCall) {
-            firstCall = false
-            a = mA
-            if (mErr) o(mErr, a)
-            else if (rays.length > 0) runNext()
-            else o(void 0, a)
-          }
+          if (!firstCall) return
+          firstCall = false
+          a = mA
+          if (mErr) o(mErr, a)
+          else if (rays.length > 0) runNext()
+          else o(void 0, a)
         })
       } catch (err) {
         o(err, a)
