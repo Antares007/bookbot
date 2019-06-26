@@ -1,7 +1,7 @@
 // @flow strict
-
-export type CB<+A> = ((error: ?Error, value: A) => void) => void
-export type CPith<+A> = (o: (CB<A>) => void) => void
+type P<+O> = ((O) => void) => void
+export type CB<+A> = ((Error | A) => void) => void
+export type CPith<+A> = P<P<A | Error>>
 
 export const onNextFrame = (f: () => void): void => {
   setTimeout(f, 0)
@@ -9,43 +9,10 @@ export const onNextFrame = (f: () => void): void => {
 
 const noop = (_1, _2) => {}
 
-export const parBark = <A>(pith: CPith<A>): CB<Array<A>> => {
+export const parBark = <A>(pith: P<P<A | Error>>): P<Array<A> | Error> => {
   return o_ => {
-    var o = (err, a) => ((o = noop), onNextFrame(() => o_(err, a)))
+    var o = x => ((o = noop), onNextFrame(() => o_(x)))
     const rays: Array<CB<A>> = []
-    try {
-      pith(r => {
-        rays.push(r)
-      })
-    } catch (err) {
-      return o(err, [])
-    }
-    var left = rays.length
-    if (!left) return o(null, [])
-    const rez: Array<A> = new Array(left)
-    try {
-      rays.forEach((cbf, i) => {
-        var firstCall = true
-        cbf((mErr, mA) => {
-          if (!firstCall) return
-          firstCall = false
-          left--
-          rez[i] = mA
-          if (mErr) o(mErr, left ? rez.slice() : rez)
-          else if (!left) o(null, rez)
-        })
-      })
-    } catch (err) {
-      return o(err, [])
-    }
-    o = (e, a) => ((o = noop), o_(e, a))
-  }
-}
-
-export const seqBark = <A>(pith: CPith<?A>): CB<?A> => {
-  return o_ => {
-    var o = (err, a) => onNextFrame(() => o_(err, a))
-    const rays: Array<CB<?A>> = []
     try {
       pith(r => {
         rays.push(r)
@@ -53,25 +20,69 @@ export const seqBark = <A>(pith: CPith<?A>): CB<?A> => {
     } catch (err) {
       return o(err)
     }
-    if (rays.length === 0) return o()
-    var a: ?A
+    var left = rays.length
+    if (!left) return o([])
+    const rez: Array<A> = new Array(left)
+    try {
+      rays.forEach((cbf, i) => {
+        var firstCall = true
+        cbf(x => {
+          if (!firstCall) return
+          firstCall = false
+          left--
+          if (x instanceof Error) o(x)
+          else {
+            rez[i] = x
+            if (!left) o(rez)
+          }
+        })
+      })
+    } catch (err) {
+      return o(err)
+    }
+    o = x => ((o = noop), o_(x))
+  }
+}
+
+export const seqBark = <A>(pith: P<P<A | Error>>): P<A | Error> => {
+  return o_ => {
+    var o = x => onNextFrame(() => o_(x))
+    const rays: Array<CB<A>> = []
+    try {
+      pith(r => {
+        rays.push(r)
+      })
+    } catch (err) {
+      return o(err)
+    }
+    if (rays.length === 0) return
+    var a: A
     const runNext = () => {
       const cbf = rays.shift()
       var firstCall = true
       try {
-        cbf((mErr, mA) => {
+        cbf(x => {
           if (!firstCall) return
           firstCall = false
-          a = mA
-          if (mErr) o(mErr, a)
+          if (x instanceof Error) o(x)
           else if (rays.length > 0) runNext()
-          else o(void 0, a)
+          else o(x)
         })
       } catch (err) {
-        o(err, a)
+        o(err)
       }
     }
     runNext()
     o = o_
   }
 }
+
+declare var bark: <A>(pith: (o: (CB<A>) => void) => void) => CB<A>
+bark(o => {
+  o(cb => {
+    cb(1)
+  })
+  o(cb => {
+    cb(2)
+  })
+})((err: Error | number) => {})
