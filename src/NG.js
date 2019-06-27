@@ -1,7 +1,7 @@
 // @flow strict
 import * as N from './N'
 import * as G from './G'
-import * as P from './P'
+import * as CB from './CB'
 import * as S from './S'
 import * as M from './M'
 import { liftBark } from './liftbark'
@@ -14,12 +14,12 @@ export type Rays =
       create: () => Node,
       eq: Node => boolean,
       name: string,
-      b: (Node, G.Repo, ?G.Hash) => P.CBPith<G.Hash>
+      b: (Node, G.Repo, ?G.Hash) => CB.CBPith<G.Hash>
     }
 
 export type Pith = ((Rays) => void, Node, G.Tree) => void
 
-export function nodeGitBark(pith: Pith): (Node, G.Repo, ?G.Hash) => P.CBPith<G.Hash> {
+export function nodeGitBark(pith: Pith): (Node, G.Repo, ?G.Hash) => CB.CBPith<G.Hash> {
   return (n, repo, initHash) =>
     G.treeBark((oG, tree) =>
       N.nodeBark((oN, n) =>
@@ -56,7 +56,7 @@ const gelm = (
   create: () => Node,
   eq: Node => boolean,
   name: string,
-  b: (Node, G.Repo, ?G.Hash) => P.CBPith<G.Hash>
+  b: (Node, G.Repo, ?G.Hash) => CB.CBPith<G.Hash>
 }> => {
   const TAG = tag.toUpperCase()
   return S.map(
@@ -82,7 +82,7 @@ const rblob = (name: string, f: (?Buffer) => Buffer): G.Rays => ({
   R: 'blob',
   name,
   b: M.m2((r, h) =>
-    h ? P.flatMap(b => repo.saveBlob(f(b)), repo.loadBlob(h)) : repo.saveBlob(f())
+    h ? CB.flatMap(b => repo.saveBlob(f(b)), repo.loadBlob(h)) : repo.saveBlob(f())
   )
 })
 

@@ -1,6 +1,6 @@
 // @flow strict
 import * as G from './G'
-import * as P from './P'
+import * as CB from './CB'
 
 const repo = G.mkrepo(__dirname + '/../.git')
 
@@ -9,7 +9,7 @@ const hash = G.treeBark(function rec(o, dir) {
   for (var name in dir) {
     const e = dir[name]
     if (e.mode === 'tree') o({ R: 'tree', name, b: G.treeBark(rec) })
-    else o({ R: e.mode, name, b: () => P.right(e.hash) })
+    else o({ R: e.mode, name, b: () => CB.right(e.hash) })
   }
   o({
     R: 'blob',

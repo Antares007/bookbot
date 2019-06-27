@@ -1,13 +1,13 @@
 // @flow strict
-import * as P from './P'
+import * as CB from './CB'
 import * as M from './M'
 import * as JSGit from './repo'
 
 type Hash = string
 
-export type TreePH = { T: 'tree', hashish: JSGit.Repo => P.CBPith<Hash> }
-export type BlobPH = { T: 'blob', hashish: JSGit.Repo => P.CBPith<Hash> }
-export type CommitPH = { T: 'commit', hashish: JSGit.Repo => P.CBPith<Hash> }
+export type TreePH = { T: 'tree', hashish: JSGit.Repo => CB.CBPith<Hash> }
+export type BlobPH = { T: 'blob', hashish: JSGit.Repo => CB.CBPith<Hash> }
+export type CommitPH = { T: 'commit', hashish: JSGit.Repo => CB.CBPith<Hash> }
 
 export type Tree = {
   [string]:
@@ -33,7 +33,7 @@ const blob: Blob => BlobPH = M.ab(v => {
 const tree: Tree => TreePH = M.ab(tree => {
   const names = Object.keys(tree)
   const hashish = repo =>
-    P.flatMap(
+    CB.flatMap(
       hashes =>
         repo.saveTree(
           names.reduce((t, name, i) => {
@@ -41,13 +41,13 @@ const tree: Tree => TreePH = M.ab(tree => {
             return t
           }, ({}: JSGit.Tree))
         ),
-      P.all(names.map(name => tree[name].value.hashish(repo)))
+      CB.all(names.map(name => tree[name].value.hashish(repo)))
     )
   return { T: 'tree', hashish }
 })
 
 const commit: Commit => CommitPH = M.ab(commit => {
-  return { T: 'commit', hashish: repo => P.right('') }
+  return { T: 'commit', hashish: repo => CB.right('') }
 })
 
 const mkrepo: JSGit.Repo => {
@@ -56,10 +56,10 @@ const mkrepo: JSGit.Repo => {
   mapBlob: ((Blob) => Blob) => BlobPH => BlobPH
 } = M.ab(repo => {
   const blobMap = new Map<Hash, BlobPH>()
-  const loadBlob: BlobPH => P.CBPith<Blob> = v => {
-    return P.flatMap(
+  const loadBlob: BlobPH => CB.CBPith<Blob> = v => {
+    return CB.flatMap(
       hash =>
-        P.map(b => {
+        CB.map(b => {
           if (!b) throw new Error()
           return b
         }, repo.loadBlob(hash)),
@@ -70,12 +70,13 @@ const mkrepo: JSGit.Repo => {
   return {
     loadBlob: hash => ({
       T: 'blob',
-      hashish: trepo => P.flatMap(mb => (mb ? P.right(hash) : P.right(hash)), trepo.loadBlob(hash))
+      hashish: trepo =>
+        CB.flatMap(mb => (mb ? CB.right(hash) : CB.right(hash)), trepo.loadBlob(hash))
     }),
     mapTree: f => treePH => {
-      let see = P.flatMap(
+      let see = CB.flatMap(
         hash =>
-          P.map(b => {
+          CB.map(b => {
             if (!b) throw new Error()
             let see = b['a']
             return b
@@ -86,7 +87,7 @@ const mkrepo: JSGit.Repo => {
       throw new Error()
     },
     mapBlob: f => blobPH => {
-      return { T: 'blob', hashish: repo => P.flatMap(b => repo.saveBlob(f(b)), loadBlob(blobPH)) }
+      return { T: 'blob', hashish: repo => CB.flatMap(b => repo.saveBlob(f(b)), loadBlob(blobPH)) }
     }
   }
 })

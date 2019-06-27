@@ -1,88 +1,55 @@
 // @flow strict
-type P<+O> = ((O) => void) => void
-export type CB<+A> = ((Error | A) => void) => void
-export type CPith<+A> = P<P<A | Error>>
+import * as Schdlr from './S/scheduler'
+import * as D from './S/Disposable'
+import * as LR from './LR'
 
-export const onNextFrame = (f: () => void): void => {
-  setTimeout(f, 0)
-}
+export type CBPith<+A> = ((LR.Left<Error> | LR.Right<A>) => void) => void
 
-const noop = (_1, _2) => {}
-
-export const parBark = <A>(pith: P<P<A | Error>>): P<Array<A> | Error> => {
-  return o_ => {
-    var o = x => ((o = noop), onNextFrame(() => o_(x)))
-    const rays: Array<CB<A>> = []
-    try {
-      pith(r => {
-        rays.push(r)
-      })
-    } catch (err) {
-      return o(err)
-    }
-    var left = rays.length
-    if (!left) return o([])
-    const rez: Array<A> = new Array(left)
-    try {
-      rays.forEach((cbf, i) => {
-        var firstCall = true
-        cbf(x => {
-          if (!firstCall) return
-          firstCall = false
-          left--
-          if (x instanceof Error) o(x)
-          else {
-            rez[i] = x
-            if (!left) o(rez)
-          }
-        })
-      })
-    } catch (err) {
-      return o(err)
-    }
-    o = x => ((o = noop), o_(x))
+export function p<A>(pith: ((LR.Left<Error> | LR.Right<A>) => void) => void): CBPith<A> {
+  var result: LR.Right<A> | LR.Left<Error>
+  var Os: ?Array<(LR.Right<A> | LR.Left<Error>) => void> = []
+  pith(r => {
+    if (!Os) return
+    const os = Os
+    result = r
+    Os = null
+    Schdlr.delay(() => os.forEach(o => o(r)))
+  })
+  return function(o) {
+    if (Os) Os.push(o)
+    else Schdlr.delay(() => o(result))
   }
 }
 
-export const seqBark = <A>(pith: P<P<A | Error>>): P<A | Error> => {
-  return o_ => {
-    var o = x => onNextFrame(() => o_(x))
-    const rays: Array<CB<A>> = []
-    try {
-      pith(r => {
-        rays.push(r)
-      })
-    } catch (err) {
-      return o(err)
-    }
-    if (rays.length === 0) return
-    var a: A
-    const runNext = () => {
-      const cbf = rays.shift()
-      var firstCall = true
-      try {
-        cbf(x => {
-          if (!firstCall) return
-          firstCall = false
-          if (x instanceof Error) o(x)
-          else if (rays.length > 0) runNext()
-          else o(x)
-        })
-      } catch (err) {
-        o(err)
-      }
-    }
-    runNext()
-    o = o_
-  }
+export function right<A>(a: A): CBPith<A> {
+  return p(o => o(LR.right(a)))
 }
 
-declare var bark: <A>(pith: (o: (CB<A>) => void) => void) => CB<A>
-bark(o => {
-  o(cb => {
-    cb(1)
-  })
-  o(cb => {
-    cb(2)
-  })
-})((err: Error | number) => {})
+export function left(value: Error): CBPith<empty> {
+  return p(o => o(LR.left(value)))
+}
+
+export function map<A, B>(f: A => B, ps: CBPith<A>): CBPith<B> {
+  return p(o => ps(r => o(LR.map(f, r))))
+}
+
+export function flatMap<A, B>(f: A => CBPith<B>, ps: CBPith<A>): CBPith<B> {
+  return p(o => ps(r => (r.T === 'right' ? f(r.value)(o) : o(r))))
+}
+
+export function all<A>(ps: Array<CBPith<A>>): CBPith<Array<A>> {
+  var count = 0
+  var left = ps.length
+  if (left === 0) return p(o => o(LR.right([])))
+  var results = new Array(left)
+  return p(o =>
+    ps.forEach((p, index) =>
+      p(r => {
+        if (r.T === 'right') {
+          results[index] = r.value
+          if (!--left) o(LR.right(results))
+        } else o(r)
+      })
+    )
+  )
+}
