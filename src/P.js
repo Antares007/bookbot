@@ -3,13 +3,13 @@ import * as Schdlr from './S/scheduler'
 import * as D from './S/Disposable'
 import * as LR from './LR'
 
-export type PPith<+A> = ((LR.Left<Error> | LR.Right<A>) => void) => void
-export const bark = <A>(pith: PPith<A>): PPith<A> => {
+export type CBPith<+A> = ((LR.Left<Error> | LR.Right<A>) => void) => void
+export const bark = <A>(pith: CBPith<A>): CBPith<A> => {
   pith(r => {})
   throw new Error()
 }
 
-export function p<A>(pith: ((LR.Left<Error> | LR.Right<A>) => void) => void): PPith<A> {
+export function p<A>(pith: ((LR.Left<Error> | LR.Right<A>) => void) => void): CBPith<A> {
   var result: LR.Right<A> | LR.Left<Error>
   var Os: ?Array<(LR.Right<A> | LR.Left<Error>) => void> = []
   pith(r => {
@@ -25,56 +25,33 @@ export function p<A>(pith: ((LR.Left<Error> | LR.Right<A>) => void) => void): PP
   }
 }
 
-export function right<A>(a: A): PPith<A> {
+export function right<A>(a: A): CBPith<A> {
   return p(o => o(LR.right(a)))
 }
 
-export function left(value: Error): PPith<empty> {
+export function left(value: Error): CBPith<empty> {
   return p(o => o(LR.left(value)))
 }
 
-export function map<A, B>(f: A => B, ps: PPith<A>): PPith<B> {
-  return p(o =>
-    ps(r => {
-      if (r.T === 'right') {
-        var result
-        try {
-          result = f(r.value)
-        } catch (value) {
-          return o(LR.left(value))
-        }
-        o(LR.right(result))
-      } else o(r)
-    })
-  )
+export function map<A, B>(f: A => B, ps: CBPith<A>): CBPith<B> {
+  return p(o => ps(r => o(LR.map(f, r))))
 }
 
-export function flatMap<A, B>(f: A => PPith<B>, ps: PPith<A>): PPith<B> {
-  return p(o =>
-    ps(r => {
-      if (r.T === 'right') {
-        var result
-        try {
-          result = f(r.value)
-        } catch (error) {
-          return o(LR.left(error))
-        }
-        result(o)
-      } else o(r)
-    })
-  )
+export function flatMap<A, B>(f: A => CBPith<B>, ps: CBPith<A>): CBPith<B> {
+  return p(o => ps(r => (r.T === 'right' ? f(r.value)(o) : o(r))))
 }
 
-export function all<A>(ps: Array<PPith<A>>): PPith<Array<A>> {
+export function all<A>(ps: Array<CBPith<A>>): CBPith<Array<A>> {
   var count = 0
-  if (ps.length === 0) return p(o => o(LR.right([])))
-  var results = new Array(ps.length)
+  var left = ps.length
+  if (left === 0) return p(o => o(LR.right([])))
+  var results = new Array(left)
   return p(o =>
-    ps.forEach((p, i) =>
+    ps.forEach((p, index) =>
       p(r => {
         if (r.T === 'right') {
-          results[i] = r.value
-          if (++count === results.length) o(LR.right(results))
+          results[index] = r.value
+          if (!--left) o(LR.right(results))
         } else o(r)
       })
     )

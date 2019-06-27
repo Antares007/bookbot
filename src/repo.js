@@ -12,12 +12,12 @@ export type Tree = {
 export type Commit = JSGit.Commit
 
 export type Repo = {
-  loadTree: Hash => P.PPith<?Tree>,
-  loadBlob: Hash => P.PPith<?Buffer>,
-  loadCommit: Hash => P.PPith<?Commit>,
-  saveTree: Tree => P.PPith<Hash>,
-  saveBlob: Buffer => P.PPith<Hash>,
-  saveCommit: Commit => P.PPith<Hash>
+  loadTree: Hash => P.CBPith<?Tree>,
+  loadBlob: Hash => P.CBPith<?Buffer>,
+  loadCommit: Hash => P.CBPith<?Commit>,
+  saveTree: Tree => P.CBPith<Hash>,
+  saveBlob: Buffer => P.CBPith<Hash>,
+  saveCommit: Commit => P.CBPith<Hash>
 }
 
 export function mkrepo(gitdir: string): Repo {

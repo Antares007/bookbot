@@ -14,12 +14,12 @@ export type Rays =
       create: () => Node,
       eq: Node => boolean,
       name: string,
-      b: (Node, G.Repo, ?G.Hash) => P.PPith<G.Hash>
+      b: (Node, G.Repo, ?G.Hash) => P.CBPith<G.Hash>
     }
 
 export type Pith = ((Rays) => void, Node, G.Tree) => void
 
-export function nodeGitBark(pith: Pith): (Node, G.Repo, ?G.Hash) => P.PPith<G.Hash> {
+export function nodeGitBark(pith: Pith): (Node, G.Repo, ?G.Hash) => P.CBPith<G.Hash> {
   return (n, repo, initHash) =>
     G.treeBark((oG, tree) =>
       N.nodeBark((oN, n) =>
@@ -56,7 +56,7 @@ const gelm = (
   create: () => Node,
   eq: Node => boolean,
   name: string,
-  b: (Node, G.Repo, ?G.Hash) => P.PPith<G.Hash>
+  b: (Node, G.Repo, ?G.Hash) => P.CBPith<G.Hash>
 }> => {
   const TAG = tag.toUpperCase()
   return S.map(

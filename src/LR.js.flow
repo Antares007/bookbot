@@ -9,9 +9,8 @@ declare export var mappend: (<R>(Right<R>, Right<R>) => Right<R>) &
   (<L, R>(Right<R>, Left<L>) => Left<L>) &
   (<L, R>(Left<L>, Right<R>) => Left<L>) &
   (<L>(Left<L>, Left<L>) => Left<L>)
-declare export var map: (<A, B>(f: (A) => B, Right<A>) => Right<B>) &
-  (<A, B>((A) => B, Left<A>) => Left<A>)
-declare export var flatMap: (<A, B>(f: (A) => Right<B>, Right<A>) => Right<B>) &
-  (<A, B>((A) => Right<B>, Left<A>) => Left<A>) &
-  (<A, B>((A) => Left<B>, Right<A>) => Left<B>) &
-  (<A, B>((A) => Left<B>, Left<A>) => Left<A>)
+declare export var map: <A, B, L>(f: (A) => B, Right<A> | Left<L>) => Right<B> | Left<L>
+declare export var flatMap: <A, B, L>(
+  f: (A) => Right<B> | Left<L>,
+  Right<A> | Left<L>
+) => Right<B> | Left<L>

@@ -5,9 +5,9 @@ import * as JSGit from './repo'
 
 type Hash = string
 
-export type TreePH = { T: 'tree', hashish: JSGit.Repo => P.PPith<Hash> }
-export type BlobPH = { T: 'blob', hashish: JSGit.Repo => P.PPith<Hash> }
-export type CommitPH = { T: 'commit', hashish: JSGit.Repo => P.PPith<Hash> }
+export type TreePH = { T: 'tree', hashish: JSGit.Repo => P.CBPith<Hash> }
+export type BlobPH = { T: 'blob', hashish: JSGit.Repo => P.CBPith<Hash> }
+export type CommitPH = { T: 'commit', hashish: JSGit.Repo => P.CBPith<Hash> }
 
 export type Tree = {
   [string]:
@@ -56,7 +56,7 @@ const mkrepo: JSGit.Repo => {
   mapBlob: ((Blob) => Blob) => BlobPH => BlobPH
 } = M.ab(repo => {
   const blobMap = new Map<Hash, BlobPH>()
-  const loadBlob: BlobPH => P.PPith<Blob> = v => {
+  const loadBlob: BlobPH => P.CBPith<Blob> = v => {
     return P.flatMap(
       hash =>
         P.map(b => {
@@ -70,8 +70,7 @@ const mkrepo: JSGit.Repo => {
   return {
     loadBlob: hash => ({
       T: 'blob',
-      hashish: trepo =>
-        P.flatMap(mb => (mb ? P.right(hash) : P.right(hash)), trepo.loadBlob(hash))
+      hashish: trepo => P.flatMap(mb => (mb ? P.right(hash) : P.right(hash)), trepo.loadBlob(hash))
     }),
     mapTree: f => treePH => {
       let see = P.flatMap(

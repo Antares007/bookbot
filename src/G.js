@@ -11,19 +11,19 @@ export type Blob = Buffer
 export type Commit = JSGit.Commit
 
 export type Repo = {
-  loadTree: Hash => P.PPith<?Tree>,
-  loadBlob: Hash => P.PPith<?Blob>,
-  loadCommit: Hash => P.PPith<?Commit>,
-  saveTree: Tree => P.PPith<Hash>,
-  saveBlob: Blob => P.PPith<Hash>,
-  saveCommit: Commit => P.PPith<Hash>
+  loadTree: Hash => P.CBPith<?Tree>,
+  loadBlob: Hash => P.CBPith<?Blob>,
+  loadCommit: Hash => P.CBPith<?Commit>,
+  saveTree: Tree => P.CBPith<Hash>,
+  saveBlob: Blob => P.CBPith<Hash>,
+  saveCommit: Commit => P.CBPith<Hash>
 }
 
 export type Hash = string
 
 export const emptyTreeHash: Hash = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
-export type B = (Repo, ?Hash) => P.PPith<Hash>
+export type B = (Repo, ?Hash) => P.CBPith<Hash>
 
 export type Rays = { R: 'tree' | 'blob' | 'exec' | 'sym' | 'commit', name: string, b: B }
 
