@@ -47,7 +47,7 @@ const tree: Tree => TreePH = M.ab(tree => {
 })
 
 const commit: Commit => CommitPH = M.ab(commit => {
-  return { T: 'commit', hashish: repo => P.resolve('') }
+  return { T: 'commit', hashish: repo => P.right('') }
 })
 
 const mkrepo: JSGit.Repo => {
@@ -71,7 +71,7 @@ const mkrepo: JSGit.Repo => {
     loadBlob: hash => ({
       T: 'blob',
       hashish: trepo =>
-        P.flatMap(mb => (mb ? P.resolve(hash) : P.resolve(hash)), trepo.loadBlob(hash))
+        P.flatMap(mb => (mb ? P.right(hash) : P.right(hash)), trepo.loadBlob(hash))
     }),
     mapTree: f => treePH => {
       let see = P.flatMap(

@@ -1,6 +1,7 @@
 // @flow strict
 import * as JSGit from './js-git/js-git'
 import * as P from './P'
+import * as LR from './LR'
 
 export type Hash = string
 export const emptyTreeHash: Hash = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
@@ -25,11 +26,11 @@ export function mkrepo(gitdir: string): Repo {
     loadTree: hash =>
       P.p(o =>
         repo.loadAs('tree', hash, (err, a) => {
-          if (err) o(P.rError(err))
-          else if (!a) o(P.rValue(a))
+          if (err) o(LR.left(err))
+          else if (!a) o(LR.right(a))
           else {
             o(
-              P.rValue(
+              LR.right(
                 Object.keys(a).reduce((t, name) => {
                   const { mode: m, hash } = a[name]
                   if (m === 16384) t[name] = { mode: 'tree', hash }
@@ -46,9 +47,9 @@ export function mkrepo(gitdir: string): Repo {
         })
       ),
     loadBlob: hash =>
-      P.p(o => repo.loadAs('blob', hash, (err, a) => (err ? o(P.rError(err)) : o(P.rValue(a))))),
+      P.p(o => repo.loadAs('blob', hash, (err, a) => (err ? o(LR.left(err)) : o(LR.right(a))))),
     loadCommit: hash =>
-      P.p(o => repo.loadAs('commit', hash, (err, a) => (err ? o(P.rError(err)) : o(P.rValue(a))))),
+      P.p(o => repo.loadAs('commit', hash, (err, a) => (err ? o(LR.left(err)) : o(LR.right(a))))),
     saveTree: a =>
       P.p(o =>
         repo.saveAs(
@@ -58,12 +59,12 @@ export function mkrepo(gitdir: string): Repo {
             t[name] = { mode: JSGit.modes[m], hash }
             return t
           }, ({}: JSGit.Tree)),
-          (err, a) => (err ? o(P.rError(err)) : o(P.rValue(a)))
+          (err, a) => (err ? o(LR.left(err)) : o(LR.right(a)))
         )
       ),
     saveBlob: a =>
-      P.p(o => repo.saveAs('blob', a, (err, a) => (err ? o(P.rError(err)) : o(P.rValue(a))))),
+      P.p(o => repo.saveAs('blob', a, (err, a) => (err ? o(LR.left(err)) : o(LR.right(a))))),
     saveCommit: body =>
-      P.p(o => repo.saveAs('commit', body, (err, a) => (err ? o(P.rError(err)) : o(P.rValue(a)))))
+      P.p(o => repo.saveAs('commit', body, (err, a) => (err ? o(LR.left(err)) : o(LR.right(a)))))
   }
 }

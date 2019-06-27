@@ -1,0 +1,17 @@
+// @flow strict
+
+export type Right<+T> = {| +T: 'right', +value: T |}
+export type Left<+T> = {| +T: 'left', +value: T |}
+
+declare export var left: <L>(L) => Left<L>
+declare export var right: <R>(R) => Right<R>
+declare export var mappend: (<R>(Right<R>, Right<R>) => Right<R>) &
+  (<L, R>(Right<R>, Left<L>) => Left<L>) &
+  (<L, R>(Left<L>, Right<R>) => Left<L>) &
+  (<L>(Left<L>, Left<L>) => Left<L>)
+declare export var map: (<A, B>(f: (A) => B, Right<A>) => Right<B>) &
+  (<A, B>((A) => B, Left<A>) => Left<A>)
+declare export var flatMap: (<A, B>(f: (A) => Right<B>, Right<A>) => Right<B>) &
+  (<A, B>((A) => Right<B>, Left<A>) => Left<A>) &
+  (<A, B>((A) => Left<B>, Right<A>) => Left<B>) &
+  (<A, B>((A) => Left<B>, Left<A>) => Left<A>)

@@ -125,9 +125,9 @@ if (!rootNode) throw new Error()
 const d = S.run(r => {
   if (r.T === 'next') {
     r.value(e => {
-      if (e.R === 'value') {
+      if (e.T === 'right') {
         console.log(e.value)
-      } else console.error(e.error)
+      } else console.error(e.value)
     })
   } else r.T === 'error' ? console.error(r.error) : console.info(r.T)
 }, S.map(g => g(rootNode, repo), s))

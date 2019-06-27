@@ -2,6 +2,7 @@
 import * as S from './S'
 import * as JSGit from './js-git/js-git'
 import * as P from './P'
+import * as LR from './LR'
 
 export type Tree = {
   [string]: { mode: 'tree' | 'blob' | 'exec' | 'sym' | 'commit', hash: Hash }
@@ -29,7 +30,7 @@ export type Rays = { R: 'tree' | 'blob' | 'exec' | 'sym' | 'commit', name: strin
 export type Pith = ((Rays) => void, Tree) => void
 
 export const blobBark = (f: (?Buffer) => Buffer): B => (repo, ohash) =>
-  P.flatMap(mbuffer => repo.saveBlob(f(mbuffer)), ohash ? repo.loadBlob(ohash) : P.resolve(null))
+  P.flatMap(mbuffer => repo.saveBlob(f(mbuffer)), ohash ? repo.loadBlob(ohash) : P.right(null))
 
 export function treeBark(pith: Pith): B {
   return (repo, initHash) =>
@@ -50,7 +51,7 @@ export function treeBark(pith: Pith): B {
           P.all(rays.map(r => r.b(repo, otree[r.name] ? otree[r.name].hash : null)))
         )
       },
-      initHash ? P.map(t => t || {}, repo.loadTree(initHash)) : P.resolve({})
+      initHash ? P.map(t => t || {}, repo.loadTree(initHash)) : P.right({})
     )
 }
 
@@ -60,11 +61,11 @@ export function mkrepo(gitdir: string): Repo {
     loadTree: hash =>
       P.p(o =>
         repo.loadAs('tree', hash, (err, a) => {
-          if (err) o(P.rError(err))
-          else if (!a) o(P.rValue(a))
+          if (err) o(LR.left(err))
+          else if (!a) o(LR.right(a))
           else {
             o(
-              P.rValue(
+              LR.right(
                 Object.keys(a).reduce((t, name) => {
                   const { mode: m, hash } = a[name]
                   if (m === 16384) t[name] = { mode: 'tree', hash }
@@ -81,9 +82,9 @@ export function mkrepo(gitdir: string): Repo {
         })
       ),
     loadBlob: hash =>
-      P.p(o => repo.loadAs('blob', hash, (err, a) => (err ? o(P.rError(err)) : o(P.rValue(a))))),
+      P.p(o => repo.loadAs('blob', hash, (err, a) => (err ? o(LR.left(err)) : o(LR.right(a))))),
     loadCommit: hash =>
-      P.p(o => repo.loadAs('commit', hash, (err, a) => (err ? o(P.rError(err)) : o(P.rValue(a))))),
+      P.p(o => repo.loadAs('commit', hash, (err, a) => (err ? o(LR.left(err)) : o(LR.right(a))))),
     saveTree: a =>
       P.p(o =>
         repo.saveAs(
@@ -93,12 +94,12 @@ export function mkrepo(gitdir: string): Repo {
             t[name] = { mode: JSGit.modes[m], hash }
             return t
           }, ({}: JSGit.Tree)),
-          (err, a) => (err ? o(P.rError(err)) : o(P.rValue(a)))
+          (err, a) => (err ? o(LR.left(err)) : o(LR.right(a)))
         )
       ),
     saveBlob: a =>
-      P.p(o => repo.saveAs('blob', a, (err, a) => (err ? o(P.rError(err)) : o(P.rValue(a))))),
+      P.p(o => repo.saveAs('blob', a, (err, a) => (err ? o(LR.left(err)) : o(LR.right(a))))),
     saveCommit: body =>
-      P.p(o => repo.saveAs('commit', body, (err, a) => (err ? o(P.rError(err)) : o(P.rValue(a)))))
+      P.p(o => repo.saveAs('commit', body, (err, a) => (err ? o(LR.left(err)) : o(LR.right(a)))))
   }
 }

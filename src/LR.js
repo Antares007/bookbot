@@ -1,0 +1,5 @@
+export const left = value => ({ T: 'left', value })
+export const right = value => ({ T: 'right', value })
+export const mappend = (l, r) => (l.T === 'right' && r.T === 'right' ? r : l)
+export const map = (f, lr) => (lr.T === 'right' ? right(f(lr.value)) : lr)
+export const flatMap = (f, lr) => (lr.T === 'right' ? f(lr.value) : lr)

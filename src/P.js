@@ -1,64 +1,49 @@
 // @flow strict
 import * as Schdlr from './S/scheduler'
 import * as D from './S/Disposable'
+import * as LR from './LR'
 
-export type RValue<+A> = { +R: 'value', +value: A }
-export type RError = { +R: 'error', +error: Error }
-
-export type PPith<+A> = ((RValue<A> | RError) => void) => void
+export type PPith<+A> = ((LR.Left<Error> | LR.Right<A>) => void) => void
 export const bark = <A>(pith: PPith<A>): PPith<A> => {
   pith(r => {})
   throw new Error()
 }
 
-export function p<A>(pith: ((RValue<A> | RError) => void) => void): PPith<A> {
-  var result: RValue<A> | RError
-  var Os: ?Array<(RValue<A> | RError) => void> = []
-  try {
-    pith(r => {
-      if (Os) {
-        const os = Os
-        result = r
-        Os = null
-        Schdlr.delay(() => os.forEach(o => o(r)))
-      }
-    })
-  } catch (error) {
-    result = { R: 'error', error }
+export function p<A>(pith: ((LR.Left<Error> | LR.Right<A>) => void) => void): PPith<A> {
+  var result: LR.Right<A> | LR.Left<Error>
+  var Os: ?Array<(LR.Right<A> | LR.Left<Error>) => void> = []
+  pith(r => {
+    if (!Os) return
+    const os = Os
+    result = r
     Os = null
-  }
+    Schdlr.delay(() => os.forEach(o => o(r)))
+  })
   return function(o) {
     if (Os) Os.push(o)
     else Schdlr.delay(() => o(result))
   }
 }
 
-export function resolve<A>(a: A): PPith<A> {
-  return p(o => o(rValue(a)))
+export function right<A>(a: A): PPith<A> {
+  return p(o => o(LR.right(a)))
 }
 
-export function reject(error: Error): PPith<empty> {
-  return p(o => o(rError(error)))
-}
-
-export function rValue<A>(a: A): RValue<A> {
-  return { R: 'value', value: a }
-}
-export function rError(error: Error): RError {
-  return { R: 'error', error }
+export function left(value: Error): PPith<empty> {
+  return p(o => o(LR.left(value)))
 }
 
 export function map<A, B>(f: A => B, ps: PPith<A>): PPith<B> {
   return p(o =>
     ps(r => {
-      if (r.R === 'value') {
+      if (r.T === 'right') {
         var result
         try {
           result = f(r.value)
-        } catch (error) {
-          return o({ R: 'error', error })
+        } catch (value) {
+          return o(LR.left(value))
         }
-        o({ R: 'value', value: result })
+        o(LR.right(result))
       } else o(r)
     })
   )
@@ -67,12 +52,12 @@ export function map<A, B>(f: A => B, ps: PPith<A>): PPith<B> {
 export function flatMap<A, B>(f: A => PPith<B>, ps: PPith<A>): PPith<B> {
   return p(o =>
     ps(r => {
-      if (r.R === 'value') {
+      if (r.T === 'right') {
         var result
         try {
           result = f(r.value)
         } catch (error) {
-          return o({ R: 'error', error })
+          return o(LR.left(error))
         }
         result(o)
       } else o(r)
@@ -82,14 +67,14 @@ export function flatMap<A, B>(f: A => PPith<B>, ps: PPith<A>): PPith<B> {
 
 export function all<A>(ps: Array<PPith<A>>): PPith<Array<A>> {
   var count = 0
-  if (ps.length === 0) return p(o => o(rValue([])))
+  if (ps.length === 0) return p(o => o(LR.right([])))
   var results = new Array(ps.length)
   return p(o =>
     ps.forEach((p, i) =>
       p(r => {
-        if (r.R === 'value') {
+        if (r.T === 'right') {
           results[i] = r.value
-          if (++count === results.length) o({ R: 'value', value: results })
+          if (++count === results.length) o(LR.right(results))
         } else o(r)
       })
     )
