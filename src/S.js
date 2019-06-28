@@ -155,6 +155,7 @@ export const flatMap = <L, A, B>(
           si,
           si(r => {
             if (r.T === 'right') {
+              o(r)
             } else {
               dmap.delete(si)
               if (dmap.size === 0) o(r)
