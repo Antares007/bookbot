@@ -84,13 +84,13 @@ export function periodic(period: number): SPith<void, void> {
   }
 }
 
-export const map = <A, B, L>(f: A => B): ((SPith<L, A>) => SPith<L, B>) => s => o =>
+export const map = <L, A, B>(f: A => B): ((SPith<L, A>) => SPith<L, B>) => s => o =>
   s(r => o(LR.map(f, r)))
 
-export const tap = <A, B, L>(f: A => B): ((SPith<L, A>) => SPith<L, A>) => s => o =>
+export const tap = <L, A, B>(f: A => B): ((SPith<L, A>) => SPith<L, A>) => s => o =>
   s(r => o(LR.map(lr => (f(lr), lr), r)))
 
-export const filter = <A, L>(f: A => boolean): ((SPith<L, A>) => SPith<L | void, A>) => s => o =>
+export const filter = <L, A>(f: A => boolean): ((SPith<L, A>) => SPith<L | void, A>) => s => o =>
   s(r => o(LR.filter(f, r)))
 
 export const take = <L, A>(n: number): ((SPith<L, A>) => SPith<L | void, A>) => as =>
@@ -110,33 +110,93 @@ export const take = <L, A>(n: number): ((SPith<L, A>) => SPith<L | void, A>) => 
         return d
       })
 
-export const scan = <A, B, L>(f: (B, A) => B, b: B): ((SPith<L, A>) => SPith<L, B>) => as =>
+export const scan = <L, A, B>(f: (B, A) => B, b: B): ((SPith<L, A>) => SPith<L, B>) => as =>
   s(o => {
     var acc = b
     return as(r => (r.T === 'right' ? o(LR.right((acc = f(acc, r.value)))) : o(r)))
   })
 
-//export function merge<A>(...ss: Array<SPith<A>>): SPith<A> {
-//  return function mergePith(o) {
+export const merge = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, A> => o => {
+  const dmap = new Map()
+  for (let s of ss)
+    dmap.set(
+      s,
+      s(r => {
+        if (r.T === 'right') o(r)
+        else {
+          dmap.delete(s)
+          if (dmap.size === 0) o(r)
+        }
+      })
+    )
+  return D.create(() => dmap.forEach(d => d.dispose()))
+}
+
+export const flatMap = <L, A, B>(
+  f: A => SPith<L, B>
+): ((SPith<L, A>) => SPith<L, B>) => so => o => {
+  const dmap = new Map()
+  dmap.set(
+    so,
+    so(r => {
+      if (r.T === 'right') {
+        const si = f(r.value)
+        dmap.set(
+          si,
+          si(r => {
+            if (r.T === 'right') {
+            } else {
+              dmap.delete(si)
+              if (dmap.size === 0) o(r)
+            }
+          })
+        )
+      } else {
+        dmap.delete(so)
+        if (dmap.size === 0) o(r)
+      }
+    })
+  )
+  return D.create(() => dmap.forEach(d => d.dispose()))
+}
+
+//export function flatMap<A, B>(f: A => SPith<B>, so: SPith<A>): SPith<B> {
+//  return function flatMapPith(o) {
 //    const dmap = new Map()
 //    const d = D.create(() => dmap.forEach(d => d.dispose()))
-//    ss.forEach(s =>
-//      dmap.set(
-//        s,
-//        s(function mergeO(r) {
-//          if (r.T === 'next') o(r)
-//          else {
-//            dmap.delete(s)
-//            if (r.T === 'end') dmap.size === 0 && o(r)
-//            else d.dispose(), o(r)
+//    dmap.set(
+//      so,
+//      so(function flatMapOO(r) {
+//        if (r.T === 'next') {
+//          var si
+//          try {
+//            si = f(r.value)
+//          } catch (err) {
+//            d.dispose()
+//            return o({ T: 'error', error: err })
 //          }
-//        })
-//      )
+//          dmap.set(
+//            si,
+//            si(function flatMapIO(r) {
+//              if (r.T === 'next') o(r)
+//              else {
+//                dmap.delete(si)
+//                if (r.T === 'end') dmap.size === 0 && o(r)
+//                else d.dispose(), o(r)
+//              }
+//            })
+//          )
+//        } else {
+//          dmap.delete(so)
+//          if (r.T === 'end') dmap.size === 0 && o(r)
+//          else d.dispose(), o(r)
+//        }
+//      })
 //    )
 //    return d
 //  }
 //}
-//
+
 //export function combine<A, B>(f: (...Array<A>) => B, ...ss: Array<SPith<A>>): SPith<B> {
 //  return function combinePith(o) {
 //    const dmap = new Map()
@@ -210,42 +270,6 @@ export const scan = <A, B, L>(f: (B, A) => B, b: B): ((SPith<L, A>) => SPith<L, 
 //  }
 //}
 //
-//export function flatMap<A, B>(f: A => SPith<B>, so: SPith<A>): SPith<B> {
-//  return function flatMapPith(o) {
-//    const dmap = new Map()
-//    const d = D.create(() => dmap.forEach(d => d.dispose()))
-//    dmap.set(
-//      so,
-//      so(function flatMapOO(r) {
-//        if (r.T === 'next') {
-//          var si
-//          try {
-//            si = f(r.value)
-//          } catch (err) {
-//            d.dispose()
-//            return o({ T: 'error', error: err })
-//          }
-//          dmap.set(
-//            si,
-//            si(function flatMapIO(r) {
-//              if (r.T === 'next') o(r)
-//              else {
-//                dmap.delete(si)
-//                if (r.T === 'end') dmap.size === 0 && o(r)
-//                else d.dispose(), o(r)
-//              }
-//            })
-//          )
-//        } else {
-//          dmap.delete(so)
-//          if (r.T === 'end') dmap.size === 0 && o(r)
-//          else d.dispose(), o(r)
-//        }
-//      })
-//    )
-//    return d
-//  }
-//}
 //
 //export function flatMapEnd<A>(f: () => SPith<A>, s: SPith<A>): SPith<A> {
 //  return function flatMapEndPith(o) {
