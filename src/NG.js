@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import * as N from './N'
 import * as G from './G'
 import * as CB from './CB'

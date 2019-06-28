@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import * as S from './S'
 import * as D_ from './S/Disposable'
 import * as M from './M'
