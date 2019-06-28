@@ -2,6 +2,7 @@
 import * as Schdlr from './S/scheduler'
 import * as D from './S/Disposable'
 import * as LR from './LR'
+import * as M from './M'
 
 export opaque type SPith<+L, +R> = ((LR.T<L, R>) => void) => D.Disposable
 
@@ -56,14 +57,41 @@ export const empty: SPith<void, empty> = o => Schdlr.delay(() => o(LR.left()))
 
 export const never: SPith<void, empty> = o => D.empty
 
-export function periodic(period: number): SPith<void, void> {
-  return function periodicPith(o) {
-    var d = Schdlr.delay(function periodicNext() {
-      d = Schdlr.delay(periodicNext, period)
-      o(LR.right())
-    })
-    return D.create(() => d.dispose())
+export const multicast = <L, A>(source: SPith<L, A>): SPith<L, A> => {
+  var md: D.Disposable
+  var os: Array<(LR.T<L, A>) => void> = []
+  function b(r: LR.T<L, A>): void {
+    if (r.T === 'right') os.forEach(o => o(r))
+    else {
+      const os_ = os
+      os = []
+      msource = M.ab(source)
+      os_.forEach(o => o(r))
+    }
   }
+  var msource = M.ab(source)
+  return o => {
+    os.push(o)
+    md = msource(b)
+    return D.create(() => {
+      const pos = os.indexOf(o)
+      if (pos > -1) {
+        os.splice(pos, 1)
+        if (os.length === 0) {
+          md.dispose()
+          msource = M.ab(source)
+        }
+      }
+    })
+  }
+}
+
+export const periodic = (period: number): SPith<void, void> => o => {
+  var d = Schdlr.delay(function periodicNext() {
+    d = Schdlr.delay(periodicNext, period)
+    o(LR.right())
+  })
+  return D.create(() => d.dispose())
 }
 
 export const map = <L, A, B>(f: A => B): ((SPith<L, A>) => SPith<L, B>) => s => o =>
@@ -289,37 +317,7 @@ export const flatMap = <L, A, B>(
 //  }
 //}
 //
-//import * as M from './M'
-//
-//export function multicast<A>(source: SPith<A>): SPith<A> {
-//  var d: D.Disposable
-//  var os: Array<(RValue<A> | REnd | RError) => void> = []
-//  function b(r) {
-//    if (r.T === 'next') os.forEach(o => o(r))
-//    else {
-//      if (r.T === 'error') d.dispose()
-//      const os_ = os
-//      os = []
-//      msource = M.ab(source)
-//      os_.forEach(o => o(r))
-//    }
-//  }
-//  var msource = M.ab(source)
-//  return function pith(o) {
-//    os.push(o)
-//    d = msource(b)
-//    return D.create(() => {
-//      const pos = os.indexOf(o)
-//      if (pos > -1) {
-//        os.splice(pos, 1)
-//        if (os.length === 0) {
-//          d.dispose()
-//          msource = M.ab(source)
-//        }
-//      }
-//    })
-//  }
-//}
+
 //
 //export function subject<A>(): [(RValue<A> | REnd | RError) => void, SPith<A>] {
 //  var O
