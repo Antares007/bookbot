@@ -44,35 +44,17 @@ export function run<L, R>(o: (LR.T<L, R>) => void, s: SPith<L, R>): D.Disposable
   return d
 }
 
-export function d<A>(a: A, delay: number = 0): SPith<void, A> {
-  return function dPith(o) {
-    var d = Schdlr.delay(() => {
-      d = Schdlr.delay(() => o(LR.left()))
-      o(LR.right(a))
-    }, delay)
-    return D.create(() => d.dispose())
-  }
+export const d = <A>(a: A, delay: number = 0): SPith<void, A> => o => {
+  var d = Schdlr.delay(() => {
+    d = Schdlr.delay(() => o(LR.left()))
+    o(LR.right(a))
+  }, delay)
+  return D.create(() => d.dispose())
 }
 
-export function throwError(error: Error): SPith<Error, empty> {
-  return function throwErrorPith(o) {
-    var d = Schdlr.delay(() => {
-      d = null
-      o(LR.left(error))
-    })
-    return D.create(() => {
-      d && d.dispose()
-    })
-  }
-}
+export const empty: SPith<void, empty> = o => Schdlr.delay(() => o(LR.left()))
 
-export const empty: SPith<void, empty> = function emptyPith(o) {
-  return Schdlr.delay(() => o(LR.left()))
-}
-
-export const never: SPith<void, empty> = function neverPith(o) {
-  return D.empty
-}
+export const never: SPith<void, empty> = o => D.empty
 
 export function periodic(period: number): SPith<void, void> {
   return function periodicPith(o) {
