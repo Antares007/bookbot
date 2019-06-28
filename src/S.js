@@ -97,6 +97,18 @@ export const periodic = (period: number): SPith<void, void> => o => {
 export const map = <L, A, B>(f: A => B): ((SPith<L, A>) => SPith<L, B>) => s => o =>
   s(r => o(LR.map(f, r)))
 
+export const tryCatch = <L, A>(s: SPith<L, A>): SPith<L | Error, A> => o => {
+  const d = s(r => {
+    try {
+      o(r)
+    } catch (err) {
+      d.dispose()
+      o(LR.left(err instanceof Error ? err : new Error(err)))
+    }
+  })
+  return d
+}
+
 export const tap = <L, A, B>(f: A => B): ((SPith<L, A>) => SPith<L, A>) => s => o =>
   s(r => o(LR.map(lr => (f(lr), lr), r)))
 
