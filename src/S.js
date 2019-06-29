@@ -6,6 +6,22 @@ import * as M from './M'
 
 export opaque type SPith<+L, +R> = ((LR.T<?L, R>) => void) => D.Disposable
 
+export const d = <A>(a: A, delay: number = 0): SPith<void, A> => o => {
+  var d = Schdlr.delay(() => {
+    d = Schdlr.delay(() => o(LR.left()))
+    o(LR.right(a))
+  }, delay)
+  return D.create(() => d.dispose())
+}
+
+export const run = <L, R>(o: (LR.T<?L, R>) => void): ((SPith<L, R>) => D.Disposable) => s => {
+  const d = s(r => {
+    if (r.T === 'left' && r.value) d.dispose()
+    o(r)
+  })
+  return d
+}
+
 export const map = <L, A, B>(f: A => B): ((SPith<L, A>) => SPith<L | Error, B>) => s => o =>
   s(r => o(LR.map(f, r)))
 
@@ -20,7 +36,7 @@ export const scan = <L, A, B>(
   b: B
 ): ((SPith<L, A>) => SPith<L | Error, B>) => as => o => {
   var acc = b
-  return as(r => o(LR.map(a => (acc = f(acc, a)), r)))
+  return map(a => (acc = f(acc, a)))(as)(o)
 }
 
 export const join = <La, Lb, R>(so: SPith<La, SPith<Lb, R>>): SPith<La | Lb, R> => o => {
@@ -36,13 +52,13 @@ export const join = <La, Lb, R>(so: SPith<La, SPith<Lb, R>>): SPith<La | Lb, R> 
               o(r)
             } else {
               dmap.delete(r.value)
-              if (dmap.size === 0) o(r)
+              if (r.value || dmap.size === 0) o(r)
             }
           })
         )
       } else {
         dmap.delete(so)
-        if (dmap.size === 0) o(r)
+        if (r.value || dmap.size === 0) o(r)
       }
     })
   )
@@ -52,6 +68,22 @@ export const join = <La, Lb, R>(so: SPith<La, SPith<Lb, R>>): SPith<La | Lb, R> 
 export const flatMap = <La, Lb, Ra, Rb>(
   f: Ra => SPith<Lb, Rb>
 ): ((SPith<La, Ra>) => SPith<La | Lb | Error, Rb>) => so => join(map(f)(so))
+
+export const merge = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, A> => o => {
+  const dmap = new Map()
+  for (let s of ss)
+    dmap.set(
+      s,
+      s(r => {
+        if (r.T === 'right') o(r)
+        else {
+          dmap.delete(s)
+          if (r.value || dmap.size === 0) o(r)
+        }
+      })
+    )
+  return D.create(() => dmap.forEach(d => d.dispose()))
+}
 
 export const fromCB = <L, R>(cbf: ((?L, R) => void) => void): SPith<L, R> => o => {
   var disposed = false
@@ -63,8 +95,12 @@ export const fromCB = <L, R>(cbf: ((?L, R) => void) => void): SPith<L, R> => o =
     if (!firstRun) return
     firstRun = false
     const e = l ? LR.left(l) : LR.right(r)
-    if (sameCallStack) d = Schdlr.delay(() => o(e))
-    else if (!disposed) o(e)
+    const send = () => {
+      d = Schdlr.delay(() => o(LR.left()))
+      o(e)
+    }
+    if (sameCallStack) d = Schdlr.delay(send)
+    else if (!disposed) send()
   })
 
   sameCallStack = false
@@ -88,23 +124,7 @@ export const fromCB = <L, R>(cbf: ((?L, R) => void) => void): SPith<L, R> => o =
 //  }
 //}
 //
-//export function run<L, R>(o: (LR.T<L, R>) => void, s: SPith<L, R>): D.Disposable {
-//  var last: LR.T<L, R>
-//  const d = s(r => {
-//    if (last && last.T === 'left') return d.dispose()
-//    last = r
-//    o(r)
-//  })
-//  return d
-//}
 //
-//export const d = <A>(a: A, delay: number = 0): SPith<void, A> => o => {
-//  var d = Schdlr.delay(() => {
-//    d = Schdlr.delay(() => o(LR.left()))
-//    o(LR.right(a))
-//  }, delay)
-//  return D.create(() => d.dispose())
-//}
 //
 //export const empty: SPith<void, empty> = o => Schdlr.delay(() => o(LR.left()))
 //
@@ -182,21 +202,6 @@ export const fromCB = <L, R>(cbf: ((?L, R) => void) => void): SPith<L, R> => o =
 //      })
 //
 //
-//export const merge = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, A> => o => {
-//  const dmap = new Map()
-//  for (let s of ss)
-//    dmap.set(
-//      s,
-//      s(r => {
-//        if (r.T === 'right') o(r)
-//        else {
-//          dmap.delete(s)
-//          if (dmap.size === 0) o(r)
-//        }
-//      })
-//    )
-//  return D.create(() => dmap.forEach(d => d.dispose()))
-//}
 //
 //
 //export const combine = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, Array<A>> => o => {
