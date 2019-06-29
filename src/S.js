@@ -12,8 +12,7 @@ export const fromCB = <L, R>(cbf: ((?L, R) => void) => void): SPith<L, R> => o =
     cbf((l, r) => {
       if (disposed) return
       disposed = true
-      if (l) o(LR.left(l))
-      else o(LR.right(r))
+      o(l ? LR.left(l) : LR.right(r))
     })
   )
   return D.create(() => {
@@ -56,6 +55,10 @@ export const d = <A>(a: A, delay: number = 0): SPith<void, A> => o => {
 export const empty: SPith<void, empty> = o => Schdlr.delay(() => o(LR.left()))
 
 export const never: SPith<void, empty> = o => D.empty
+
+export const left = <L>(l: L): SPith<L, empty> => o => Schdlr.delay(() => o(LR.left(l)))
+
+export const right = <R>(r: R): SPith<empty, R> => o => Schdlr.delay(() => o(LR.right(r)))
 
 export const multicast = <L, A>(source: SPith<L, A>): SPith<L, A> => {
   var md: D.Disposable
@@ -183,85 +186,43 @@ export const flatMap = <L, A, B>(
   return D.create(() => dmap.forEach(d => d.dispose()))
 }
 
-//export function flatMap<A, B>(f: A => SPith<B>, so: SPith<A>): SPith<B> {
-//  return function flatMapPith(o) {
-//    const dmap = new Map()
-//    const d = D.create(() => dmap.forEach(d => d.dispose()))
-//    dmap.set(
-//      so,
-//      so(function flatMapOO(r) {
-//        if (r.T === 'next') {
-//          var si
-//          try {
-//            si = f(r.value)
-//          } catch (err) {
-//            d.dispose()
-//            return o({ T: 'error', error: err })
-//          }
-//          dmap.set(
-//            si,
-//            si(function flatMapIO(r) {
-//              if (r.T === 'next') o(r)
-//              else {
-//                dmap.delete(si)
-//                if (r.T === 'end') dmap.size === 0 && o(r)
-//                else d.dispose(), o(r)
-//              }
-//            })
-//          )
-//        } else {
-//          dmap.delete(so)
-//          if (r.T === 'end') dmap.size === 0 && o(r)
-//          else d.dispose(), o(r)
-//        }
-//      })
-//    )
-//    return d
-//  }
-//}
+export const combine = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, Array<A>> => o => {
+  const dmap = new Map()
+  const indices: Array<number> = []
+  const length = ss.length
+  const values = new Array(length)
+  var hasallvalues = false
+  ss.forEach((s, index) =>
+    dmap.set(
+      s,
+      s(r => {
+        if (r.T === 'right') {
+          values[index] = r.value
+          goto: while (true) {
+            if (hasallvalues) {
+              o(LR.right(values))
+              break
+            } else {
+              const pos = Schdlr.binarySearchRightmost(index, indices)
+              if (pos === -1 || indices[pos] < index) {
+                indices.splice(pos + 1, 0, index)
+                if ((hasallvalues = indices.length === length)) continue goto
+                else break
+              }
+            }
+          }
+        } else {
+          dmap.delete(s)
+          if (dmap.size === 0) o(r)
+        }
+      })
+    )
+  )
+  return D.create(() => dmap.forEach(d => d.dispose()))
+}
 
 //export function combine<A, B>(f: (...Array<A>) => B, ...ss: Array<SPith<A>>): SPith<B> {
 //  return function combinePith(o) {
-//    const dmap = new Map()
-//    const d = D.create(() => dmap.forEach(d => d.dispose()))
-//    const indices: Array<number> = []
-//    const values = new Array(ss.length)
-//    var hasallvalues = false
-//    ss.forEach((s, index) =>
-//      dmap.set(
-//        s,
-//        s(function combineO(r) {
-//          if (r.T === 'next') {
-//            values[index] = r.value
-//            goto: while (true) {
-//              if (hasallvalues) {
-//                var b
-//                try {
-//                  b = f(...values)
-//                } catch (error) {
-//                  d.dispose()
-//                  return o({ T: 'error', error })
-//                }
-//                o({ T: 'next', value: b })
-//                break
-//              } else {
-//                const pos = Schdlr.binarySearchRightmost(index, indices)
-//                if (pos === -1 || indices[pos] < index) {
-//                  indices.splice(pos + 1, 0, index)
-//                  if ((hasallvalues = indices.length === values.length)) continue goto
-//                  else break
-//                }
-//              }
-//            }
-//          } else {
-//            dmap.delete(s)
-//            if (r.T === 'end') dmap.size === 0 && o(r)
-//            else d.dispose(), o(r)
-//          }
-//        })
-//      )
-//    )
-//    return d
 //  }
 //}
 //

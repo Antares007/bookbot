@@ -25,6 +25,8 @@ export const loadHash = (rootPath: string) => (hash: string) =>
     )
   )
 
+const see = S.fromCB(cb => fs.readdir('', cb))
+
 //export const mkrepo: string => { load: Hash => CB.CBPith<OC.Tree | OC.Blob | OC.Commit> } = M.ab(
 //  rootPath => {
 //    return {
