@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import * as OC from './object-codec'
 import * as S from '../S'
 import * as M from '../M'
