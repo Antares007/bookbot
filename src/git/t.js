@@ -1,4 +1,4 @@
-// flow strict
+// @flow strict
 import * as OC from './object-codec'
 import * as S from '../S'
 import * as M from '../M'
@@ -17,10 +17,8 @@ const inflate = S.flatMap(buffer =>
 export const loadHash = (rootPath: string) => (hash: string) =>
   deframe(
     inflate(
-      S.tryCatch(
-        S.fromCB(cb =>
-          fs.readFile(pathJoin(rootPath, 'objects', hash.substring(0, 2), hash.substring(2)), cb)
-        )
+      S.fromCB(cb =>
+        fs.readFile(pathJoin(rootPath, 'objects', hash.substring(0, 2), hash.substring(2)), cb)
       )
     )
   )
