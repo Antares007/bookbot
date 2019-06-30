@@ -14,9 +14,27 @@ export const d = <A>(a: A, delay: number = 0): SPith<void, A> => o => {
   return D.create(() => d.dispose())
 }
 
+export function s<L, R>(pith: ((LR.T<L, R>) => void) => D.Disposable): SPith<L, R> {
+  return o => {
+    var last: LR.T<L, R>
+    const d = pith(r => {
+      if (last && last.T === 'left') return d.dispose()
+      last = r
+      o(r)
+    })
+    return d
+  }
+}
+
+export const empty: SPith<void, empty> = o => Schdlr.delay(() => o(LR.left()))
+
+export const never: SPith<void, empty> = o => D.empty
+
+export const left = <L>(l: L): SPith<L, empty> => o => Schdlr.delay(() => o(LR.left(l)))
+
 export const run = <L, R>(o: (LR.T<?L, R>) => void): ((SPith<L, R>) => D.Disposable) => s => {
   const d = s(r => {
-    if (r.T === 'left' && r.value) d.dispose()
+    if (r.T === 'left' && r.value != null) d.dispose()
     o(r)
   })
   return d
@@ -52,13 +70,13 @@ export const join = <La, Lb, R>(so: SPith<La, SPith<Lb, R>>): SPith<La | Lb, R> 
               o(r)
             } else {
               dmap.delete(r.value)
-              if (r.value || dmap.size === 0) o(r)
+              if (r.value != null || dmap.size === 0) o(r)
             }
           })
         )
       } else {
         dmap.delete(so)
-        if (r.value || dmap.size === 0) o(r)
+        if (r.value != null || dmap.size === 0) o(r)
       }
     })
   )
@@ -78,7 +96,7 @@ export const merge = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, A> => o => {
         if (r.T === 'right') o(r)
         else {
           dmap.delete(s)
-          if (r.value || dmap.size === 0) o(r)
+          if (r.value != null || dmap.size === 0) o(r)
         }
       })
     )
@@ -111,29 +129,6 @@ export const fromCB = <L, R>(cbf: ((?L, R) => void) => void): SPith<L, R> => o =
   })
 }
 
-//
-//export function s<L, R>(pith: ((LR.T<L, R>) => void) => D.Disposable): SPith<L, R> {
-//  return o => {
-//    var last: LR.T<L, R>
-//    const d = pith(r => {
-//      if (last && last.T === 'left') return d.dispose()
-//      last = r
-//      o(r)
-//    })
-//    return d
-//  }
-//}
-//
-//
-//
-//export const empty: SPith<void, empty> = o => Schdlr.delay(() => o(LR.left()))
-//
-//export const never: SPith<void, empty> = o => D.empty
-//
-//export const left = <L>(l: L): SPith<L, empty> => o => Schdlr.delay(() => o(LR.left(l)))
-//
-//export const right = <R>(r: R): SPith<empty, R> => o => Schdlr.delay(() => o(LR.right(r)))
-//
 //export const multicast = <L, A>(source: SPith<L, A>): SPith<L, A> => {
 //  var md: D.Disposable
 //  var os: Array<(LR.T<L, A>) => void> = []
@@ -162,88 +157,67 @@ export const fromCB = <L, R>(cbf: ((?L, R) => void) => void): SPith<L, R> => o =
 //    })
 //  }
 //}
-//
-//export const periodic = (period: number): SPith<void, void> => o => {
-//  var d = Schdlr.delay(function periodicNext() {
-//    d = Schdlr.delay(periodicNext, period)
-//    o(LR.right())
-//  })
-//  return D.create(() => d.dispose())
-//}
-//
-//export const tryCatch = <L, A>(s: SPith<L, A>): SPith<L | Error, A> => o => {
-//  const d = s(r => {
-//    try {
-//      o(r)
-//    } catch (err) {
-//      d.dispose()
-//      o(LR.left(err instanceof Error ? err : new Error(err)))
-//    }
-//  })
-//  return d
-//}
-//
-//
-//export const take = <L, A>(n: number): ((SPith<L, A>) => SPith<L | void, A>) => as =>
-//  n <= 0
-//    ? empty
-//    : s(o => {
-//        var i = 0
-//        const d = run(r => {
-//          if (r.T === 'right') {
-//            o(r)
-//            if (++i === n) {
-//              d.dispose()
-//              o(LR.left())
-//            }
-//          } else o(r)
-//        }, as)
-//        return d
-//      })
-//
-//
-//
-//
-//export const combine = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, Array<A>> => o => {
-//  const dmap = new Map()
-//  const indices: Array<number> = []
-//  const length = ss.length
-//  const values = new Array(length)
-//  var hasallvalues = false
-//  ss.forEach((s, index) =>
-//    dmap.set(
-//      s,
-//      s(r => {
-//        if (r.T === 'right') {
-//          values[index] = r.value
-//          goto: while (true) {
-//            if (hasallvalues) {
-//              o(LR.right(values))
-//              break
-//            } else {
-//              const pos = Schdlr.binarySearchRightmost(index, indices)
-//              if (pos === -1 || indices[pos] < index) {
-//                indices.splice(pos + 1, 0, index)
-//                if ((hasallvalues = indices.length === length)) continue goto
-//                else break
-//              }
-//            }
-//          }
-//        } else {
-//          dmap.delete(s)
-//          if (dmap.size === 0) o(r)
-//        }
-//      })
-//    )
-//  )
-//  return D.create(() => dmap.forEach(d => d.dispose()))
-//}
-//
-////export function combine<A, B>(f: (...Array<A>) => B, ...ss: Array<SPith<A>>): SPith<B> {
-////  return function combinePith(o) {
-////  }
-////}
-////
+
+export const periodic = (period: number): SPith<empty, void> => o => {
+  var d = Schdlr.delay(function periodicNext() {
+    d = Schdlr.delay(periodicNext, period)
+    o(LR.right())
+  })
+  return D.create(() => d.dispose())
+}
+
+export const take = <L, A>(n: number): ((SPith<L, A>) => SPith<L, A>) => as =>
+  n > 0
+    ? o => {
+        var i = 0
+        const d = as(r => {
+          if (r.T === 'right') {
+            o(r)
+            if (++i >= n) {
+              d.dispose()
+              o(LR.left())
+            }
+          } else o(r)
+        })
+        return d
+      }
+    : empty
+
+export const combine = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, Array<A>> => o => {
+  const dmap = new Map()
+  const indices: Array<number> = []
+  const length = ss.length
+  const values = new Array(length)
+  var hasallvalues = false
+  ss.forEach((s, index) =>
+    dmap.set(
+      s,
+      s(r => {
+        if (r.T === 'right') {
+          values[index] = r.value
+          goto: while (true) {
+            if (hasallvalues) {
+              o(LR.right(values))
+              break
+            } else {
+              const pos = Schdlr.binarySearchRightmost(index, indices)
+              if (pos === -1 || indices[pos] < index) {
+                indices.splice(pos + 1, 0, index)
+                if ((hasallvalues = indices.length === length)) continue goto
+                else break
+              }
+            }
+          }
+        } else {
+          dmap.delete(s)
+          if (r.value != null || dmap.size === 0) o(r)
+        }
+      })
+    )
+  )
+  return D.create(() => dmap.forEach(d => d.dispose()))
+}
+
 ////export function switchLatest<A>(so: SPith<SPith<A>>): SPith<A> {
 ////  return function switchLatestPith(o) {
 ////    const d = D.create(() => {
