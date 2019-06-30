@@ -4,9 +4,9 @@ import * as D from './S/Disposable'
 import * as LR from './LR'
 import * as M from './M'
 
-export opaque type SPith<+L, +R> = ((LR.T<?L, R>) => void) => D.Disposable
+export opaque type SPith<+A> = ((LR.T<?Error, A>) => void) => D.Disposable
 
-export const d = <A>(a: A, delay: number = 0): SPith<void, A> => o => {
+export const d = <A>(a: A, delay: number = 0): SPith<A> => o => {
   var d = Schdlr.delay(() => {
     d = Schdlr.delay(() => o(LR.left()))
     o(LR.right(a))
@@ -14,9 +14,9 @@ export const d = <A>(a: A, delay: number = 0): SPith<void, A> => o => {
   return D.create(() => d.dispose())
 }
 
-export function s<L, R>(pith: ((LR.T<L, R>) => void) => D.Disposable): SPith<L, R> {
+export function s<A>(pith: ((LR.T<?Error, A>) => void) => D.Disposable): SPith<A> {
   return o => {
-    var last: LR.T<L, R>
+    var last: LR.T<?Error, A>
     const d = pith(r => {
       if (last && last.T === 'left') return d.dispose()
       last = r
@@ -26,38 +26,32 @@ export function s<L, R>(pith: ((LR.T<L, R>) => void) => D.Disposable): SPith<L, 
   }
 }
 
-export const empty: SPith<void, empty> = o => Schdlr.delay(() => o(LR.left()))
+export const empty: SPith<empty> = o => Schdlr.delay(() => o(LR.left()))
 
-export const never: SPith<void, empty> = o => D.empty
+export const never: SPith<empty> = o => D.empty
 
-export const left = <L>(l: L): SPith<L, empty> => o => Schdlr.delay(() => o(LR.left(l)))
-
-export const run = <L, R>(o: (LR.T<?L, R>) => void): ((SPith<L, R>) => D.Disposable) => s => {
+export const run = <A>(o: (LR.T<?Error, A>) => void): ((SPith<A>) => D.Disposable) => s => {
   const d = s(r => {
-    if (r.T === 'left' && r.value != null) d.dispose()
+    if (r.T === 'left' && r.value) d.dispose()
     o(r)
   })
   return d
 }
 
-export const map = <L, A, B>(f: A => B): ((SPith<L, A>) => SPith<L | Error, B>) => s => o =>
-  s(r => o(LR.map(f, r)))
+export const map = <A, B>(f: A => B): ((SPith<A>) => SPith<B>) => s => o => s(r => o(LR.map(f, r)))
 
-export const tap = <L, A, B>(f: A => B): ((SPith<L, A>) => SPith<L | Error, A>) => s => o =>
+export const tap = <A, ANY>(f: A => ANY): ((SPith<A>) => SPith<A>) => s => o =>
   s(r => o(LR.map(lr => (f(lr), lr), r)))
 
-export const filter = <L, A>(f: A => boolean): ((SPith<L, A>) => SPith<L | Error, A>) => s => o =>
+export const filter = <A>(f: A => boolean): ((SPith<A>) => SPith<A>) => s => o =>
   s(r => o(LR.filter(f, r)))
 
-export const scan = <L, A, B>(
-  f: (B, A) => B,
-  b: B
-): ((SPith<L, A>) => SPith<L | Error, B>) => as => o => {
+export const scan = <A, B>(f: (B, A) => B, b: B): ((SPith<A>) => SPith<B>) => as => o => {
   var acc = b
   return map(a => (acc = f(acc, a)))(as)(o)
 }
 
-export const join = <La, Lb, R>(so: SPith<La, SPith<Lb, R>>): SPith<La | Lb, R> => o => {
+export const join = <A>(so: SPith<SPith<A>>): SPith<A> => o => {
   const dmap = new Map()
   dmap.set(
     so,
@@ -70,24 +64,22 @@ export const join = <La, Lb, R>(so: SPith<La, SPith<Lb, R>>): SPith<La | Lb, R> 
               o(r)
             } else {
               dmap.delete(r.value)
-              if (r.value != null || dmap.size === 0) o(r)
+              if (r.value || dmap.size === 0) o(r)
             }
           })
         )
       } else {
         dmap.delete(so)
-        if (r.value != null || dmap.size === 0) o(r)
+        if (r.value || dmap.size === 0) o(r)
       }
     })
   )
   return D.create(() => dmap.forEach(d => d.dispose()))
 }
 
-export const flatMap = <La, Lb, Ra, Rb>(
-  f: Ra => SPith<Lb, Rb>
-): ((SPith<La, Ra>) => SPith<La | Lb | Error, Rb>) => so => join(map(f)(so))
+export const flatMap = <A, B>(f: A => SPith<B>): ((SPith<A>) => SPith<B>) => so => join(map(f)(so))
 
-export const merge = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, A> => o => {
+export const merge = <A>(...ss: Array<SPith<A>>): SPith<A> => o => {
   const dmap = new Map()
   for (let s of ss)
     dmap.set(
@@ -96,14 +88,14 @@ export const merge = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, A> => o => {
         if (r.T === 'right') o(r)
         else {
           dmap.delete(s)
-          if (r.value != null || dmap.size === 0) o(r)
+          if (r.value || dmap.size === 0) o(r)
         }
       })
     )
   return D.create(() => dmap.forEach(d => d.dispose()))
 }
 
-export const fromCB = <L, R>(cbf: ((?L, R) => void) => void): SPith<L, R> => o => {
+export const fromCB = <A>(cbf: ((?Error, A) => void) => void): SPith<A> => o => {
   var disposed = false
   var sameCallStack = true
   var firstRun = true
@@ -129,36 +121,36 @@ export const fromCB = <L, R>(cbf: ((?L, R) => void) => void): SPith<L, R> => o =
   })
 }
 
-//export const multicast = <L, A>(source: SPith<L, A>): SPith<L, A> => {
-//  var md: D.Disposable
-//  var os: Array<(LR.T<L, A>) => void> = []
-//  function b(r: LR.T<L, A>): void {
-//    if (r.T === 'right') os.forEach(o => o(r))
-//    else {
-//      const os_ = os
-//      os = []
-//      msource = M.ab(source)
-//      os_.forEach(o => o(r))
-//    }
-//  }
-//  var msource = M.ab(source)
-//  return o => {
-//    os.push(o)
-//    md = msource(b)
-//    return D.create(() => {
-//      const pos = os.indexOf(o)
-//      if (pos > -1) {
-//        os.splice(pos, 1)
-//        if (os.length === 0) {
-//          md.dispose()
-//          msource = M.ab(source)
-//        }
-//      }
-//    })
-//  }
-//}
+export const multicast = <A>(source: SPith<A>): SPith<A> => {
+  var md: D.Disposable
+  var os: Array<(LR.T<?Error, A>) => void> = []
+  function b(r: LR.T<?Error, A>): void {
+    if (r.T === 'right') os.forEach(o => o(r))
+    else {
+      const os_ = os
+      os = []
+      msource = M.ab(source)
+      os_.forEach(o => o(r))
+    }
+  }
+  var msource = M.ab(source)
+  return o => {
+    os.push(o)
+    md = msource(b)
+    return D.create(() => {
+      const pos = os.indexOf(o)
+      if (pos > -1) {
+        os.splice(pos, 1)
+        if (os.length === 0) {
+          md.dispose()
+          msource = M.ab(source)
+        }
+      }
+    })
+  }
+}
 
-export const periodic = (period: number): SPith<empty, void> => o => {
+export const periodic = (period: number): SPith<void> => o => {
   var d = Schdlr.delay(function periodicNext() {
     d = Schdlr.delay(periodicNext, period)
     o(LR.right())
@@ -166,7 +158,7 @@ export const periodic = (period: number): SPith<empty, void> => o => {
   return D.create(() => d.dispose())
 }
 
-export const take = <L, A>(n: number): ((SPith<L, A>) => SPith<L, A>) => as =>
+export const take = <A>(n: number): ((SPith<A>) => SPith<A>) => as =>
   n > 0
     ? o => {
         var i = 0
@@ -183,7 +175,7 @@ export const take = <L, A>(n: number): ((SPith<L, A>) => SPith<L, A>) => as =>
       }
     : empty
 
-export const combine = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, Array<A>> => o => {
+export const combine = <A>(ss: Array<SPith<A>>): SPith<Array<A>> => o => {
   const dmap = new Map()
   const indices: Array<number> = []
   const length = ss.length
@@ -195,22 +187,17 @@ export const combine = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, Array<A>> => 
       s(r => {
         if (r.T === 'right') {
           values[index] = r.value
-          goto: while (true) {
-            if (hasallvalues) {
-              o(LR.right(values))
-              break
-            } else {
-              const pos = Schdlr.binarySearchRightmost(index, indices)
-              if (pos === -1 || indices[pos] < index) {
-                indices.splice(pos + 1, 0, index)
-                if ((hasallvalues = indices.length === length)) continue goto
-                else break
-              }
+          if (hasallvalues) o(LR.right(values))
+          else {
+            const pos = Schdlr.binarySearchRightmost(index, indices)
+            if (pos === -1 || indices[pos] < index) {
+              indices.splice(pos + 1, 0, index)
+              if ((hasallvalues = indices.length === length)) o(LR.right(values))
             }
           }
         } else {
           dmap.delete(s)
-          if (r.value != null || dmap.size === 0) o(r)
+          if (r.value || dmap.size === 0) o(r)
         }
       })
     )
@@ -218,142 +205,99 @@ export const combine = <L, A>(...ss: Array<SPith<L, A>>): SPith<L, Array<A>> => 
   return D.create(() => dmap.forEach(d => d.dispose()))
 }
 
-////export function switchLatest<A>(so: SPith<SPith<A>>): SPith<A> {
-////  return function switchLatestPith(o) {
-////    const d = D.create(() => {
-////      sod && sod.dispose()
-////      sid && sid.dispose()
-////    })
-////    var sid: ?D.Disposable = null
-////    var sod: ?D.Disposable = so(function switchLatestOO(r) {
-////      if (r.T === 'next') {
-////        sid && sid.dispose()
-////        sid = r.value(function switchLatestIO(r) {
-////          if (r.T === 'next') o(r)
-////          else {
-////            sid = null
-////            if (r.T === 'end') sod || o(r)
-////            else d.dispose(), o(r)
-////          }
-////        })
-////      } else {
-////        sod = null
-////        if (r.T === 'end') sid || o(r)
-////        else d.dispose(), o(r)
-////      }
-////    })
-////    return d
-////  }
-////}
-////
-////
-////export function flatMapEnd<A>(f: () => SPith<A>, s: SPith<A>): SPith<A> {
-////  return function flatMapEndPith(o) {
-////    var d = s(function flatMapEndO(r) {
-////      if (r.T === 'end') {
-////        var s
-////        try {
-////          s = f()
-////        } catch (error) {
-////          d.dispose()
-////          return o({ T: 'error', error })
-////        }
-////        d = s(o)
-////      } else o(r)
-////    })
-////    return D.create(() => d.dispose())
-////  }
-////}
-////
-////export function flatMapError<A>(f: Error => SPith<A>, s: SPith<A>): SPith<A> {
-////  return function flatMapErrorPith(o) {
-////    var d = s(function flatMapErrorO(r) {
-////      if (r.T === 'error') {
-////        var s
-////        try {
-////          s = f(r.error)
-////        } catch (error) {
-////          d.dispose()
-////          return o({ T: 'error', error })
-////        }
-////        d = s(o)
-////      } else o(r)
-////    })
-////    return D.create(() => d.dispose())
-////  }
-////}
-////
-//
-////
-////export function subject<A>(): [(RValue<A> | REnd | RError) => void, SPith<A>] {
-////  var O
-////  return [
-////    r => {
-////      if (O) O(r)
-////    },
-////    multicast(
-////      s(o => {
-////        O = o
-////        return D.create(() => {
-////          O = null
-////        })
-////      })
-////    )
-////  ]
-////}
-////
-////export function proxy<A>(): [(RValue<A> | REnd | RError) => void, SPith<A>] {
-////  var proxyOs: ?Array<(RValue<A> | REnd | RError) => void> = []
-////  var last: REnd | RError
-////  return [
-////    function proxyO(r) {
-////      if (proxyOs) {
-////        if (r.T === 'next') proxyOs.forEach(o => o(r))
-////        else {
-////          const os = proxyOs
-////          last = r
-////          proxyOs = null
-////          os.forEach(o => o(last))
-////        }
-////      }
-////    },
-////    function pith(o) {
-////      if (proxyOs) {
-////        const os = proxyOs
-////        proxyOs.push(o)
-////        return D.create(() => {
-////          const pos = os.indexOf(o)
-////          if (-1 < pos) os.splice(pos, 1)
-////        })
-////      } else {
-////        return Schdlr.delay(() => o(last))
-////      }
-////    }
-////  ]
-////}
-////
-////export class On {
-////  ets: SPith<Node>
-////  constructor(ets: SPith<Node>) {
-////    this.ets = ets
-////  }
-////  event(name: string) {
-////    return switchLatest(
-////      map(
-////        et =>
-////          s(o => {
-////            const handler = (e: Event) => o({ T: 'next', value: e })
-////            et.addEventListener(name, handler)
-////            return D.create(() => et.removeEventListener(name, handler))
-////          }),
-////        this.ets
-////      )
-////    )
-////  }
-////  click() {
-////    return this.event('click')
-////  }
-////  input() {
-////    return this.event('input')
-////  }
-////}
+export function switchLatest<A>(so: SPith<SPith<A>>): SPith<A> {
+  return function switchLatestPith(o) {
+    const d = D.create(() => {
+      sod && sod.dispose()
+      sid && sid.dispose()
+    })
+    var sid: ?D.Disposable = null
+    var sod: ?D.Disposable = so(function switchLatestOO(r) {
+      if (r.T === 'right') {
+        sid && sid.dispose()
+        sid = r.value(function switchLatestIO(r) {
+          if (r.T === 'right') o(r)
+          else {
+            sid = null
+            if (r.value || !sod) o(r)
+          }
+        })
+      } else {
+        sod = null
+        if (r.value || !sid) o(r)
+      }
+    })
+    return d
+  }
+}
+
+export function subject<A>(): [(LR.T<?Error, A>) => void, SPith<A>] {
+  var O
+  return [
+    r => {
+      if (O) O(r)
+    },
+    multicast(
+      s(o => {
+        O = o
+        return D.create(() => {
+          O = null
+        })
+      })
+    )
+  ]
+}
+
+export function proxy<A>(): [(LR.T<?Error, A>) => void, SPith<A>] {
+  var proxyOs: ?Array<(LR.T<?Error, A>) => void> = []
+  var last: LR.Left<?Error>
+  return [
+    function proxyO(r) {
+      if (proxyOs) {
+        if (r.T === 'right') proxyOs.forEach(o => o(r))
+        else {
+          const os = proxyOs
+          last = r
+          proxyOs = null
+          os.forEach(o => o(last))
+        }
+      }
+    },
+    function pith(o) {
+      if (proxyOs) {
+        const os = proxyOs
+        proxyOs.push(o)
+        return D.create(() => {
+          const pos = os.indexOf(o)
+          if (-1 < pos) os.splice(pos, 1)
+        })
+      } else {
+        return Schdlr.delay(() => o(last))
+      }
+    }
+  ]
+}
+
+export class On {
+  ets: SPith<Node>
+  constructor(ets: SPith<Node>) {
+    this.ets = ets
+  }
+  event(name: string) {
+    return switchLatest(
+      map(et =>
+        s(o => {
+          const handler = (e: Event) => o(LR.right(e))
+          et.addEventListener(name, handler)
+          return D.create(() => et.removeEventListener(name, handler))
+        })
+      )(this.ets)
+    )
+  }
+  click() {
+    return this.event('click')
+  }
+  input() {
+    return this.event('input')
+  }
+}

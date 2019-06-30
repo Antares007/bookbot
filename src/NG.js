@@ -1,4 +1,4 @@
-// flow strict
+// @flow strict
 import * as N from './N'
 import * as G from './G'
 import * as CB from './CB'
@@ -59,16 +59,13 @@ const gelm = (
   b: (Node, G.Repo, ?G.Hash) => CB.CBPith<G.Hash>
 }> => {
   const TAG = tag.toUpperCase()
-  return S.map(
-    b => ({
-      R: 'nodeTree',
-      create: () => document.createElement(TAG),
-      eq: n => n.nodeName === TAG,
-      name,
-      b: M.m3(b)
-    }),
-    sbark(pith)
-  )
+  return S.map(b => ({
+    R: 'nodeTree',
+    create: () => document.createElement(TAG),
+    eq: n => n.nodeName === TAG,
+    name,
+    b: M.m3(b)
+  }))(sbark(pith))
 }
 
 const str = (text: string) => ({
@@ -98,9 +95,8 @@ const counter = (depth: number, state: S.SPith<G.Hash>) =>
     o(
       gelm('button', '+', (o, c, d) => {
         const on = new S.On(c)
-        S.run(
-          p1[0],
-          S.map(() => rblob('hi', b => Buffer.from('a' + i++)), S.merge(S.d(), on.click()))
+        S.run(p1[0])(
+          S.map(() => rblob('hi', b => Buffer.from('a' + i++)))(S.merge(S.d(), on.click()))
         )
         o(S.d(str('+')))
         depth > 0 && o(counter(depth - 1, state))
@@ -109,7 +105,7 @@ const counter = (depth: number, state: S.SPith<G.Hash>) =>
     o(
       gelm('button', '-', (o, c, d) => {
         const on = new S.On(c)
-        S.run(p2[0], S.map(() => rblob('hi', b => Buffer.from('a')), S.merge(S.d(), on.click())))
+        S.run(p2[0])(S.map(() => rblob('hi', b => Buffer.from('a')))(S.merge(S.d(), on.click())))
         o(S.d(str('-')))
         depth > 0 && o(counter(depth - 1, state))
       })
@@ -130,4 +126,4 @@ const d = S.run(r => {
       } else console.error(e.value)
     })
   } else r.T === 'error' ? console.error(r.error) : console.info(r.T)
-}, S.map(g => g(rootNode, repo), s))
+})(S.map(g => g(rootNode, repo))(s))

@@ -1,7 +1,8 @@
-// flow strict
+// @flow strict
 import * as S from './S'
 import * as D_ from './S/Disposable'
 import * as M from './M'
+import * as LR from './LR'
 
 const noop = () => {}
 export function liftBark<R: {}, B, C, D>(
@@ -20,14 +21,12 @@ export function liftBark<R: {}, B, C, D>(
       dSubject[1]
     )
     if (rays.length === 0) return S.d(bark(o => {}))
-    return S.combine(
-      (...rays) =>
-        bark((o, c, d) => {
-          cSubject[0]({ T: 'next', value: c })
-          dSubject[0]({ T: 'next', value: d })
-          for (var r of rays) o(r)
-        }),
-      ...rays
-    )
+    return S.map(rays =>
+      bark((o, c, d) => {
+        cSubject[0](LR.right(c))
+        dSubject[0](LR.right(d))
+        for (var r of rays) o(r)
+      })
+    )(S.combine(rays))
   }
 }
