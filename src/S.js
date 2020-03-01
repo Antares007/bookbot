@@ -40,11 +40,15 @@ export const run = <A>(o: (LR.T<?Error, A>) => void): ((SPith<A>) => D.Disposabl
 
 export const map = <A, B>(f: A => B): ((SPith<A>) => SPith<B>) => s => o => s(r => o(LR.map(f, r)))
 
-export const tap = <A, ANY>(f: A => ANY): ((SPith<A>) => SPith<A>) => s => o =>
-  s(r => o(LR.map(lr => (f(lr), lr), r)))
+export const tap = <A, ANY>(f: A => ANY): ((SPith<A>) => SPith<A>) => s => map(a => (f(a), a))(s)
 
 export const filter = <A>(f: A => boolean): ((SPith<A>) => SPith<A>) => s => o =>
-  s(r => o(LR.filter(f, r)))
+  s(r => {
+    const rb = LR.map(f, r)
+    if (rb.T === 'right') {
+      if (rb.value) o(r)
+    } else o(rb)
+  })
 
 export const scan = <A, B>(f: (B, A) => B, b: B): ((SPith<A>) => SPith<B>) => as => o => {
   var acc = b
@@ -56,19 +60,18 @@ export const join = <A>(so: SPith<SPith<A>>): SPith<A> => o => {
   dmap.set(
     so,
     so(r => {
-      if (r.T === 'right') {
+      if (r.T === 'right')
         dmap.set(
           r.value,
           r.value(r => {
-            if (r.T === 'right') {
-              o(r)
-            } else {
+            if (r.T === 'right') o(r)
+            else {
               dmap.delete(r.value)
               if (r.value || dmap.size === 0) o(r)
             }
           })
         )
-      } else {
+      else {
         dmap.delete(so)
         if (r.value || dmap.size === 0) o(r)
       }

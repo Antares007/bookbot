@@ -23,6 +23,3 @@ export const join = <La, Lb, R>(r: T<La, T<Lb, R>>): T<La | Lb, R> =>
 
 export const flatMap = <La, Lb, Ra, Rb>(f: Ra => T<Lb, Rb>, r: T<La, Ra>): T<La | Lb | Error, Rb> =>
   join(map(f, r))
-
-export const filter = <L, Ra>(f: Ra => boolean, r: T<L, Ra>): T<void | L | Error, Ra> =>
-  flatMap(v => (f(v) ? r : left()), r)
