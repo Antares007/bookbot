@@ -10,7 +10,7 @@
     "@babel/preset-flow": "^7.0.0",
     "@babel/register": "^7.0.0",
     "babel-loader": "^8.0.5",
-    "flow-bin": "^0.96.0",
+    "flow-bin": "^0.128.0",
     "webpack": "^4.28.4",
     "webpack-cli": "^3.2.1"
   },
