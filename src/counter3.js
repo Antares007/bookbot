@@ -10,7 +10,7 @@ const counter = (d: number) =>
         o(
           i.on
             .click()
-            .map(e => N.r(s => s + 1))
+            .map((e) => N.r((s) => s + 1))
             .map(N.select('n'))
         )
         d > 0 && o(counter(d - 1).pmap(N.ringState('+', { n: 0 })))
@@ -22,22 +22,22 @@ const counter = (d: number) =>
         o(
           i.on
             .click()
-            .map(e => N.r(s => s - 1))
+            .map((e) => N.r((s) => s - 1))
             .map(N.select('n'))
         )
         d > 0 && o(counter(d - 1).pmap(N.ringState('-', { n: 0 })))
       })
     )
-    o(N.text(i.states.map(s => s.n + '')))
+    o(N.text(i.states.map((s) => s.n + '')))
   })
 
-const napp = counter(1)
+const napp = counter(2)
 
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
 
 N.run(rootNode, JSON.parse(localStorage.getItem('s') || '{"n":0}'), napp).run(
-  e => {
+  (e) => {
     if (e instanceof S.Next) {
       const ns = JSON.stringify(e.value, null, '  ')
       localStorage.setItem('s', ns)
