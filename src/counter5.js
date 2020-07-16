@@ -1,7 +1,7 @@
 // @flow strict
 const elm = (tag, pith) => ({ tag, pith })
-const button = (pith) => elm('button', pith)
-const div = (pith) => elm('div', pith)
+const button = (pith) => elm('BUTTON', pith)
+const div = (pith) => elm('DIV', pith)
 const counter = (d = 3) => (o, s) => {
   o(
     button((o, s) => {
@@ -18,22 +18,44 @@ const counter = (d = 3) => (o, s) => {
   o(s.n + d + '')
 }
 const mkpith = (elm: HTMLElement, state) => {
+  var lastIndex
+  const { childNodes } = elm
   return function pith(x) {
     if (typeof x === 'function') {
+      lastIndex = 0
       x(pith, state)
-      pith()
-    } else if (x == null) {
-    } else if (typeof x === 'string') {
-      const text = document.createTextNode(x)
-      elm.insertBefore(text, null)
+      for (let l = childNodes.length; l > lastIndex; l--)
+        elm.removeChild(childNodes[lastIndex])
+      return
+    }
+    const index = lastIndex++
+
+    if (typeof x === 'string') {
+      for (let i = index, l = childNodes.length; i < l; i++) {
+        let n = childNodes[i]
+        if (n.nodeType === 3) {
+          if (index < i) elm.insertBefore(n, childNodes[index])
+          return (n.textContent = x)
+        }
+      }
+      elm.insertBefore(document.createTextNode(x), null)
     } else {
-      const btn = document.createElement(x.tag)
-      const o = mkpith(btn, state)
-      elm.insertBefore(btn, null)
-      o(x.pith)
+      for (let i = index, l = childNodes.length; i < l; i++) {
+        let n = childNodes[i]
+        if (n instanceof HTMLElement && n.nodeName === x.tag) {
+          if (index < i) elm.insertBefore(n, childNodes[index])
+          return mkpith(n, state)(x.pith)
+        }
+      }
+      mkpith(
+        elm.insertBefore(document.createElement(x.tag), childNodes[index]),
+        state
+      )(x.pith)
     }
   }
 }
 const rootNode = document.getElementById('root-node')
 if (!rootNode) throw new Error('cant find root-node')
-mkpith(rootNode, { n: 9 })(counter(2))
+const bark = mkpith(rootNode, { n: 9 })
+bark(counter(2))
+bark(counter(2))
