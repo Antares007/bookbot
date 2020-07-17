@@ -1,2 +1,2 @@
 // @flow strict
-export * from './S'
+export * from "./S";

@@ -1,18 +1,18 @@
 // @flow strict
 export class Disposable {
-  dispose: () => void
-  constructor(dispose: $PropertyType<Disposable, 'dispose'>) {
-    this.dispose = dispose
+  dispose: () => void;
+  constructor(dispose: $PropertyType<Disposable, "dispose">) {
+    this.dispose = dispose;
   }
   dispose(): void {
-    this.dispose()
+    this.dispose();
   }
 }
 
 export function create(
-  dispose: $PropertyType<Disposable, 'dispose'>
+  dispose: $PropertyType<Disposable, "dispose">
 ): Disposable {
-  return new Disposable(dispose)
+  return new Disposable(dispose);
 }
 
-export const empty: Disposable = new Disposable(() => {})
+export const empty: Disposable = new Disposable(() => {});

@@ -1,5 +1,5 @@
 // @flow strict
-import type { S } from './S'
+import type { S } from "./S";
 
 declare class On {
   constructor(ets: S<Node>): void;
