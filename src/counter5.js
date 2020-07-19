@@ -1,26 +1,42 @@
 // @flow strict
-const elm = (tag, pith) => ({ tag, pith });
+const elm = (tag, pith) => ({ type: "elm", tag, pith });
 const button = (pith) => elm("BUTTON", pith);
 const div = (pith) => elm("DIV", pith);
-const counter = (d = 3) => (o, s) => {
-  o(
-    button((o, s) => {
-      o("+");
-      if (d > 0) o(div(counter(d - 1)));
-    })
-  );
-  o(
-    button((o, s) => {
-      o("-");
-      if (d > 0) o(div(counter(d - 1)));
-    })
-  );
-  o(s.n + d + "");
+const counter = (d = 2) => {
+  var di = 0;
+  return function ring(o, s) {
+    o(
+      button((o, s) => {
+        o("+");
+        if (d > 0) o(div(counter(d - 1)));
+      })
+    );
+    o(
+      button((o, s) => {
+        o("-");
+        if (d > 0) o(div(counter(d - 1)));
+      })
+    );
+    if (d == 2)
+      setTimeout(() => {
+        di++;
+        o(ring);
+      }, 1000);
+    o(s.n + d + di + "");
+  };
 };
+
+type Ring = ((x: Pith) => void, {| n: number |}) => void;
+type Pith =
+  | string
+  | Ring
+  | {| type: "elm", tag: string, pith: Ring |}
+  | {| type: "handler" |};
+
 const mkpith = (elm: HTMLElement, state) => {
   var lastIndex;
   const { childNodes } = elm;
-  return function pith(x) {
+  return function pith(x: Pith) {
     if (typeof x === "function") {
       lastIndex = 0;
       x(pith, state);
@@ -33,13 +49,13 @@ const mkpith = (elm: HTMLElement, state) => {
     if (typeof x === "string") {
       for (let i = index, l = childNodes.length; i < l; i++) {
         let n = childNodes[i];
-        if (n.nodeType === 3) {
+        if (n.nodeType === 3 && n.textContent === x) {
           if (index < i) elm.insertBefore(n, childNodes[index]);
-          return (n.textContent = x);
+          return;
         }
       }
-      elm.insertBefore(document.createTextNode(x), null);
-    } else {
+      elm.insertBefore(document.createTextNode(x), childNodes[index]);
+    } else if (x.type === "elm") {
       for (let i = index, l = childNodes.length; i < l; i++) {
         let n = childNodes[i];
         if (n instanceof HTMLElement && n.nodeName === x.tag) {
@@ -51,11 +67,12 @@ const mkpith = (elm: HTMLElement, state) => {
         elm.insertBefore(document.createElement(x.tag), childNodes[index]),
         state
       )(x.pith);
+    } else {
+      x;
     }
   };
 };
 const rootNode = document.getElementById("root-node");
 if (!rootNode) throw new Error("cant find root-node");
 const bark = mkpith(rootNode, { n: 9 });
-bark(counter(2));
-bark(counter(2));
+bark(counter());
