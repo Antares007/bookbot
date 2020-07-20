@@ -1,57 +1,45 @@
 // @flow strict
-const elm = (tag, pith) => ({ type: ("elm": "elm"), tag, pith });
-const button = (pith) => elm("BUTTON", pith);
-const div = (pith) => elm("DIV", pith);
+const elm = (tag, props, pith) => ({ type: ("elm": "elm"), tag, props, pith });
+const button = (props, pith) => elm("BUTTON", props, pith);
+const div = (props, pith) => elm("DIV", props, pith);
 const onClick = (f: (MouseEvent) => mixed) => ({
   type: ("handler": "handler"),
   f,
 });
-const counter = (d = 2) => {
-  var di = 0;
-  return function ring(o, s) {
-    const ob = o;
-    o(
-      button((o, s) => {
-        o("+");
-        o(
-          onClick((e) => {
-            di++;
-            ob(ring);
-          })
-        );
-        if (d > 0) o(div(counter(d - 1)));
-      })
-    );
-    o(
-      button((o, s) => {
-        o("-");
-        o(
-          onClick((e) => {
-            di--;
-            ob(ring);
-          })
-        );
-        if (d > 0) o(div(counter(d - 1)));
-      })
-    );
-    if (d == 2)
-      setTimeout(() => {
-        di++;
-        o(ring);
-      }, 1000);
-    o(di + "");
-  };
-};
+var di = 0;
+function counter(o, props) {
+  const ob = o;
+  o(
+    button(props, (o, { d }) => {
+      o("+");
+      o(
+        onClick((e) => {
+          di++;
+          console.log(d);
+          ob(counter);
+        })
+      );
+      if (d > 0) o(div({ d: d - 1 }, counter));
+    })
+  );
+  o(
+    button(props, (o, { d }) => {
+      o("-");
+      if (d > 0) o(div({ d: d - 1 }, counter));
+    })
+  );
+  o(props.d + di + "");
+}
 
-const mkpith = (elm: HTMLElement, state) => {
+const mkpith = (elm: HTMLElement) => {
   var lastIndex;
   const { childNodes } = elm;
-  return function pith(x) {
+  return function pith(x, props = {}) {
     if (x == null) {
       // dispose
     } else if (typeof x === "function") {
       lastIndex = 0;
-      x(pith, state);
+      x(pith, props);
       for (let l = childNodes.length; l > lastIndex; l--)
         elm.removeChild(childNodes[lastIndex]);
       return;
@@ -71,21 +59,19 @@ const mkpith = (elm: HTMLElement, state) => {
         let n = childNodes[i];
         if (n instanceof HTMLElement && n.nodeName === x.tag) {
           if (index < i) elm.insertBefore(n, childNodes[index]);
-          return mkpith(n, state)(x.pith);
+          return mkpith(n)(x.pith, x.props);
         }
       }
       mkpith(
-        elm.insertBefore(document.createElement(x.tag), childNodes[index]),
-        state
-      )(x.pith);
+        elm.insertBefore(document.createElement(x.tag), childNodes[index])
+      )(x.pith, x.props);
     } else {
-      //  elm.addEventListener("click", x.f);
-      //  console.log(x.f.toString());
+      elm.addEventListener("click", x.f);
     }
   };
 };
 const rootNode = document.getElementById("root-node");
 if (!rootNode) throw new Error("cant find root-node");
-const bark = mkpith(rootNode, { n: 9 });
-bark(counter());
+const bark = mkpith(rootNode);
+bark(counter, { d: 1 });
 bark();
