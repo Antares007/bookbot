@@ -1,8 +1,11 @@
 // @flow strict
-const elm = (tag, pith) => ({ type: "elm", tag, pith });
+const elm = (tag, pith) => ({ type: ("elm": "elm"), tag, pith });
 const button = (pith) => elm("BUTTON", pith);
 const div = (pith) => elm("DIV", pith);
-const onClick = (f) => ({ type: "handler", f });
+const onClick = (f: (MouseEvent) => mixed) => ({
+  type: ("handler": "handler"),
+  f,
+});
 const counter = (d = 2) => {
   var di = 0;
   return function ring(o, s) {
@@ -40,18 +43,13 @@ const counter = (d = 2) => {
   };
 };
 
-type Ring = ((x: Pith) => void, {| n: number |}) => void;
-type Pith =
-  | string
-  | Ring
-  | {| type: "elm", tag: string, pith: Ring |}
-  | {| type: "handler", f: (Event) => void |};
-
 const mkpith = (elm: HTMLElement, state) => {
   var lastIndex;
   const { childNodes } = elm;
-  return function pith(x: Pith) {
-    if (typeof x === "function") {
+  return function pith(x) {
+    if (x == null) {
+      // dispose
+    } else if (typeof x === "function") {
       lastIndex = 0;
       x(pith, state);
       for (let l = childNodes.length; l > lastIndex; l--)
@@ -81,7 +79,8 @@ const mkpith = (elm: HTMLElement, state) => {
         state
       )(x.pith);
     } else {
-      //console.log(x.f.toString());
+      //  elm.addEventListener("click", x.f);
+      //  console.log(x.f.toString());
     }
   };
 };
@@ -89,3 +88,4 @@ const rootNode = document.getElementById("root-node");
 if (!rootNode) throw new Error("cant find root-node");
 const bark = mkpith(rootNode, { n: 9 });
 bark(counter());
+bark();
