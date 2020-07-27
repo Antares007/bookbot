@@ -7,7 +7,7 @@ const onClick = (f: (MouseEvent) => mixed) => ({
   f,
 });
 var di = 0;
-function counter(o, props) {
+function counter(o, props: {| d: number |}) {
   const ob = o;
   o(
     button(props, (o, { d }) => {
@@ -16,7 +16,7 @@ function counter(o, props) {
         onClick((e) => {
           di++;
           console.log(d);
-          ob(counter);
+          ob(counter, { d });
         })
       );
       if (d > 0) o(div({ d: d - 1 }, counter));
@@ -34,12 +34,12 @@ function counter(o, props) {
 const mkpith = (elm: HTMLElement) => {
   var lastIndex;
   const { childNodes } = elm;
-  return function pith(x, props = {}) {
+  return function pith(x, props) {
     if (x == null) {
       // dispose
     } else if (typeof x === "function") {
       lastIndex = 0;
-      x(pith, props);
+      if (props != null) x(pith, props);
       for (let l = childNodes.length; l > lastIndex; l--)
         elm.removeChild(childNodes[lastIndex]);
       return;
