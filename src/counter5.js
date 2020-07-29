@@ -6,7 +6,7 @@ const onClick = (f: (MouseEvent) => mixed) => ({
   type: ("handler": "handler"),
   f,
 });
-const ring = (props, f) => ({ type: "ring", props, f });
+const ring = (props, f) => ({ type: ("ring": "ring"), props, f });
 var di = 0;
 function counter(o, props: {| d: number |}) {
   const ob = o;
@@ -16,12 +16,20 @@ function counter(o, props: {| d: number |}) {
         o("+");
         o(
           onClick((e) => {
-            di++;
             ob((s) => {
               return { ...s, n: s.n + 1 };
             });
-            console.log(d);
-            ob(ring({ d }, counter));
+            ob(
+              ring({ d }, (o, p) => {
+                counter((r) => {
+                  if (typeof r === "function")
+                    o((s) => {
+                      return { ...s, ["+"]: r(s["+"] || { n: 1 }) };
+                    });
+                  else o(r);
+                }, p);
+              })
+            );
           })
         );
         if (d > 0) o(div(ring({ d: d - 1 }, counter)));
@@ -92,7 +100,7 @@ const mkpith = (o, elm: HTMLElement) => {
 };
 const rootNode = document.getElementById("root-node");
 if (!rootNode) throw new Error("cant find root-node");
-var state = { n: 0 };
+var state: { n: number } = { n: 0 };
 console.info(state);
 const bark = mkpith((r) => {
   state = r(state);
