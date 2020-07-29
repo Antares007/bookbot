@@ -1,48 +1,60 @@
 // @flow strict
-const elm = (tag, props, pith) => ({ type: ("elm": "elm"), tag, props, pith });
-const button = (props, pith) => elm("BUTTON", props, pith);
-const div = (props, pith) => elm("DIV", props, pith);
+const elm = (tag, pith) => ({ type: ("elm": "elm"), tag, pith });
+const button = (pith) => elm("BUTTON", pith);
+const div = (pith) => elm("DIV", pith);
 const onClick = (f: (MouseEvent) => mixed) => ({
   type: ("handler": "handler"),
   f,
 });
+const ring = (props, f) => ({ type: "ring", props, f });
 var di = 0;
 function counter(o, props: {| d: number |}) {
   const ob = o;
   o(
-    button(props, (o, { d }) => {
-      o("+");
-      o(
-        onClick((e) => {
-          di++;
-          console.log(d);
-          ob(counter, { d });
-        })
-      );
-      if (d > 0) o(div({ d: d - 1 }, counter));
-    })
+    button(
+      ring(props, (o, { d }) => {
+        o("+");
+        o(
+          onClick((e) => {
+            di++;
+            ob((s) => {
+              return { ...s, n: s.n + 1 };
+            });
+            console.log(d);
+            ob(ring({ d }, counter));
+          })
+        );
+        if (d > 0) o(div(ring({ d: d - 1 }, counter)));
+      })
+    )
   );
   o(
-    button(props, (o, { d }) => {
-      o("-");
-      if (d > 0) o(div({ d: d - 1 }, counter));
-    })
+    button(
+      ring(props, (o, { d }) => {
+        o("-");
+        if (d > 0) o(div(ring({ d: d - 1 }, counter)));
+      })
+    )
   );
-  o(props.d + di + "");
+  o((s) => {
+    o(s.n + "");
+    return s;
+  });
 }
 
-const mkpith = (elm: HTMLElement) => {
+// function page1(o, p) {
+//   o("page 1");
+//   o(div({ d: 1 }, switcher));
+// }
+// function page2(o, p) {}
+// function switcher(o, p) {}
+
+const mkpith = (o, elm: HTMLElement) => {
   var lastIndex;
   const { childNodes } = elm;
-  return function pith(x, props) {
-    if (x == null) {
-      // dispose
-    } else if (typeof x === "function") {
-      lastIndex = 0;
-      if (props != null) x(pith, props);
-      for (let l = childNodes.length; l > lastIndex; l--)
-        elm.removeChild(childNodes[lastIndex]);
-      return;
+  return function pith(x) {
+    if (typeof x === "function") {
+      o(x);
     } else if (typeof x === "string") {
       const index = lastIndex++;
       for (let i = index, l = childNodes.length; i < l; i++) {
@@ -53,18 +65,26 @@ const mkpith = (elm: HTMLElement) => {
         }
       }
       elm.insertBefore(document.createTextNode(x), childNodes[index]);
+    } else if (x == null) {
+    } else if (x.type === "ring") {
+      lastIndex = 0;
+      x.f(pith, x.props);
+      for (let l = childNodes.length; l > lastIndex; l--)
+        elm.removeChild(childNodes[lastIndex]);
+      return;
     } else if (x.type === "elm") {
       const index = lastIndex++;
       for (let i = index, l = childNodes.length; i < l; i++) {
         let n = childNodes[i];
         if (n instanceof HTMLElement && n.nodeName === x.tag) {
           if (index < i) elm.insertBefore(n, childNodes[index]);
-          return mkpith(n)(x.pith, x.props);
+          return mkpith(o, n)(ring(x.pith.props, x.pith.f));
         }
       }
       mkpith(
+        o,
         elm.insertBefore(document.createElement(x.tag), childNodes[index])
-      )(x.pith, x.props);
+      )(ring(x.pith.props, x.pith.f));
     } else {
       elm.addEventListener("click", x.f);
     }
@@ -72,6 +92,11 @@ const mkpith = (elm: HTMLElement) => {
 };
 const rootNode = document.getElementById("root-node");
 if (!rootNode) throw new Error("cant find root-node");
-const bark = mkpith(rootNode);
-bark(counter, { d: 1 });
+var state = { n: 0 };
+console.info(state);
+const bark = mkpith((r) => {
+  state = r(state);
+  console.info(state);
+}, rootNode);
+bark(ring({ d: 1 }, counter));
 bark();
