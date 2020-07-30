@@ -2,7 +2,7 @@
 import { mkpith } from "./mkpith";
 import type { Pith } from "./mkpith";
 
-const elm = (tag, pith) => ({ _: ("elm": "elm"), tag, pith });
+const elm = (tag, ring) => ({ _: ("elm": "elm"), tag, ring });
 const onClick = (f: (MouseEvent) => mixed) => ({
   _: ("handler": "handler"),
   f,
@@ -36,12 +36,12 @@ const rootNode = document.getElementById("root-node");
 if (!rootNode) throw new Error("cant find root-node");
 
 var state: { n: number } = { n: 0 };
-console.info(state);
+console.info(JSON.stringify(state));
 
 const bark = mkpith((r) => {
   const os = state;
   state = r(state);
-  if (os !== state) console.info(state);
+  if (os !== state) console.info(JSON.stringify(state));
 }, rootNode);
 
 bark(counter);

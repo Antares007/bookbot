@@ -3,7 +3,7 @@ export type Ring<S> = ((Pith<S>) => void) => void;
 export type Pith<S> =
   | string
   | Ring<S>
-  | {| _: "elm", tag: string, pith: Ring<S> |}
+  | {| _: "elm", tag: string, ring: Ring<S> |}
   | {| _: "reduce", g: (S) => S |};
 
 export const mkpith = <S>(
@@ -38,13 +38,13 @@ export const mkpith = <S>(
         let n = childNodes[i];
         if (n instanceof HTMLElement && n.nodeName === x.tag) {
           if (index < i) elm.insertBefore(n, childNodes[index]);
-          return mkpith(o, n)(x.pith);
+          return mkpith(o, n)(x.ring);
         }
       }
       mkpith(
         o,
         elm.insertBefore(document.createElement(x.tag), childNodes[index])
-      )(x.pith);
+      )(x.ring);
     } else {
       //elm.addEventListener("click", x.f);
     }
