@@ -13,7 +13,7 @@ export const mkpith = <S>(
 ): ((Pith<S>) => void) => {
   var lastIndex;
   const { childNodes } = elm;
-  return function pith(x): void {
+  return function pith(x: Pith<S>): void {
     if (typeof x === "function") {
       lastIndex = 0;
       x(pith);
