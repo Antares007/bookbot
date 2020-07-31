@@ -8,15 +8,23 @@ export type Pith<S> =
 
 export const mkpith = <S>(
   o: ((S) => S) => void,
-  elm: HTMLElement,
-  vnode: {} = { disposables: [], childs: [] }
+  elm: HTMLElement
 ): ((Pith<S>) => void) => {
-  var lastIndex;
+  var lastIndex: number;
+  var dispose: ?() => void;
+  const childPiths: Array<?(Pith<S>) => void> = [];
   const { childNodes } = elm;
+  var pring: ?Ring<S>;
   return function pith(x: Pith<S>): void {
     if (typeof x === "function") {
+      if (pring === x) {
+        console.log("a");
+        return;
+      }
+      pring = x;
       lastIndex = 0;
       x(pith);
+
       for (let l = childNodes.length; l > lastIndex; l--)
         elm.removeChild(childNodes[lastIndex]);
       return;
@@ -31,22 +39,30 @@ export const mkpith = <S>(
       }
       elm.insertBefore(document.createTextNode(x), childNodes[index]);
     } else if (x._ === "reduce") {
-      o((s) => x.g(s));
+      o((s) => {
+        const ns = x.g(s);
+        if (ns !== s) pring = null;
+        return ns;
+      });
     } else if (x._ === "elm") {
       const index = lastIndex++;
       for (let i = index, l = childNodes.length; i < l; i++) {
         let n = childNodes[i];
+        const ob = childPiths[i];
+        if (ob) ob;
+
         if (n instanceof HTMLElement && n.nodeName === x.tag) {
           if (index < i) elm.insertBefore(n, childNodes[index]);
           return mkpith(o, n)(x.ring);
         }
       }
-      mkpith(
-        o,
-        elm.insertBefore(document.createElement(x.tag), childNodes[index])
-      )(x.ring);
+      const child = document.createElement(x.tag);
+      const ob = mkpith(o, elm.insertBefore(child, childNodes[index]));
+      childPiths[index] = ob;
+      ob(x.ring);
+      // ob, child, x.ring;
     } else {
-      //elm.addEventListener("click", x.f);
+      // elm.addEventListener("click", x.f);
     }
   };
 };

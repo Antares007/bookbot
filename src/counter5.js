@@ -45,6 +45,7 @@ const bark = mkpith((r) => {
 }, rootNode);
 
 bark(counter);
+bark(counter);
 
 // function page1(o, p) {
 //   o("page 1");
