@@ -1,68 +1,83 @@
 // @flow strict
-export type Ring<S> = ((Pith<S>) => void) => void;
-export type Pith<S> =
+type O<S> =
   | string
-  | Ring<S>
-  | {| _: "elm", tag: string, ring: Ring<S> |}
-  | {| _: "reduce", g: (S) => S |};
+  | (((O<S>) => void) => void)
+  | {| _: "elm", tag: string, key?: string, seed: ((O<S>) => void) => void |}
+  | {| _: "reduce", g: (S) => S |}
+  | {| _: "click", f: (MouseEvent) => mixed |};
+
+function empty(_) {}
 
 export const mkpith = <S>(
   o: ((S) => S) => void,
   elm: HTMLElement
-): ((Pith<S>) => void) => {
+): ((O<S>) => void) => {
+  var seed: ?((O<S>) => void) => void;
   var lastIndex: number;
   var dispose: ?() => void;
-  const childPiths: Array<?(Pith<S>) => void> = [];
   const { childNodes } = elm;
-  var pring: ?Ring<S>;
-  return function pith(x: Pith<S>): void {
+  const childPiths: Array<(O<S>) => void> = new Array(childNodes.length);
+  const keys: Array<?string> = new Array(childNodes.length);
+  return function pith(x: O<S>): void {
     if (typeof x === "function") {
-      if (pring === x) {
-        console.log("a");
-        return;
-      }
-      pring = x;
+      if (seed === x) return console.log("a");
+      dispose = dispose && dispose();
       lastIndex = 0;
       x(pith);
-
-      for (let l = childNodes.length; l > lastIndex; l--)
+      seed = x;
+      for (let l = childNodes.length; l > lastIndex; l--) {
         elm.removeChild(childNodes[lastIndex]);
-      return;
+        keys.splice(lastIndex, 1);
+        childPiths.splice(lastIndex, 1)[0](empty);
+      }
     } else if (typeof x === "string") {
       const index = lastIndex++;
-      for (let i = index, l = childNodes.length; i < l; i++) {
-        let n = childNodes[i];
-        if (n.nodeType === 3 && n.textContent === x) {
-          if (index < i) elm.insertBefore(n, childNodes[index]);
+      for (let i = index, l = childNodes.length; i < l; i++)
+        if (childNodes[i].nodeType === 3 && childNodes[i].textContent === x) {
+          if (index < i) {
+            elm.insertBefore(childNodes[i], childNodes[index]);
+            keys.splice(index, 0, ...keys.splice(i, 1));
+            childPiths.splice(index, 0, ...childPiths.splice(i, 1));
+          }
           return;
         }
-      }
       elm.insertBefore(document.createTextNode(x), childNodes[index]);
+      keys.splice(index, 0, null);
+      childPiths.splice(index, 0, empty);
     } else if (x._ === "reduce") {
-      o((s) => {
-        const ns = x.g(s);
-        if (ns !== s) pring = null;
-        return ns;
-      });
+      o(x.g);
     } else if (x._ === "elm") {
       const index = lastIndex++;
-      for (let i = index, l = childNodes.length; i < l; i++) {
-        let n = childNodes[i];
-        const ob = childPiths[i];
-        if (ob) ob;
-
-        if (n instanceof HTMLElement && n.nodeName === x.tag) {
-          if (index < i) elm.insertBefore(n, childNodes[index]);
-          return mkpith(o, n)(x.ring);
+      for (let i = index, l = childNodes.length; i < l; i++)
+        if (
+          childNodes[i] instanceof HTMLElement &&
+          childNodes[i].nodeName === x.tag &&
+          (x.key == null || keys[i] === x.key)
+        ) {
+          if (index < i) {
+            elm.insertBefore(childNodes[i], childNodes[index]);
+            keys.splice(index, 0, ...keys.splice(i, 1));
+            childPiths.splice(index, 0, ...childPiths.splice(i, 1));
+          }
+          if (!seed) childPiths[index] = mkpith(o, childNodes[i]);
+          childPiths[index](x.seed);
+          return;
         }
-      }
-      const child = document.createElement(x.tag);
-      const ob = mkpith(o, elm.insertBefore(child, childNodes[index]));
-      childPiths[index] = ob;
-      ob(x.ring);
-      // ob, child, x.ring;
+      const child = elm.insertBefore(
+        document.createElement(x.tag),
+        childNodes[index]
+      );
+      const ob = mkpith(o, child);
+      keys.splice(index, 0, x.key);
+      childPiths.splice(index, 0, ob);
+      ob(x.seed);
     } else {
-      // elm.addEventListener("click", x.f);
+      const d = dispose;
+      elm.addEventListener(x._, x.f);
+      dispose = () => {
+        elm.removeEventListener(x._, x.f);
+        d && d();
+      };
     }
   };
 };

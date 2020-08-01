@@ -1,26 +1,46 @@
 // @flow strict
 import { mkpith } from "./mkpith";
-import type { Pith } from "./mkpith";
 
-const elm = (tag, ring) => ({ _: ("elm": "elm"), tag, ring });
-const onClick = (f: (MouseEvent) => mixed) => ({
-  _: ("handler": "handler"),
-  f,
-});
+const elm = (tag, seed) => ({ _: ("elm": "elm"), tag, seed });
+const click = (f) => ({ _: ("click": "click"), f });
 const reduce = (g) => ({ _: ("reduce": "reduce"), g });
 const button = (pith) => elm("BUTTON", pith);
 const div = (pith) => elm("DIV", pith);
 var di = 0;
-function counter(o: (Pith<{ n: number }>) => void, d: number = 1) {
+const c3 = (o) => counter(o, 2);
+function counter(o, d: number) {
+  const ob = o;
   o(
     button((o) => {
       o("+");
-      if (d > 0) o(div((o) => counter((r) => o(r), d - 1)));
+      o(
+        click((e) => {
+          console.log("+" + d);
+          o(
+            reduce((s) => {
+              return { ...s, n: s.n + 1 };
+            })
+          );
+          ob((o) => counter(o, d));
+        })
+      );
+      if (d > 0) o(div((o) => counter(o, d - 1)));
     })
   );
   o(
     button((o) => {
       o("-");
+      o(
+        click((e) => {
+          console.log("-" + d);
+          o(
+            reduce((s) => {
+              return { ...s, n: s.n - 1 };
+            })
+          );
+          ob((o) => counter(o, d));
+        })
+      );
       if (d > 0) o(div((o) => counter(o, d - 1)));
     })
   );
@@ -43,9 +63,8 @@ const bark = mkpith((r) => {
   state = r(state);
   if (os !== state) console.info(JSON.stringify(state));
 }, rootNode);
-
-bark(counter);
-bark(counter);
+bark(c3);
+bark(c3);
 
 // function page1(o, p) {
 //   o("page 1");
