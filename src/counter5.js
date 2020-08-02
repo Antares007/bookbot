@@ -1,7 +1,7 @@
 // @flow strict
 import { mkpith } from "./mkpith";
 
-const elm = (tag, seed) => ({ _: ("elm": "elm"), tag, seed });
+const elm = (tag, bark) => ({ _: ("elm": "elm"), tag, bark });
 const click = (f) => ({ _: ("click": "click"), f });
 const reduce = (g) => ({ _: ("reduce": "reduce"), g });
 const button = (pith) => elm("BUTTON", pith);

@@ -2,7 +2,7 @@
 type O<S> =
   | string
   | (((O<S>) => void) => void)
-  | {| _: "elm", tag: string, key?: string, seed: ((O<S>) => void) => void |}
+  | {| _: "elm", tag: string, key?: string, bark: ((O<S>) => void) => void |}
   | {| _: "reduce", g: (S) => S |}
   | {| _: "click", f: (MouseEvent) => mixed |};
 
@@ -60,7 +60,7 @@ export const mkpith = <S>(
             childPiths.splice(index, 0, ...childPiths.splice(i, 1));
           }
           if (!seed) childPiths[index] = mkpith(o, childNodes[i]);
-          childPiths[index](x.seed);
+          childPiths[index](x.bark);
           return;
         }
       const child = elm.insertBefore(
@@ -70,7 +70,7 @@ export const mkpith = <S>(
       const ob = mkpith(o, child);
       keys.splice(index, 0, x.key);
       childPiths.splice(index, 0, ob);
-      ob(x.seed);
+      ob(x.bark);
     } else {
       const d = dispose;
       elm.addEventListener(x._, x.f);
