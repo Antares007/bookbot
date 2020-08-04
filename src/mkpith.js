@@ -63,11 +63,9 @@ export const mkpith = <S>(
           childPiths[index](x.bark);
           return;
         }
-      const child = elm.insertBefore(
-        document.createElement(x.tag),
-        childNodes[index]
-      );
+      const child = document.createElement(x.tag);
       const ob = mkpith(o, child);
+      elm.insertBefore(child, childNodes[index]);
       keys.splice(index, 0, x.key);
       childPiths.splice(index, 0, ob);
       ob(x.bark);
