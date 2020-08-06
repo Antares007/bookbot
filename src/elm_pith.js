@@ -54,11 +54,30 @@ export function create(elm: Element): (O) => void {
       throw new Error("x not empty");
     }
   };
-};
-const p2 = <S>(o: (S) => S, elm: HTMLElement): ((O) => void) => {
-  const ob = create(elm);
-  return function pith(x) {
-    ob(x);
-  };
-};
+}
 
+type O2<S> =
+  | void
+  | string
+  | {|
+      _: "elm",
+      ctor: () => HTMLElement,
+      eq: (Node) => ?HTMLElement,
+      r: ((O2<S>) => void) => void,
+    |}
+  | {| _: "reduce", r: (S) => S |};
+
+function sc<S>(o: (S) => S, elm: Element): (O2<S>) => void {
+  const ob = create(elm);
+  const history: Array<O2<S>> = [];
+  return function pith(x: O2<S>): void {
+    // history.push(x);
+    if (typeof x !== "object") {
+      ob(x);
+    } else if (x._ === "reduce") {
+      x;
+    } else if (x._ === "elm") {
+      x.r;
+    } else ob(x);
+  };
+}
