@@ -37,12 +37,16 @@ function counter(o, d = 1) {
     })
   );
   o("0");
+  o({ _: "reduce", r: (s) => s });
 }
 
 const root = document.querySelector("#root-node");
 if (!root) throw new Error("root");
 
-const ob = E.create(root);
+var state = { n: 0 };
+const ob = E.sc((r) => {
+  state = r(state);
+}, E.create(root));
 
 counter(ob);
 counter(ob);

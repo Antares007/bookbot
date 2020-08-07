@@ -56,28 +56,27 @@ export function create(elm: Element): (O) => void {
   };
 }
 
-type O2<S> =
+export type O2<S> =
   | void
   | string
   | {|
       _: "elm",
       ctor: () => HTMLElement,
       eq: (Node) => ?HTMLElement,
-      r: ((O2<S>) => void) => void,
+      bark: ((O2<S>) => void) => void,
     |}
   | {| _: "reduce", r: (S) => S |};
 
-function sc<S>(o: (S) => S, elm: Element): (O2<S>) => void {
-  const ob = create(elm);
+export function sc<S>(o: ((S) => S) => void, ob: (O) => void): (O2<S>) => void {
   const history: Array<O2<S>> = [];
   return function pith(x: O2<S>): void {
     // history.push(x);
     if (typeof x !== "object") {
       ob(x);
     } else if (x._ === "reduce") {
-      x;
+      o(x.r);
     } else if (x._ === "elm") {
-      x.r;
+      ob({ _: "elm", ctor: x.ctor, eq: x.eq, bark: (op) => x.bark(sc(o, op)) });
     } else ob(x);
   };
 }
