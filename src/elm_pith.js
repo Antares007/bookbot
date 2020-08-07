@@ -76,7 +76,31 @@ export function sc<S>(o: ((S) => S) => void, ob: (O) => void): (O2<S>) => void {
     } else if (x._ === "reduce") {
       o(x.r);
     } else if (x._ === "elm") {
-      ob({ _: "elm", ctor: x.ctor, eq: x.eq, bark: (op) => x.bark(sc(o, op)) });
+      ob({ ...x, bark: (op) => x.bark(sc(o, op)) });
     } else ob(x);
   };
 }
+export const elm = <S>(
+  tag: string,
+  bark: ((O2<S>) => void) => void
+): ({|
+  _: "elm",
+  bark: ((O2<S>) => void) => void,
+  ctor: () => HTMLElement,
+  eq: (Node) => ?HTMLElement,
+|}) => {
+  return {
+    _: "elm",
+    ctor() {
+      return document.createElement(tag);
+    },
+    eq(n) {
+      return n instanceof HTMLElement && n.nodeName === tag ? n : null;
+    },
+    bark,
+  };
+};
+export const reduce = <S>(r: (S) => S): ({| _: "reduce", r: (S) => S |}) => ({
+  _: ("reduce": "reduce"),
+  r,
+});
