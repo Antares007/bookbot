@@ -9,7 +9,7 @@ export type O =
       bark: ((O) => void) => void,
     |};
 export function empty<T>(_: T) {}
-export function create(elm: Element): (O) => void {
+export function mkElementPith(elm: Element): (O) => void {
   var count = 0;
   const { childNodes } = elm;
   const childPiths: Array<(O) => void> = [];
@@ -45,7 +45,7 @@ export function create(elm: Element): (O) => void {
           return;
         }
       const child = x.ctor();
-      const ob = create(child);
+      const ob = mkElementPith(child);
       elm.insertBefore(child, childNodes[index]);
       childPiths.splice(index, 0, ob);
       x.bark(ob);
@@ -67,7 +67,10 @@ export type O2<S> =
     |}
   | {| _: "reduce", r: (S) => S |};
 
-export function sc<S>(o: ((S) => S) => void, ob: (O) => void): (O2<S>) => void {
+export function mk_state_pith<S>(
+  o: ((S) => S) => void,
+  ob: (O) => void
+): (O2<S>) => void {
   const history: Array<O2<S>> = [];
   return function pith(x: O2<S>): void {
     // history.push(x);
@@ -76,7 +79,7 @@ export function sc<S>(o: ((S) => S) => void, ob: (O) => void): (O2<S>) => void {
     } else if (x._ === "reduce") {
       o(x.r);
     } else if (x._ === "elm") {
-      ob({ ...x, bark: (op) => x.bark(sc(o, op)) });
+      ob({ ...x, bark: (op) => x.bark(mk_state_pith(o, op)) });
     } else ob(x);
   };
 }

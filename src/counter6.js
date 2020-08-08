@@ -27,13 +27,12 @@ if (!root) throw new Error("root");
 
 var state = { n: 1, v: "o" };
 
-const ob = E.sc((r) => {
+const ob = E.mk_state_pith((r) => {
   state = r(state);
-}, E.create(root));
+}, E.mkElementPith(root));
 
 counter(ob);
-counter(ob);
-counter(ob);
 ob();
-ob("helllooooo");
-ob();
+window.E = E;
+window.c = counter;
+window.o = ob;
