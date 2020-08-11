@@ -2,9 +2,21 @@
 import * as E from "./elm_pith";
 
 function counter(o, d = 1) {
+  const ob = o;
   o(
     E.elm("button", (o) => {
       o("+");
+      o(
+        E.on.click((e) => {
+          console.log(e.target);
+          o(
+            E.reduce((s) => {
+              return { ...s, n: s.n + 1 };
+            })
+          );
+          counter(ob, d);
+        })
+      );
       if (d > 0) o(E.elm("div", (o) => counter(o, d - 1)));
     })
   );
@@ -16,10 +28,11 @@ function counter(o, d = 1) {
   );
   o(
     E.reduce((s) => {
-      o(d + "");
+      o(s.n + "");
       return s;
     })
   );
+  o();
 }
 
 const root = document.querySelector("#root-node");
@@ -32,7 +45,6 @@ const ob = E.mk_state_pith((r) => {
 }, E.mkElementPith(root));
 
 counter(ob);
-ob();
 window.E = E;
 window.c = counter;
 window.o = ob;
