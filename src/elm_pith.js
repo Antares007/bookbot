@@ -142,3 +142,29 @@ export function mk_state_pith<S>(
     } else ob(x);
   };
 }
+export function ext<A, B>(
+  key: string,
+  b: B,
+  bark: ((O2<B>) => void) => void
+): ((O2<A>) => void) => void {
+  return function (o) {
+    bark((x) => {
+      if (typeof x !== "object") {
+        o(x);
+      } else if (x._ === "reduce") {
+        o(
+          reduce((a) => {
+            const os = a[key] || b;
+            const ns = x.r(os);
+            if (os == ns) return a;
+            return { ...a, [key]: ns };
+          })
+        );
+      } else if (x._ === "elm") {
+        o({ _: "elm", ctor: x.ctor, eq: x.eq, bark: ext(key, b, x.bark) });
+      } else {
+        o(x);
+      }
+    });
+  };
+}
