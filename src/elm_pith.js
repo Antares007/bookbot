@@ -1,12 +1,15 @@
 // @flow strict
-export type O =
+import { static_cast } from "./static_cast.js";
+
+export type O<S> =
   | void
   | string
+  | ((S) => S)
   | {|
       _: "elm",
-      ctor: () => HTMLElement,
-      eq: (Node) => ?HTMLElement,
-      bark: ((O) => void) => void,
+      ctor: () => Element,
+      eq: (Node) => ?Element,
+      bark: ((O<S>) => void) => void,
     |}
   | {|
       _: "on",
@@ -15,7 +18,10 @@ export type O =
       options?: EventListenerOptionsOrUseCapture,
     |};
 export function empty<T>(_: T) {}
-export function mkElementPith(elm: Element): (O) => void {
+export function makeElementPith<S>(
+  o: ((S) => S) => void,
+  elm: Element
+): (O<S>) => void {
   var childs_count = 0;
   var handlers_count = 0;
   const handlers = [];
@@ -34,6 +40,8 @@ export function mkElementPith(elm: Element): (O) => void {
       ))
         elm.removeEventListener(h.type, h.handler);
       handlers_count = 0;
+    } else if (typeof x === "function") {
+      o(x);
     } else if (typeof x === "string") {
       const index = childs_count++;
       for (let i = index, l = childNodes.length; i < l; i++)
@@ -59,11 +67,11 @@ export function mkElementPith(elm: Element): (O) => void {
           return;
         }
       const child = x.ctor();
-      const ob = mkElementPith(child);
+      const ob = makeElementPith(o, child);
       elm.insertBefore(child, childNodes[index]);
       childPiths.splice(index, 0, ob);
       x.bark(ob);
-    } else if (x._ === "on") {
+    } else {
       const index = handlers_count++;
       for (let i = index, l = handlers.length; i < l; i++)
         if (handlers[i] === x) {
@@ -72,20 +80,17 @@ export function mkElementPith(elm: Element): (O) => void {
         }
       elm.addEventListener(x.type, x.handler, x.options);
       handlers.splice(index, 0, x);
-    } else {
-      (x: empty);
-      throw new Error("x not empty");
     }
   };
 }
 export const elm = <S>(
   tag: string,
-  bark: ((O2<S>) => void) => void
+  bark: ((O<S>) => void) => void
 ): ({|
   _: "elm",
-  bark: ((O2<S>) => void) => void,
-  ctor: () => HTMLElement,
-  eq: (Node) => ?HTMLElement,
+  ctor: () => Element,
+  eq: (Node) => ?Element,
+  bark: ((O<S>) => void) => void,
 |}) => {
   return {
     _: "elm",
@@ -98,68 +103,44 @@ export const elm = <S>(
     bark,
   };
 };
-export const reduce = <S>(r: (S) => S): ({| _: "reduce", r: (S) => S |}) => ({
-  _: ("reduce": "reduce"),
-  r,
-});
+// prettier-ignore
 export const on = {
-  click: (h: EventHandler) => ({
-    _: "on",
-    type: "click",
-    handler: h,
-  }),
+  contextmenu:(h: MouseEventHandler) => ({ _:"on", type:  'contextmenu', handler: static_cast<EventHandler, *>(h), }),
+  mousedown:(h: MouseEventHandler) => ({ _:"on", type:  'mousedown' , handler: static_cast<EventHandler, *>(h), }),
+  mouseenter:(h: MouseEventHandler) => ({ _:"on", type:  'mouseenter', handler: static_cast<EventHandler, *>(h), }),
+  mouseleave:(h: MouseEventHandler) => ({ _:"on", type:  'mouseleave', handler: static_cast<EventHandler, *>(h), }),
+  mousemove:(h: MouseEventHandler) => ({ _:"on", type:  'mousemove', handler: static_cast<EventHandler, *>(h), }),
+  mouseout:(h: MouseEventHandler) => ({ _:"on", type:  'mouseout', handler: static_cast<EventHandler, *>(h), }),
+  mouseover:(h: MouseEventHandler) => ({ _:"on", type:  'mouseover', handler: static_cast<EventHandler, *>(h), }),
+  mouseup:(h: MouseEventHandler) => ({ _:"on", type:  'mouseup', handler: static_cast<EventHandler, *>(h), }),
+  click:(h: MouseEventHandler) => ({ _:"on", type:  'click', handler: static_cast<EventHandler, *>(h), }),
+  dblclick:(h: MouseEventHandler) => ({ _:"on", type:  'dblclick', handler: static_cast<EventHandler, *>(h), }),
+  blur:(h: FocusEventTypes) => ({ _:"on", type: 'blur', handler: static_cast<EventHandler, *>(h), }),
+  focus:(h: FocusEventTypes) => ({ _:"on", type: 'focus', handler: static_cast<EventHandler, *>(h), }),
+  focusin:(h: FocusEventTypes) => ({ _:"on", type: 'focusin', handler: static_cast<EventHandler, *>(h), }),
+  focusout:(h: FocusEventTypes) => ({ _:"on", type: 'focusout', handler: static_cast<EventHandler, *>(h), }),
+  keydown:(h: KeyboardEventTypes) => ({ _:"on", type: 'keydown', handler: static_cast<EventHandler, *>(h), }),
+  keyup:(h: KeyboardEventTypes) => ({ _:"on", type: 'keyup', handler: static_cast<EventHandler, *>(h), }),
+  keypress:(h: KeyboardEventTypes) => ({ _:"on", type: 'keypress', handler: static_cast<EventHandler, *>(h), }),
+  input:(h: InputEventTypes) => ({ _:"on", type: 'input', handler: static_cast<EventHandler, *>(h), }), 
+  beforeinput:(h: InputEventTypes) => ({ _:"on", type: 'beforeinput', handler: static_cast<EventHandler, *>(h), }),
 };
-export type O2<S> =
-  | void
-  | string
-  | {|
-      _: "elm",
-      ctor: () => HTMLElement,
-      eq: (Node) => ?HTMLElement,
-      bark: ((O2<S>) => void) => void,
-    |}
-  | {| _: "reduce", r: (S) => S |}
-  | {|
-      _: "on",
-      type: string,
-      handler: EventHandler,
-      options?: EventListenerOptionsOrUseCapture,
-    |};
-
-export function mk_state_pith<S>(
-  o: ((S) => S) => void,
-  ob: (O) => void
-): (O2<S>) => void {
-  const history: Array<O2<S>> = [];
-  return function pith(x: O2<S>): void {
-    // history.push(x);
-    if (typeof x !== "object") {
-      ob(x);
-    } else if (x._ === "reduce") {
-      o(x.r);
-    } else if (x._ === "elm") {
-      ob({ ...x, bark: (op) => x.bark(mk_state_pith(o, op)) });
-    } else ob(x);
-  };
-}
-export function ext<A, B>(
+export function ext<A: { ... }, B>(
   key: string,
   b: B,
-  bark: ((O2<B>) => void) => void
-): ((O2<A>) => void) => void {
-  return function (o) {
+  bark: ((O<B>) => void) => void
+): ((O<A>) => void) => void {
+  return function (o: (O<A>) => void) {
     bark((x) => {
-      if (typeof x !== "object") {
+      if (typeof x === "function") {
+        o((a) => {
+          const os = a["o" + key] || b;
+          const ns = x(os);
+          if (os == ns) return a;
+          return { ...a, ["o" + key]: ns };
+        });
+      } else if (typeof x !== "object") {
         o(x);
-      } else if (x._ === "reduce") {
-        o(
-          reduce((a) => {
-            const os = a[key] || b;
-            const ns = x.r(os);
-            if (os == ns) return a;
-            return { ...a, [key]: ns };
-          })
-        );
       } else if (x._ === "elm") {
         o({ _: "elm", ctor: x.ctor, eq: x.eq, bark: ext(key, b, x.bark) });
       } else {

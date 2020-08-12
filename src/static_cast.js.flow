@@ -1,0 +1,2 @@
+// @flow strict
+declare export function static_cast<B, A>(A): B;
