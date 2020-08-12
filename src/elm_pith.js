@@ -31,7 +31,7 @@ export function makeElementPith<S>(
     if (x == null) {
       for (let l = childNodes.length; l > childs_count; l--) {
         elm.removeChild(childNodes[childs_count]);
-        childPiths.splice(childs_count, 1);
+        childPiths.splice(childs_count, 1)[0]();
       }
       childs_count = 0;
       for (let h of handlers.splice(
@@ -83,15 +83,15 @@ export function makeElementPith<S>(
     }
   };
 }
-export const elm = <S>(
+export function elm<S>(
   tag: string,
   bark: ((O<S>) => void) => void
-): ({|
+): {|
   _: "elm",
   ctor: () => Element,
   eq: (Node) => ?Element,
   bark: ((O<S>) => void) => void,
-|}) => {
+|} {
   return {
     _: "elm",
     ctor() {
@@ -102,7 +102,7 @@ export const elm = <S>(
     },
     bark,
   };
-};
+}
 // prettier-ignore
 export const on = {
   contextmenu: (h: MouseEventHandler)  => ({ _:"on", type: 'contextmenu', handler: static_cast<EventHandler, *>(h) }),
