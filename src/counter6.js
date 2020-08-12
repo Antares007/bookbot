@@ -36,12 +36,12 @@ const root = document.querySelector("#root-node");
 if (!root) throw new Error("root");
 
 var state = { n: 0 };
-console.info(JSON.stringify(state, null, "  "));
+console.info(state);
 
 const ob = makeElementPith((r) => {
   const os = state;
   state = r(state);
-  if (os !== state) console.info(JSON.stringify(state, null, "  "));
+  if (os !== state) console.info(state);
 }, root);
 
 counter(ob);
