@@ -2,7 +2,7 @@
 import { on, elm, ext, makeElementPith } from "./elm_pith";
 
 // prettier-ignore
-function counter(o, d = 2) {
+function counter(o, d = 1) {
   const ob = o;
   o(elm("button", (o) => {
     o("+");
@@ -13,18 +13,19 @@ function counter(o, d = 2) {
       counter(ob, d);
     }));
     if (d > 0) o(elm("div", ext("+", { n: 0 }, (o) => counter(o, d - 1))));
+    o()
   }));
   o(elm("button", (o) => {
-      o("-");
-      o(on.click((e) => {
-        o(function (s) {
-          return { ...s, n: s.n - 1 };
-        });
-        counter(ob, d);
-      }));
-      if (d > 0) o(elm("div", ext("-", { n: 0 }, (o) => counter(o, d - 1))));
-    })
-  );
+    o("-");
+    o(on.click((e) => {
+      o(function (s) {
+        return { ...s, n: s.n - 1 };
+      });
+      counter(ob, d);
+    }));
+    if (d > 0) o(elm("div", ext("-", { n: 0 }, (o) => counter(o, d - 1))));
+    o()
+  }));
   o(function (s) {
     o(s.n + "");
     return s;
