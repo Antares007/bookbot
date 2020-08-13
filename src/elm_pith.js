@@ -94,27 +94,23 @@ export function elm<S>(
 |} {
   return {
     _: "elm",
-    ctor() {
-      return document.createElement(tag);
-    },
-    eq(n) {
-      return n instanceof HTMLElement && n.nodeName === tag ? n : null;
-    },
+    ctor: () => document.createElement(tag),
+    eq: (n) => (n instanceof HTMLElement && n.nodeName === tag ? n : null),
     bark,
   };
 }
 // prettier-ignore
 export const on = {
-  contextmenu: (h: MouseEventHandler)  => ({ _:"on", type: 'contextmenu', handler: static_cast<EventHandler, *>(h) }),
-  mousedown:   (h: MouseEventHandler)  => ({ _:"on", type: 'mousedown' , handler: static_cast<EventHandler, *>(h) }),
-  mouseenter:  (h: MouseEventHandler)  => ({ _:"on", type: 'mouseenter', handler: static_cast<EventHandler, *>(h) }),
-  mouseleave:  (h: MouseEventHandler)  => ({ _:"on", type: 'mouseleave', handler: static_cast<EventHandler, *>(h) }),
-  mousemove:   (h: MouseEventHandler)  => ({ _:"on", type: 'mousemove', handler: static_cast<EventHandler, *>(h) }),
-  mouseout:    (h: MouseEventHandler)  => ({ _:"on", type: 'mouseout', handler: static_cast<EventHandler, *>(h) }),
-  mouseover:   (h: MouseEventHandler)  => ({ _:"on", type: 'mouseover', handler: static_cast<EventHandler, *>(h) }),
-  mouseup:     (h: MouseEventHandler)  => ({ _:"on", type: 'mouseup', handler: static_cast<EventHandler, *>(h) }),
-  click:       (h: MouseEventHandler)  => ({ _:"on", type: 'click', handler: static_cast<EventHandler, *>(h) }),
-  dblclick:    (h: MouseEventHandler)  => ({ _:"on", type: 'dblclick', handler: static_cast<EventHandler, *>(h) }),
+  contextmenu: (h: MouseEventHandler)    => ({ _:"on", type: 'contextmenu', handler: static_cast<EventHandler, *>(h) }),
+  mousedown:   (h: MouseEventHandler)    => ({ _:"on", type: 'mousedown' , handler: static_cast<EventHandler, *>(h) }),
+  mouseenter:  (h: MouseEventHandler)    => ({ _:"on", type: 'mouseenter', handler: static_cast<EventHandler, *>(h) }),
+  mouseleave:  (h: MouseEventHandler)    => ({ _:"on", type: 'mouseleave', handler: static_cast<EventHandler, *>(h) }),
+  mousemove:   (h: MouseEventHandler)    => ({ _:"on", type: 'mousemove', handler: static_cast<EventHandler, *>(h) }),
+  mouseout:    (h: MouseEventHandler)    => ({ _:"on", type: 'mouseout', handler: static_cast<EventHandler, *>(h) }),
+  mouseover:   (h: MouseEventHandler)    => ({ _:"on", type: 'mouseover', handler: static_cast<EventHandler, *>(h) }),
+  mouseup:     (h: MouseEventHandler)    => ({ _:"on", type: 'mouseup', handler: static_cast<EventHandler, *>(h) }),
+  click:       (h: MouseEventHandler)    => ({ _:"on", type: 'click', handler: static_cast<EventHandler, *>(h) }),
+  dblclick:    (h: MouseEventHandler)    => ({ _:"on", type: 'dblclick', handler: static_cast<EventHandler, *>(h) }),
   blur:        (h: FocusEventHandler)    => ({ _:"on", type: 'blur', handler: static_cast<EventHandler, *>(h) }),
   focus:       (h: FocusEventHandler)    => ({ _:"on", type: 'focus', handler: static_cast<EventHandler, *>(h) }),
   focusin:     (h: FocusEventHandler)    => ({ _:"on", type: 'focusin', handler: static_cast<EventHandler, *>(h) }),
@@ -134,15 +130,15 @@ export function ext<A: { ... }, B>(
     bark((x) => {
       if (typeof x === "function") {
         o((a) => {
-          const os = a["o" + key] || b;
-          const ns = x(os);
-          if (os == ns) return a;
-          return { ...a, ["o" + key]: ns };
+          const ob = a[key] || b;
+          const nb = x(ob);
+          if (ob === nb) return a;
+          return { ...a, [key]: nb };
         });
       } else if (typeof x !== "object") {
         o(x);
       } else if (x._ === "elm") {
-        o({ _: "elm", ctor: x.ctor, eq: x.eq, bark: ext(key, b, x.bark) });
+        o({ ...x, bark: ext(key, b, x.bark) });
       } else {
         o(x);
       }
