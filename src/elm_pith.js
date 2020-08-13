@@ -96,10 +96,11 @@ export function elm<S>(
   eq: (Node) => ?Element,
   bark: ((O<S>) => void) => void,
 |} {
+  const TAG = tag.toUpperCase();
   return {
     _: "elm",
-    ctor: () => document.createElement(tag),
-    eq: (n) => (n instanceof HTMLElement && n.nodeName === tag ? n : null),
+    ctor: () => document.createElement(TAG),
+    eq: (n) => (n instanceof HTMLElement && n.nodeName === TAG ? n : null),
     bark,
   };
 }
