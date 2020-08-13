@@ -1,10 +1,13 @@
 // @flow strict
 import { on, elm, ext, makeElementPith } from "./elm_pith";
+const div = (b) => elm("div", b);
+const button = (b) => elm("button", b);
 
 // prettier-ignore
 function counter(o, d = 1) {
   const ob = o;
-  o(elm("button", (o) => {
+  const counterDminus1 = (o) => counter(o, d - 1);
+  o(button((o) => {
     o("+");
     o(on.click((e) => {
       o(function (s) {
@@ -12,10 +15,10 @@ function counter(o, d = 1) {
       });
       counter(ob, d);
     }));
-    if (d > 0) o(elm("div", ext("+", { n: 0 }, (o) => counter(o, d - 1))));
+    if (d > 0) o(div(ext("+", { n: 0 }, counterDminus1)));
     o()
   }));
-  o(elm("button", (o) => {
+  o(button((o) => {
     o("-");
     o(on.click((e) => {
       o(function (s) {
@@ -23,7 +26,7 @@ function counter(o, d = 1) {
       });
       counter(ob, d);
     }));
-    if (d > 0) o(elm("div", ext("-", { n: 0 }, (o) => counter(o, d - 1))));
+    if (d > 0) o(div(ext("-", { n: 0 }, counterDminus1)));
     o()
   }));
   o(function (s) {
