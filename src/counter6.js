@@ -39,10 +39,10 @@ if (!root) throw new Error("root");
 var state = { n: 0 };
 console.info(state);
 
-const ob = makeElementPith((r) => {
+const o = makeElementPith((r) => {
   const os = state;
   state = r(state);
   if (os !== state) console.info(state);
 }, root);
 
-counter(ob);
+counter(o);

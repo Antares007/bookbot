@@ -37,8 +37,10 @@ export function makeElementPith<S>(
       for (let h of handlers.splice(
         handlers_count,
         handlers.length - handlers_count
-      ))
+      )) {
+        //console.log("remove", h);
         elm.removeEventListener(h.type, h.handler);
+      }
       handlers_count = 0;
     } else if (typeof x === "function") {
       o(x);
@@ -75,9 +77,11 @@ export function makeElementPith<S>(
       const index = handlers_count++;
       for (let i = index, l = handlers.length; i < l; i++)
         if (handlers[i] === x) {
+          //console.log("reuse", x);
           if (index < i) handlers.splice(index, 0, ...handlers.splice(i, 1));
           return;
         }
+      //console.log("add", x);
       elm.addEventListener(x.type, x.handler, x.options);
       handlers.splice(index, 0, x);
     }
