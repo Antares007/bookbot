@@ -27,7 +27,7 @@ export function makeElementPith<S>(
   const handlers = [];
   const { childNodes } = elm;
   const childPiths = [];
-  return function pith(x): void {
+  return function pith(x) {
     if (x == null) {
       for (let l = childNodes.length; l > childs_count; l--) {
         elm.removeChild(childNodes[childs_count]);
