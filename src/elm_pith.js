@@ -16,6 +16,10 @@ export type O<S> =
       type: string,
       handler: EventHandler,
       options?: EventListenerOptionsOrUseCapture,
+    |}
+  | {|
+      _: "Act",
+      a: (Element) => ?() => void,
     |};
 export function empty<T>(_: T) {}
 export function makeElementPith<S>(
@@ -73,6 +77,8 @@ export function makeElementPith<S>(
       elm.insertBefore(child, childNodes[index]);
       childPiths.splice(index, 0, ob);
       x.bark(ob);
+    } else if (x._ === "Act") {
+      const d = x.a(elm);
     } else {
       const index = handlers_count++;
       for (let i = index, l = handlers.length; i < l; i++)
@@ -103,6 +109,9 @@ export function elm<S>(
     eq: (n) => (n instanceof HTMLElement && n.nodeName === TAG ? n : null),
     bark,
   };
+}
+export function act(a: (Element) => ?() => void) {
+  return { _: ("act": "act"), a };
 }
 // prettier-ignore
 export const on = {

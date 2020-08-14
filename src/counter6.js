@@ -1,5 +1,5 @@
 // @flow strict
-import { on, elm, ext, makeElementPith } from "./elm_pith";
+import { act, on, elm, ext, makeElementPith } from "./elm_pith";
 const div = (b) => elm("div", b);
 const button = (b) => elm("button", b);
 
@@ -7,6 +7,13 @@ const button = (b) => elm("button", b);
 function counter(o, d = 1) {
   const ob = o;
   const counterDminus1 = (o) => counter(o, d - 1);
+
+  const action0 = act((elm) => {
+    const h = (e: MouseEvent) => {}
+    elm.addEventListener('click', h)
+    return () => elm.removeEventListener('click', h)
+  });
+
   o(button((o) => {
     o("+");
     o(on.click((e) => {
