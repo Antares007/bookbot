@@ -18,9 +18,10 @@ export type O<S> =
       options?: EventListenerOptionsOrUseCapture,
     |}
   | {|
-      _: "Act",
-      a: (Element) => ?() => void,
-    |};
+      _: "action",
+      a: ((O<S>) => void, Element) => void,
+    |}
+  | {| _: "dispose", dispose: () => void |};
 export function empty<T>(_: T) {}
 export function makeElementPith<S>(
   o: ((S) => S) => void,
@@ -28,6 +29,8 @@ export function makeElementPith<S>(
 ): (O<S>) => void {
   var childs_count = 0;
   var handlers_count = 0;
+  var disposables_count = 0;
+  const disposables = [];
   const handlers = [];
   const { childNodes } = elm;
   const childPiths = [];
@@ -42,10 +45,18 @@ export function makeElementPith<S>(
         handlers_count,
         handlers.length - handlers_count
       )) {
-        //console.log("remove", h);
+        //console.log("h_remove", h);
         elm.removeEventListener(h.type, h.handler);
       }
       handlers_count = 0;
+      for (let h of disposables.splice(
+        disposables_count,
+        disposables.length - disposables_count
+      )) {
+        console.log("d_remove", h);
+        h.dispose();
+      }
+      disposables_count = 0;
     } else if (typeof x === "function") {
       o(x);
     } else if (typeof x === "string") {
@@ -77,19 +88,30 @@ export function makeElementPith<S>(
       elm.insertBefore(child, childNodes[index]);
       childPiths.splice(index, 0, ob);
       x.bark(ob);
-    } else if (x._ === "Act") {
-      const d = x.a(elm);
-    } else {
+    } else if (x._ === "action") {
+      const d = x.a(pith, elm);
+    } else if (x._ === "on") {
       const index = handlers_count++;
       for (let i = index, l = handlers.length; i < l; i++)
         if (handlers[i] === x) {
-          //console.log("reuse", x);
+          //console.log("h_reuse", x);
           if (index < i) handlers.splice(index, 0, ...handlers.splice(i, 1));
           return;
         }
-      //console.log("add", x);
+      //console.log("h_add", x);
       elm.addEventListener(x.type, x.handler, x.options);
       handlers.splice(index, 0, x);
+    } else {
+      const index = disposables_count++;
+      for (let i = index, l = disposables.length; i < l; i++)
+        if (disposables[i] === x) {
+          console.log("d_reuse", x);
+          if (index < i)
+            disposables.splice(index, 0, ...disposables.splice(i, 1));
+          return;
+        }
+      console.log("d_add", x);
+      disposables.splice(index, 0, x);
     }
   };
 }
@@ -110,8 +132,11 @@ export function elm<S>(
     bark,
   };
 }
-export function act(a: (Element) => ?() => void) {
-  return { _: ("act": "act"), a };
+export function action<S>(a: ((O<S>) => void, Element) => void) {
+  return { _: ("action": "action"), a };
+}
+export function dispose<S>(dispose: () => void) {
+  return { _: ("dispose": "dispose"), dispose };
 }
 // prettier-ignore
 export const on = {
@@ -140,7 +165,7 @@ export function ext<A: { ... }, B>(
   b: B,
   bark: ((O<B>) => void) => void
 ): ((O<A>) => void) => void {
-  return function (o: (O<A>) => void) {
+  return function ring(o: (O<A>) => void) {
     bark((x) => {
       if (typeof x === "function") {
         o((a) => {
@@ -153,6 +178,11 @@ export function ext<A: { ... }, B>(
         o(x);
       } else if (x._ === "elm") {
         o({ ...x, bark: ext(key, b, x.bark) });
+      } else if (x._ === "action") {
+        o({
+          ...x,
+          a: (oa, elm) => ext(key, b, (o) => x.a(o, elm))(oa),
+        });
       } else {
         o(x);
       }

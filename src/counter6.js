@@ -1,18 +1,29 @@
 // @flow strict
-import { act, on, elm, ext, makeElementPith } from "./elm_pith";
+import { dispose, action, on, elm, ext, makeElementPith } from "./elm_pith";
 const div = (b) => elm("div", b);
 const button = (b) => elm("button", b);
 
+const action0 = {
+  _: "action",
+  a: (o, elm) => {
+    const h = (e: MouseEvent) => {
+      console.log("m");
+    };
+    elm.addEventListener("click", h);
+    o(
+      dispose(() => {
+        elm.removeEventListener("click", h);
+        console.log("d");
+      })
+    );
+  },
+};
 // prettier-ignore
 function counter(o, d = 1) {
   const ob = o;
   const counterDminus1 = (o) => counter(o, d - 1);
 
-  const action0 = act((elm) => {
-    const h = (e: MouseEvent) => {}
-    elm.addEventListener('click', h)
-    return () => elm.removeEventListener('click', h)
-  });
+  o(action0); 
 
   o(button((o) => {
     o("+");
