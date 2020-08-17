@@ -28,44 +28,48 @@ export function makeElementPith<S>(
   elm: Element
 ): (O<S>) => void {
   var childs_count = 0;
-  var handlers_count = 0;
-  var disposables_count = 0;
-  var actions_count = 0;
-  const actions = [];
-  const disposables = [];
-  const handlers = [];
   const { childNodes } = elm;
   const childPiths = [];
+  var actions_count = 0;
+  const actions = [];
+  var handlers_count = 0;
+  const handlers = [];
+  var disposables_count = 0;
+  const disposables = [];
   return function pith(x) {
     if (typeof x === "function") {
       o(x);
     } else if (x == null) {
-      for (let l = childNodes.length; l > childs_count; l--) {
+      let rez, l;
+      for (l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
-        childPiths.splice(childs_count, 1)[0]();
-      }
+
+      l = childPiths.length - childs_count;
+      rez = childPiths.splice(childs_count, l);
+      if (rez.length) console.log("e_remove", rez);
+      for (let x of rez) x();
       childs_count = 0;
 
-      let rez;
-      rez = handlers.splice(handlers_count, handlers.length - handlers_count);
+      l = handlers.length - handlers_count;
+      rez = handlers.splice(handlers_count, l);
       if (rez.length) console.log("h_remove", rez);
       for (let x of rez) elm.removeEventListener(x.type, x.handler);
       handlers_count = 0;
 
-      rez = disposables.splice(
-        disposables_count,
-        disposables.length - disposables_count
-      );
+      l = disposables.length - disposables_count;
+      rez = disposables.splice(disposables_count, l);
       if (rez.length) console.log("d_remove", rez);
       for (let x of rez) x.dispose();
       disposables_count = 0;
 
-      rez = actions.splice(actions_count, actions.length - actions_count);
+      l = actions.length - actions_count;
+      rez = actions.splice(actions_count, l);
       if (rez.length) console.log("a_remove", rez);
       actions_count = 0;
     } else if (typeof x === "string") {
       const index = childs_count++;
-      for (let i = index, l = childNodes.length; i < l; i++)
+      const l = childNodes.length;
+      for (let i = index; i < l; i++)
         if (childNodes[i].nodeType === 3 && childNodes[i].textContent === x) {
           if (index < i) {
             elm.insertBefore(childNodes[i], childNodes[index]);
@@ -77,53 +81,54 @@ export function makeElementPith<S>(
       childPiths.splice(index, 0, empty);
     } else if (x._ === "elm") {
       const index = childs_count++;
-      for (let i = index, l = childNodes.length; i < l; i++)
+      const l = childNodes.length;
+      for (let i = index; i < l; i++)
         if (x.eq(childNodes[i])) {
           if (index < i) {
             elm.insertBefore(childNodes[i], childNodes[index]);
             childPiths.splice(index, 0, ...childPiths.splice(i, 1));
           }
-          const ob = childPiths[index];
-          x.bark(ob);
+          x.bark(childPiths[index]);
           return;
         }
-      const child = x.ctor();
+      const child = elm.insertBefore(x.ctor(), childNodes[index]);
       const ob = makeElementPith(o, child);
-      elm.insertBefore(child, childNodes[index]);
       childPiths.splice(index, 0, ob);
       x.bark(ob);
     } else if (x._ === "action") {
       const index = actions_count++;
-      for (let i = index, l = actions.length; i < l; i++)
+      const l = actions.length;
+      for (let i = index; i < l; i++)
         if (actions[i] === x) {
-          console.log("a_reuse", x);
-          if (index < i) actions.splice(index, 0, ...actions.splice(i, 1));
+          if (index < i) {
+            actions.splice(index, 0, ...actions.splice(i, 1));
+          }
           return;
         }
-      console.log("a_add", x);
       actions.splice(index, 0, x);
       x.a(pith, elm);
     } else if (x._ === "on") {
       const index = handlers_count++;
-      for (let i = index, l = handlers.length; i < l; i++)
+      const l = handlers.length;
+      for (let i = index; i < l; i++)
         if (handlers[i] === x) {
-          //console.log("h_reuse", x);
-          if (index < i) handlers.splice(index, 0, ...handlers.splice(i, 1));
+          if (index < i) {
+            handlers.splice(index, 0, ...handlers.splice(i, 1));
+          }
           return;
         }
-      //console.log("h_add", x);
-      elm.addEventListener(x.type, x.handler, x.options);
       handlers.splice(index, 0, x);
+      elm.addEventListener(x.type, x.handler, x.options);
     } else {
       const index = disposables_count++;
-      for (let i = index, l = disposables.length; i < l; i++)
+      const l = disposables.length;
+      for (let i = index; i < l; i++)
         if (disposables[i] === x) {
-          console.log("d_reuse", x);
-          if (index < i)
+          if (index < i) {
             disposables.splice(index, 0, ...disposables.splice(i, 1));
+          }
           return;
         }
-      console.log("d_add", x);
       disposables.splice(index, 0, x);
     }
   };
