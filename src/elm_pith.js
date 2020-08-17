@@ -30,35 +30,39 @@ export function makeElementPith<S>(
   var childs_count = 0;
   var handlers_count = 0;
   var disposables_count = 0;
+  var actions_count = 0;
+  const actions = [];
   const disposables = [];
   const handlers = [];
   const { childNodes } = elm;
   const childPiths = [];
   return function pith(x) {
-    if (x == null) {
+    if (typeof x === "function") {
+      o(x);
+    } else if (x == null) {
       for (let l = childNodes.length; l > childs_count; l--) {
         elm.removeChild(childNodes[childs_count]);
         childPiths.splice(childs_count, 1)[0]();
       }
       childs_count = 0;
-      for (let h of handlers.splice(
-        handlers_count,
-        handlers.length - handlers_count
-      )) {
-        //console.log("h_remove", h);
-        elm.removeEventListener(h.type, h.handler);
-      }
+
+      let rez;
+      rez = handlers.splice(handlers_count, handlers.length - handlers_count);
+      if (rez.length) console.log("h_remove", rez);
+      for (let x of rez) elm.removeEventListener(x.type, x.handler);
       handlers_count = 0;
-      for (let h of disposables.splice(
+
+      rez = disposables.splice(
         disposables_count,
         disposables.length - disposables_count
-      )) {
-        console.log("d_remove", h);
-        h.dispose();
-      }
+      );
+      if (rez.length) console.log("d_remove", rez);
+      for (let x of rez) x.dispose();
       disposables_count = 0;
-    } else if (typeof x === "function") {
-      o(x);
+
+      rez = actions.splice(actions_count, actions.length - actions_count);
+      if (rez.length) console.log("a_remove", rez);
+      actions_count = 0;
     } else if (typeof x === "string") {
       const index = childs_count++;
       for (let i = index, l = childNodes.length; i < l; i++)
@@ -89,7 +93,16 @@ export function makeElementPith<S>(
       childPiths.splice(index, 0, ob);
       x.bark(ob);
     } else if (x._ === "action") {
-      const d = x.a(pith, elm);
+      const index = actions_count++;
+      for (let i = index, l = actions.length; i < l; i++)
+        if (actions[i] === x) {
+          console.log("a_reuse", x);
+          if (index < i) actions.splice(index, 0, ...actions.splice(i, 1));
+          return;
+        }
+      console.log("a_add", x);
+      actions.splice(index, 0, x);
+      x.a(pith, elm);
     } else if (x._ === "on") {
       const index = handlers_count++;
       for (let i = index, l = handlers.length; i < l; i++)
