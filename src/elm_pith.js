@@ -41,12 +41,13 @@ export function makeElementPith<S>(
       o(x);
     } else if (x == null) {
       let rez, l;
+      let tmp = [];
       for (l = childNodes.length; l > childs_count; l--)
-        elm.removeChild(childNodes[childs_count]);
+        tmp.push(elm.removeChild(childNodes[childs_count]));
 
       l = childPiths.length - childs_count;
       rez = childPiths.splice(childs_count, l);
-      if (rez.length) console.log("e_remove", rez);
+      if (rez.length) console.log("e_remove", rez, tmp);
       for (let x of rez) x();
       childs_count = 0;
 
