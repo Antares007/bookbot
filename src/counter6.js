@@ -3,6 +3,20 @@ import { dispose, action, on, elm, ext, makeElementPith } from "./elm_pith";
 const div = (b) => elm("div", b);
 const button = (b) => elm("button", b);
 
+function c(o) {
+  var id;
+  const d = dispose(() => clearTimeout(id));
+  const c = (o, i = 0) => {
+    o(i + "");
+    id = setTimeout(() => c(o, i + 1), 1000);
+    o(d);
+    o(function (s) {
+      return { n: s.n + 1 };
+    });
+    o();
+  };
+  c(o, 2);
+}
 const action0 = {
   _: "action",
   a: (o, elm) => {
@@ -67,4 +81,4 @@ const o = makeElementPith((r) => {
 }, root);
 
 counter(o);
-Object.assign(window, { o, on, elm, div, button, c: counter });
+Object.assign(window, { o, on, elm, dispose, div, button, counter, c });
