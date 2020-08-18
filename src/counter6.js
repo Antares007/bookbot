@@ -81,4 +81,14 @@ const o = makeElementPith((r) => {
 }, root);
 
 counter(o);
-Object.assign(window, { o, on, elm, dispose, div, button, counter, c });
+Object.assign(window, {
+  o,
+  on,
+  elm,
+  dispose,
+  div,
+  button,
+  counter,
+  c,
+  makeElementPith,
+});
