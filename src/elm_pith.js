@@ -47,25 +47,21 @@ export function makeElementPith<S>(
 
       l = childPiths.length - childs_count;
       rez = childPiths.splice(childs_count, l);
-      //if (rez.length) console.log("e_remove", rez, tmp);
       for (let x of rez) x();
       childs_count = 0;
 
       l = handlers.length - handlers_count;
       rez = handlers.splice(handlers_count, l);
-      //if (rez.length) console.log("h_remove", rez);
       for (let x of rez) elm.removeEventListener(x.type, x.handler);
       handlers_count = 0;
 
       l = disposables.length - disposables_count;
       rez = disposables.splice(disposables_count, l);
-      //if (rez.length) console.log("d_remove", rez);
       for (let x of rez) x.dispose();
       disposables_count = 0;
 
       l = actions.length - actions_count;
       rez = actions.splice(actions_count, l);
-      //if (rez.length) console.log("a_remove", rez);
       actions_count = 0;
     } else if (typeof x === "string") {
       const index = childs_count++;
