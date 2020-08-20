@@ -5,27 +5,17 @@ function act<S, A>(
   name: string,
   b: ((E.O<S, A>) => void, Element, Event) => void
 ): E.Oaction<S, A> {
-  var t;
-  const d = dispose(() => {
-    if (t) {
-      console.log("d", t.l);
-      t.elm.removeEventListener(name, t.l);
-      t = null;
-    }
-  });
   const a = action((o, elm) => {
-    t = {
-      elm,
-      l: (e: Event) => {
-        b.call(this, o, elm, e);
-      },
+    const l = (e: Event) => b.call(this, o, elm, e);
+    elm.addEventListener(name, l);
+    return () => {
+      console.log("d", l);
+      elm.removeEventListener(name, l);
     };
-    elm.addEventListener(name, t.l);
-    o(d);
   });
   return a;
 }
-function counter(o, depth = 0): void {
+function counter(o, depth = 1): void {
   const a = act("click", (o, elm, e) => {
     o(E.a(1));
   });

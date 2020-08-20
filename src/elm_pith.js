@@ -10,6 +10,7 @@ export opaque type Odispose = {| _: "dispose", dispose: () => void |};
 export opaque type Oaction<S, A> = {|
   _: "action",
   a: ((O<S, A>) => void, Element) => void,
+  dispose: () => void,
 |};
 export opaque type Oa<A> = {|
   _: "a",
@@ -70,6 +71,7 @@ export function makeElementPith<S, A>(
 
         l = actions.length - actions_count;
         rez = actions.splice(actions_count, l);
+        for (let x of rez) x.dispose();
         actions_count = 0;
       } else if (typeof x === "string") {
         const index = childs_count++;
@@ -163,9 +165,18 @@ export function elm<S, A>(
   };
 }
 export function action<S, A>(
-  a: ((O<S, A>) => void, Element) => void
+  a: ((O<S, A>) => void, Element) => ?() => void
 ): Oaction<S, A> {
-  return { _: ("action": "action"), a };
+  var d;
+  return {
+    _: ("action": "action"),
+    a: (o, elm) => {
+      d = a(o, elm);
+    },
+    dispose: () => {
+      d = d && d();
+    },
+  };
 }
 export function a<A>(a: A): Oa<A> {
   return { _: "a", a };
@@ -176,7 +187,6 @@ export function on<S, A>(on: ((O<S, A>) => void, A) => void): Oon<S, A> {
 export function dispose<S>(dispose: () => void): Odispose {
   return { _: ("dispose": "dispose"), dispose };
 }
-
 export function ext<A: { ... }, B, T>(
   key: string,
   b: B,
