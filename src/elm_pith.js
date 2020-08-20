@@ -55,6 +55,7 @@ export function makeElementPith<S, A>(
         let tmp = [];
         for (l = childNodes.length; l > childs_count; l--)
           tmp.push(elm.removeChild(childNodes[childs_count]));
+        if (tmp.length) console.log("remove", tmp);
 
         l = childPiths.length - childs_count;
         rez = childPiths.splice(childs_count, l);
@@ -63,6 +64,7 @@ export function makeElementPith<S, A>(
 
         l = handlers.length - handlers_count;
         rez = handlers.splice(handlers_count, l);
+        if (rez.length) console.log("remove", rez);
         handlers_count = 0;
 
         l = disposables.length - disposables_count;
@@ -72,6 +74,7 @@ export function makeElementPith<S, A>(
 
         l = actions.length - actions_count;
         rez = actions.splice(actions_count, l);
+        if (rez.length) console.log("remove", rez);
         for (let x of rez) x.dispose();
         actions_count = 0;
       } else if (typeof x === "string") {
@@ -96,19 +99,21 @@ export function makeElementPith<S, A>(
               elm.insertBefore(childNodes[i], childNodes[index]);
               childPiths.splice(index, 0, ...childPiths.splice(i, 1));
             }
+            console.log("reuse");
             x.bark(childPiths[index]);
             return;
           }
+        console.log("create");
         const child = elm.insertBefore(x.ctor(), childNodes[index]);
         const ob = makeElementPith(
-          ((handlers_count) => (x) => {
+          (x: Oa<A> | ((S) => S)) => {
             if (typeof x === "function") {
               o(x);
             } else {
-              for (let i = 0; i < handlers_count; i++)
-                handlers[i].on(pith, x.a);
+              if (handlers.length) for (let h of handlers) h.on(pith, x.a);
+              else pith(x);
             }
-          })(handlers_count),
+          },
           child,
           depth + 1
         );
@@ -122,8 +127,10 @@ export function makeElementPith<S, A>(
             if (index < i) {
               actions.splice(index, 0, ...actions.splice(i, 1));
             }
+            console.log("reuse");
             return;
           }
+        console.log("create");
         actions.splice(index, 0, x);
         x.a(pith, elm);
       } else if (x._ === "on") {
@@ -134,8 +141,10 @@ export function makeElementPith<S, A>(
             if (index < i) {
               handlers.splice(index, 0, ...handlers.splice(i, 1));
             }
+            console.log("reuse");
             return;
           }
+        console.log("create");
         handlers.splice(index, 0, x);
       } else if (x._ === "a") {
         o(x);

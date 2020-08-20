@@ -5,7 +5,7 @@ function act<S, A>(
   name: string,
   b: ((E.O<S, A>) => void, Element, Event) => void
 ): E.Oaction<S, A> {
-  const a = action((o, elm) => {
+  return action((o, elm) => {
     const l = (e: Event) => b.call(this, o, elm, e);
     elm.addEventListener(name, l);
     return () => {
@@ -13,7 +13,6 @@ function act<S, A>(
       elm.removeEventListener(name, l);
     };
   });
-  return a;
 }
 function counter(o, depth = 1): void {
   const a = act("click", (o, elm, e) => {
@@ -28,11 +27,15 @@ function counter(o, depth = 1): void {
     o(function ({ n }) {
       return { n: n + a };
     });
+    o(E.a(a));
     p();
+  });
+  const on_1 = E.on((o, a) => {
+    o(E.a(a));
   });
   p();
   function rec(o, d) {
-    o(on_);
+    o(on_1);
     o(
       elm("button", (o) => {
         o("+");
@@ -68,6 +71,7 @@ const o = makeElementPith<{| n: number |}, *>((r) => {
   if (typeof r === "function") {
     state = r(state);
   } else {
+    console.log("A", r.a);
   }
 }, root);
 
@@ -75,6 +79,10 @@ counter(o);
 
 Object.assign(window, {
   o,
+  act,
+  action,
+  a: E.a,
+  on: E.on,
   elm,
   dispose,
   makeElementPith,
