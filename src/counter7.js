@@ -1,6 +1,6 @@
 // @flow strict
 import * as E from "./elm_pith";
-const { dispose, action, elm, ext, makeElementPith } = E;
+const { dispose, action, on, elm, ext, makeElementPith } = E;
 function act<S, A>(
   name: string,
   b: ((E.O<S, A>) => void, Element, Event) => void
@@ -14,54 +14,30 @@ function act<S, A>(
     };
   });
 }
+
+// prettier-ignore
 function counter(o, depth = 1): void {
-  const a = act("click", (o, elm, e) => {
-    console.log("ON click ->");
-    o(E.a(1));
-  });
-  const b = act("click", (o, elm, e) => {
-    o(E.a(-1));
-  });
-  const p = () => rec(o, depth);
-  const on_ = E.on((o, a) => {
+  o(on((o, a) => {
     o(function ({ n }) {
       return { n: n + a };
     });
-    o(E.a(a));
-    p();
-  });
-  const on_1 = E.on((o, a) => {
-    o(E.a(a));
-  });
-  p();
-  function rec(o, d) {
-    o(on_1);
-    o(
-      elm("button", (o) => {
-        o("+");
-        o(a);
-        if (d > 0)
-          o(
-            elm(
-              "div",
-              ext("+", { n: 0 }, (o) => rec(o, d - 1))
-            )
-          );
-        o();
-      })
-    );
-    o(function (s) {
-      o(s.n + "");
-      return s;
-    });
+    counter(o, depth)
+  }));
+  o(elm("button", (o) => {
+    o("+");
+    o(act("click", (o, elm, e) => {
+      e.preventDefault();
+      o(E.a(1));
+    }));
+    if (depth > 0)
+      o(elm("div", ext("+", { n: 0 }, (o) => counter(o, depth - 1))));
     o();
-  }
-  function r_add1(s) {
-    return { n: s.n + 1 };
-  }
-  function r_minus1(s) {
-    return { n: s.n - 1 };
-  }
+  }));
+  o(function (s) {
+    o(s.n + "");
+    return s;
+  });
+  o();
 }
 const root = (document.body = document.createElement("body"));
 
@@ -83,6 +59,7 @@ Object.assign(window, {
   action,
   a: E.a,
   on: E.on,
+  ext: E.ext,
   elm,
   dispose,
   makeElementPith,
