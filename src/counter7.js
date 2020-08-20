@@ -46,20 +46,6 @@ function counter(o, depth = 1): void {
         o();
       })
     );
-    o(
-      elm("button", (o) => {
-        o("-");
-        o(b);
-        if (d > 0)
-          o(
-            elm(
-              "div",
-              ext("-", { n: 0 }, (o) => rec(o, d - 1))
-            )
-          );
-        o();
-      })
-    );
     o(function (s) {
       o(s.n + "");
       return s;

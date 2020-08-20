@@ -32,7 +32,8 @@ export type O<S, A> =
 export function empty<T>(_: T) {}
 export function makeElementPith<S, A>(
   o: (((S) => S) | Oa<A>) => void,
-  elm: Element
+  elm: Element,
+  depth: number = 0
 ): (O<S, A>) => void {
   var childs_count = 0;
   const { childNodes } = elm;
@@ -45,10 +46,10 @@ export function makeElementPith<S, A>(
   const disposables = [];
   return function pith(x) {
     if (typeof x === "function") {
-      console.info("P", [x.toString()]);
+      console.info("P" + depth, elm.nodeName, [x.toString()]);
       o(x);
     } else {
-      console.info("P", x);
+      console.info("P" + depth, elm.nodeName, x);
       if (x == null) {
         let rez, l;
         let tmp = [];
@@ -108,7 +109,8 @@ export function makeElementPith<S, A>(
                 handlers[i].on(pith, x.a);
             }
           })(handlers_count),
-          child
+          child,
+          depth + 1
         );
         childPiths.splice(index, 0, ob);
         x.bark(ob);
