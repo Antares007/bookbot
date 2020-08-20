@@ -17,6 +17,7 @@ function act<S, A>(
 }
 function counter(o, depth = 1): void {
   const a = act("click", (o, elm, e) => {
+    console.log("ON click ->");
     o(E.a(1));
   });
   const b = act("click", (o, elm, e) => {
@@ -65,10 +66,8 @@ var state = { n: 369 };
 
 const o = makeElementPith<{| n: number |}, *>((r) => {
   if (typeof r === "function") {
-    console.info("S", [r]);
     state = r(state);
   } else {
-    console.info("A", r.a);
   }
 }, root);
 

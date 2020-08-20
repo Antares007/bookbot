@@ -46,10 +46,10 @@ export function makeElementPith<S, A>(
   const disposables = [];
   return function pith(x) {
     if (typeof x === "function") {
-      console.info("P" + depth, elm.nodeName, [x.toString()]);
+      console.info("P" + depth, [x], elm);
       o(x);
     } else {
-      console.info("P" + depth, elm.nodeName, x);
+      console.info("P" + depth, x, elm);
       if (x == null) {
         let rez, l;
         let tmp = [];
