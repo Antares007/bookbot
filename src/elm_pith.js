@@ -176,7 +176,10 @@ export function action<S, A>(
       d = a(o, elm);
     },
     dispose: () => {
-      d = d && d();
+      if (d) {
+        d();
+        d = null;
+      }
     },
   };
 }
