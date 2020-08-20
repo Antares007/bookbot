@@ -1,37 +1,40 @@
-// @flow strict
+// flow strict
 import { dispose, action, on, elm, ext, makeElementPith } from "./elm_pith";
 const div = (b) => elm("div", b);
+const h1 = (b) => elm("h1", b);
+const h2 = (b) => elm("h2", b);
+const h3 = (b) => elm("h3", b);
+const h4 = (b) => elm("h4", b);
+const ul = (b) => elm("ul", b);
+const li = (b) => elm("li", b);
+const br = (b) => elm("br");
 const button = (b) => elm("button", b);
 
 function c(o) {
   var id;
   const d = dispose(() => clearTimeout(id));
-  const c = (o, i = 0) => {
-    o(i + "");
-    id = setTimeout(() => c(o, i + 1), 1000);
-    o(d);
+  (function rec(o) {
     o(function (s) {
+      o(s.n + "");
       return { n: s.n + 1 };
     });
+    id = setTimeout(() => rec(o), 1000);
+    o(d);
     o();
-  };
-  c(o, 2);
+  })(o);
 }
-const action0 = {
-  _: "action",
-  a: (o, elm) => {
-    const h = (e: MouseEvent) => {
-      console.log("m");
-    };
-    elm.addEventListener("click", h);
-    o(
-      dispose(() => {
-        elm.removeEventListener("click", h);
-        console.log("d");
-      })
-    );
-  },
-};
+const action0 = action((o, elm) => {
+  const h = (e: MouseEvent) => {
+    console.log("m");
+  };
+  elm.addEventListener("click", h);
+  o(
+    dispose(() => {
+      elm.removeEventListener("click", h);
+      console.log("d");
+    })
+  );
+});
 // prettier-ignore
 function counter(o, d = 1) {
   const ob = o;
@@ -75,12 +78,14 @@ var state = { n: 0 };
 console.info(state);
 
 const o = makeElementPith((r) => {
+  if (typeof r !== "function") return;
   const os = state;
   state = r(state);
   if (os !== state) console.info(state);
 }, root);
 
 counter(o);
+c(o);
 Object.assign(window, {
   o,
   on,
@@ -91,4 +96,11 @@ Object.assign(window, {
   counter,
   c,
   makeElementPith,
+  h1,
+  h2,
+  h3,
+  h4,
+  ul,
+  li,
+  br,
 });
