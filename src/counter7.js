@@ -1,10 +1,10 @@
 // @flow strict
 import * as E from "./elm_pith";
-const { dispose, action, on, elm, ext, makeElementPith } = E;
-function act<S, A>(
+const { dispose, action, elm, ext, makeElementPith } = E;
+function act<S>(
   name: string,
-  b: ((E.O<S, A>) => void, Element, Event) => void
-): E.Oaction<S, A> {
+  b: ((E.O<S>) => void, Element, Event) => void
+): E.Oaction<S> {
   return action((o, elm) => {
     const l = (e: Event) => b.call(this, o, elm, e);
     elm.addEventListener(name, l);
@@ -25,7 +25,7 @@ export function pmap<O, P>(
 function counter(o, depth = 1): void {
   o(elm("button", pmap(o => p => {
     if(typeof p === 'number') {
-
+      o(p + '<-number')
     } else {
       o(p);
     }
@@ -35,17 +35,17 @@ function counter(o, depth = 1): void {
     o()
     //
   })))
-  o(on((o, a) => {
-    o(function ({ n }) {
-      return { n: n + a };
-    });
-    counter(o, depth)
-  }));
+  // o(on((o, a) => {
+  //   o(function ({ n }) {
+  //     return { n: n + a };
+  //   });
+  //   counter(o, depth)
+  // }));
   o(elm("button", (o) => {
     o("+");
     o(act("click", (o, elm, e) => {
       e.preventDefault();
-      o(E.a(1));
+      //o(E.a(1));
     }));
     if (depth > 0)
       o(elm("div", ext("+", { n: 0 }, (o) => counter(o, depth - 1))));
@@ -75,8 +75,6 @@ Object.assign(window, {
   o,
   act,
   action,
-  a: E.a,
-  on: E.on,
   ext: E.ext,
   elm,
   dispose,

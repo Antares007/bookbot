@@ -1,47 +1,30 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
-export opaque type Oelm<S, A> = {|
+export opaque type Oaction<S> = {|
+  _: "action",
+  a: ((O<S>) => void, Element) => void,
+  dispose: () => void,
+|};
+export opaque type Oelm<S> = {|
   _: "elm",
   ctor: () => Element,
   eq: (Node) => ?Element,
-  bark: ((O<S, A>) => void) => void,
+  bark: ((O<S>) => void) => void,
 |};
 export opaque type Odispose = {| _: "dispose", dispose: () => void |};
-export opaque type Oaction<S, A> = {|
-  _: "action",
-  a: ((O<S, A>) => void, Element) => void,
-  dispose: () => void,
-|};
-export opaque type Oa<A> = {|
-  _: "a",
-  a: A,
-|};
-export opaque type Oon<S, A> = {|
-  _: "on",
-  on: ((O<S, A>) => void, A) => void,
-|};
-export type O<S, A> =
-  | void
-  | string
-  | ((S) => S)
-  | Oelm<S, A>
-  | Oon<S, A>
-  | Oaction<S, A>
-  | Odispose
-  | Oa<A>;
+
+export type O<S> = void | string | ((S) => S) | Oelm<S> | Oaction<S> | Odispose;
 export function empty<T>(_: T) {}
-export function makeElementPith<S, A>(
-  o: (((S) => S) | Oa<A>) => void,
+export function makeElementPith<S>(
+  o: ((S) => S) => void,
   elm: Element,
   depth: number = 0
-): (O<S, A>) => void {
+): (O<S>) => void {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
   var actions_count = 0;
   const actions = [];
-  var handlers_count = 0;
-  const handlers = [];
   var disposables_count = 0;
   const disposables = [];
   return function pith(x) {
@@ -61,11 +44,6 @@ export function makeElementPith<S, A>(
         rez = childPiths.splice(childs_count, l);
         for (let x of rez) x();
         childs_count = 0;
-
-        l = handlers.length - handlers_count;
-        rez = handlers.splice(handlers_count, l);
-        if (rez.length) console.log("remove", rez);
-        handlers_count = 0;
 
         l = disposables.length - disposables_count;
         rez = disposables.splice(disposables_count, l);
@@ -105,18 +83,7 @@ export function makeElementPith<S, A>(
           }
         console.log("create");
         const child = elm.insertBefore(x.ctor(), childNodes[index]);
-        const ob = makeElementPith(
-          (x: Oa<A> | ((S) => S)) => {
-            if (typeof x === "function") {
-              o(x);
-            } else {
-              if (handlers.length) for (let h of handlers) h.on(pith, x.a);
-              else pith(x);
-            }
-          },
-          child,
-          depth + 1
-        );
+        const ob = makeElementPith(o, child, depth + 1);
         childPiths.splice(index, 0, ob);
         x.bark(ob);
       } else if (x._ === "action") {
@@ -133,21 +100,6 @@ export function makeElementPith<S, A>(
         console.log("create");
         actions.splice(index, 0, x);
         x.a(pith, elm);
-      } else if (x._ === "on") {
-        const index = handlers_count++;
-        const l = handlers.length;
-        for (let i = index; i < l; i++)
-          if (handlers[i] === x) {
-            if (index < i) {
-              handlers.splice(index, 0, ...handlers.splice(i, 1));
-            }
-            console.log("reuse");
-            return;
-          }
-        console.log("create");
-        handlers.splice(index, 0, x);
-      } else if (x._ === "a") {
-        o(x);
       } else {
         const index = disposables_count++;
         const l = disposables.length;
@@ -163,10 +115,7 @@ export function makeElementPith<S, A>(
     }
   };
 }
-export function elm<S, A>(
-  tag: string,
-  bark: ?((O<S, A>) => void) => void
-): Oelm<S, A> {
+export function elm<S>(tag: string, bark: ?((O<S>) => void) => void): Oelm<S> {
   const TAG = tag.toUpperCase();
   return {
     _: "elm",
@@ -175,9 +124,9 @@ export function elm<S, A>(
     bark: bark || (() => {}),
   };
 }
-export function action<S, A>(
-  a: ((O<S, A>) => void, Element) => ?() => void
-): Oaction<S, A> {
+export function action<S>(
+  a: ((O<S>) => void, Element) => ?() => void
+): Oaction<S> {
   var d;
   return {
     _: ("action": "action"),
@@ -192,21 +141,15 @@ export function action<S, A>(
     },
   };
 }
-export function a<A>(a: A): Oa<A> {
-  return { _: "a", a };
-}
-export function on<S, A>(on: ((O<S, A>) => void, A) => void): Oon<S, A> {
-  return { _: "on", on };
-}
 export function dispose<S>(dispose: () => void): Odispose {
   return { _: ("dispose": "dispose"), dispose };
 }
-export function ext<A: { ... }, B, T>(
+export function ext<A: { ... }, B>(
   key: string,
   b: B,
-  bark: ((O<B, T>) => void) => void
-): ((O<A, T>) => void) => void {
-  return function ring(o: (O<A, T>) => void) {
+  bark: ((O<B>) => void) => void
+): ((O<A>) => void) => void {
+  return function ring(o: (O<A>) => void) {
     bark((x) => {
       if (typeof x === "function") {
         o((a) => {
@@ -223,11 +166,6 @@ export function ext<A: { ... }, B, T>(
         o({
           ...x,
           a: (oa, elm) => ext(key, b, (o) => x.a(o, elm))(oa),
-        });
-      } else if (x._ === "on") {
-        o({
-          ...x,
-          on: (oa, elm) => ext(key, b, (o) => x.on(o, elm))(oa),
         });
       } else {
         o(x);
