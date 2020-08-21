@@ -1,25 +1,21 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
-export opaque type Oaction<S> = {|
+export opaque type Oaction = {|
   _: "action",
-  v: { nar: ((O<S>) => void, Element) => void, dispose: () => void },
+  v: { nar: ((O) => void, Element) => void, dispose: () => void },
 |};
-export opaque type Oelm<S> = {|
+export opaque type Oelm = {|
   _: "elm",
   v: {
     ctor: () => Element,
     eq: (Node) => ?Element,
-    nar: ((O<S>) => void) => void,
+    nar: ((O) => void) => void,
   },
 |};
 export opaque type Odispose = {| _: "dispose", v: () => void |};
-export type O<S> = void | string | ((S) => S) | Oelm<S> | Oaction<S> | Odispose;
+export type O = void | string | Oelm | Oaction | Odispose;
 export function empty<T>(_: T) {}
-export function makeElementPith<S>(
-  o: ((S) => S) => void,
-  elm: Element,
-  depth: number = 0
-): (O<S>) => void {
+export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
@@ -30,7 +26,6 @@ export function makeElementPith<S>(
   return function pith(x) {
     if (typeof x === "function") {
       console.info("P" + depth, [x], elm);
-      o(x);
     } else {
       console.info("P" + depth, x, elm);
       if (x == null) {
@@ -83,7 +78,7 @@ export function makeElementPith<S>(
           }
         console.log("create");
         const child = elm.insertBefore(x.v.ctor(), childNodes[index]);
-        const ob = makeElementPith(o, child, depth + 1);
+        const ob = makeElementPith(child, depth + 1);
         childPiths.splice(index, 0, ob);
         x.v.nar(ob);
       } else if (x._ === "action") {
@@ -115,7 +110,7 @@ export function makeElementPith<S>(
     }
   };
 }
-export function elm<S>(tag: string, bark: ?((O<S>) => void) => void): Oelm<S> {
+export function elm(tag: string, bark: ?((O) => void) => void): Oelm {
   const TAG = tag.toUpperCase();
   return {
     _: "elm",
@@ -126,9 +121,7 @@ export function elm<S>(tag: string, bark: ?((O<S>) => void) => void): Oelm<S> {
     },
   };
 }
-export function action<S>(
-  a: ((O<S>) => void, Element) => ?() => void
-): Oaction<S> {
+export function action(a: ((O) => void, Element) => ?() => void): Oaction {
   var d;
   return {
     _: ("action": "action"),
@@ -145,38 +138,38 @@ export function action<S>(
     },
   };
 }
-export function dispose<S>(dispose: () => void): Odispose {
+export function dispose(dispose: () => void): Odispose {
   return { _: ("dispose": "dispose"), v: dispose };
 }
-export function ext<A: { ... }, B>(
-  key: string,
-  b: B,
-  bark: ((O<B>) => void) => void
-): ((O<A>) => void) => void {
-  return function ring(o: (O<A>) => void) {
-    bark((x) => {
-      if (typeof x === "function") {
-        o((a) => {
-          const ob = a[key] || b;
-          const nb = x(ob);
-          if (ob === nb) return a;
-          return { ...a, [key]: nb };
-        });
-      } else if (typeof x !== "object") {
-        o(x);
-      } else if (x._ === "elm") {
-        o({ _: "elm", v: { ...x.v, nar: ext(key, b, x.v.nar) } });
-      } else if (x._ === "action") {
-        o({
-          _: "action",
-          v: {
-            ...x.v,
-            nar: (oa, elm) => ext(key, b, (o) => x.v.nar(o, elm))(oa),
-          },
-        });
-      } else {
-        o(x);
-      }
-    });
-  };
-}
+// export function ext<A: { ... }, B>(
+//   key: string,
+//   b: B,
+//   bark: ((O<B>) => void) => void
+// ): ((O<A>) => void) => void {
+//   return function ring(o: (O<A>) => void) {
+//     bark((x) => {
+//       if (typeof x === "function") {
+//         o((a) => {
+//           const ob = a[key] || b;
+//           const nb = x(ob);
+//           if (ob === nb) return a;
+//           return { ...a, [key]: nb };
+//         });
+//       } else if (typeof x !== "object") {
+//         o(x);
+//       } else if (x._ === "elm") {
+//         o({ _: "elm", v: { ...x.v, nar: ext(key, b, x.v.nar) } });
+//       } else if (x._ === "action") {
+//         o({
+//           _: "action",
+//           v: {
+//             ...x.v,
+//             nar: (oa, elm) => ext(key, b, (o) => x.v.nar(o, elm))(oa),
+//           },
+//         });
+//       } else {
+//         o(x);
+//       }
+//     });
+//   };
+// }

@@ -1,10 +1,10 @@
 // @flow strict
 import * as E from "./elm_pith";
-const { dispose, action, elm, ext, makeElementPith } = E;
-function act<S>(
+const { dispose, action, elm, makeElementPith } = E;
+function act(
   name: string,
-  b: ((E.O<S>) => void, Element, Event) => void
-): E.Oaction<S> {
+  b: ((E.O) => void, Element, Event) => void
+): E.Oaction {
   return action((o, elm) => {
     const l = (e: Event) => b.call(this, o, elm, e);
     elm.addEventListener(name, l);
@@ -48,26 +48,17 @@ function counter(o, depth = 1): void {
       //o(E.a(1));
     }));
     if (depth > 0)
-      o(elm("div", ext("+", { n: 0 }, (o) => counter(o, depth - 1))));
+      o(elm("div", (o) => counter(o, depth - 1)));
     o();
   }));
-  o(function (s) {
-    o(s.n + "");
-    return s;
-  });
+  o(0 + "");
   o();
 }
 const root = (document.body = document.createElement("body"));
 
 var state = { n: 369 };
 
-const o = makeElementPith<{| n: number |}, *>((r) => {
-  if (typeof r === "function") {
-    state = r(state);
-  } else {
-    console.log("A", r.a);
-  }
-}, root);
+const o = makeElementPith(root);
 
 counter(o);
 
@@ -75,7 +66,6 @@ Object.assign(window, {
   o,
   act,
   action,
-  ext: E.ext,
   elm,
   dispose,
   makeElementPith,
