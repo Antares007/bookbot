@@ -1,7 +1,13 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
 
-export type O = void | string | Oelm | Oaction | Odispose;
+export type O =
+  | void
+  | string
+  | Oelm
+  | Oaction
+  | Odispose
+  | (((O) => void, Element) => void);
 export opaque type Oaction = {|
   _: "action",
   v: {
@@ -31,6 +37,8 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
   return function pith(x) {
     if (typeof x === "function") {
       console.info("P" + depth, [x], elm);
+      x(pith, elm);
+      pith();
     } else {
       console.info("P" + depth, x, elm);
       if (x == null) {
@@ -78,14 +86,14 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
               childPiths.splice(index, 0, ...childPiths.splice(i, 1));
             }
             console.log("reuse");
-            x.v.nar(childPiths[index], elm);
+            childPiths[index](x.v.nar);
             return;
           }
         console.log("create");
         const child = elm.insertBefore(x.v.ctor(), childNodes[index]);
         const ob = makeElementPith(child, depth + 1);
         childPiths.splice(index, 0, ob);
-        x.v.nar(ob, elm);
+        ob(x.v.nar);
       } else if (x._ === "action") {
         const index = actions_count++;
         const l = actions.length;
@@ -115,7 +123,7 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
     }
   };
 }
-export function elm(tag: string, bark: ?((O) => void) => void): Oelm {
+export function elm(tag: string, bark: ?((O) => void, Element) => void): Oelm {
   const TAG = tag.toUpperCase();
   return {
     _: "elm",

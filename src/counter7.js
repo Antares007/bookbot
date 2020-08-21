@@ -15,37 +15,14 @@ function act(
   });
 }
 
-export function pmap<O, P>(
-  f: ((P) => void) => (O) => void,
-  o: ((O) => void) => void
-): ((P) => void) => void {
-  return (p) => o(f(p));
-}
 // prettier-ignore
-function counter(o, depth = 1): void {
-  o(elm("button", pmap(o => p => {
-    if(typeof p === 'number') {
-      o(p + '<-number')
-    } else {
-      o(p);
-    }
-  }, (o) => {
-    o(1)
-    o('')
-    o()
-  })))
+function counter(o, e, depth = 9): void {
   o(elm("button", (o) => {
     o("+");
-    o(act("click", (o, elm, e) => {
-      e.preventDefault();
-      //o(E.a(1));
-    }));
     if (depth > 0)
-      o(elm("div", (o) => counter(o, depth - 1)));
-    o();
+      o(elm("div", (o, e) => counter(o, e, depth - 1)));
   }));
-  o(0 + "");
-  o();
+  o(depth + "");
 }
 const root = (document.body = document.createElement("body"));
 
@@ -53,7 +30,7 @@ var state = { n: 369 };
 
 const o = makeElementPith(root);
 
-counter(o);
+o(counter);
 
 Object.assign(window, {
   o,
