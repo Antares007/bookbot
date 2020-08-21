@@ -15,8 +15,26 @@ function act<S, A>(
   });
 }
 
+export function pmap<O, P>(
+  f: ((P) => void) => (O) => void,
+  o: ((O) => void) => void
+): ((P) => void) => void {
+  return (p) => o(f(p));
+}
 // prettier-ignore
 function counter(o, depth = 1): void {
+  o(elm("button", pmap(o => p => {
+    if(typeof p === 'number') {
+
+    } else {
+      o(p);
+    }
+  }, (o) => {
+    o(1)
+    o('')
+    o()
+    //
+  })))
   o(on((o, a) => {
     o(function ({ n }) {
       return { n: n + a };
