@@ -33,14 +33,7 @@ function counter(o, depth = 1): void {
     o(1)
     o('')
     o()
-    //
   })))
-  // o(on((o, a) => {
-  //   o(function ({ n }) {
-  //     return { n: n + a };
-  //   });
-  //   counter(o, depth)
-  // }));
   o(elm("button", (o) => {
     o("+");
     o(act("click", (o, elm, e) => {

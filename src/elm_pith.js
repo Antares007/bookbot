@@ -1,19 +1,24 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
+
+export type O = void | string | Oelm | Oaction | Odispose;
 export opaque type Oaction = {|
   _: "action",
-  v: { nar: ((O) => void, Element) => void, dispose: () => void },
+  v: {
+    nar: ((O) => void, Element) => void,
+    dispose: () => void,
+  },
 |};
 export opaque type Oelm = {|
   _: "elm",
   v: {
     ctor: () => Element,
-    eq: (Node) => ?Element,
-    nar: ((O) => void) => void,
+    eq: (Node) => boolean,
+    nar: ((O) => void, Element) => void,
   },
 |};
 export opaque type Odispose = {| _: "dispose", v: () => void |};
-export type O = void | string | Oelm | Oaction | Odispose;
+
 export function empty<T>(_: T) {}
 export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
   var childs_count = 0;
@@ -73,14 +78,14 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
               childPiths.splice(index, 0, ...childPiths.splice(i, 1));
             }
             console.log("reuse");
-            x.v.nar(childPiths[index]);
+            x.v.nar(childPiths[index], elm);
             return;
           }
         console.log("create");
         const child = elm.insertBefore(x.v.ctor(), childNodes[index]);
         const ob = makeElementPith(child, depth + 1);
         childPiths.splice(index, 0, ob);
-        x.v.nar(ob);
+        x.v.nar(ob, elm);
       } else if (x._ === "action") {
         const index = actions_count++;
         const l = actions.length;
@@ -116,7 +121,7 @@ export function elm(tag: string, bark: ?((O) => void) => void): Oelm {
     _: "elm",
     v: {
       ctor: () => document.createElement(TAG),
-      eq: (n) => (n instanceof HTMLElement && n.nodeName === TAG ? n : null),
+      eq: (n) => n instanceof HTMLElement && n.nodeName === TAG,
       nar: bark || (() => {}),
     },
   };
