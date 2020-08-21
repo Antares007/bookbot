@@ -2,17 +2,17 @@
 import { static_cast } from "./static_cast.js";
 export opaque type Oaction<S> = {|
   _: "action",
-  a: ((O<S>) => void, Element) => void,
-  dispose: () => void,
+  v: { nar: ((O<S>) => void, Element) => void, dispose: () => void },
 |};
 export opaque type Oelm<S> = {|
   _: "elm",
-  ctor: () => Element,
-  eq: (Node) => ?Element,
-  bark: ((O<S>) => void) => void,
+  v: {
+    ctor: () => Element,
+    eq: (Node) => ?Element,
+    nar: ((O<S>) => void) => void,
+  },
 |};
-export opaque type Odispose = {| _: "dispose", dispose: () => void |};
-
+export opaque type Odispose = {| _: "dispose", v: () => void |};
 export type O<S> = void | string | ((S) => S) | Oelm<S> | Oaction<S> | Odispose;
 export function empty<T>(_: T) {}
 export function makeElementPith<S>(
@@ -47,13 +47,13 @@ export function makeElementPith<S>(
 
         l = disposables.length - disposables_count;
         rez = disposables.splice(disposables_count, l);
-        for (let x of rez) x.dispose();
+        for (let x of rez) x.v();
         disposables_count = 0;
 
         l = actions.length - actions_count;
         rez = actions.splice(actions_count, l);
         if (rez.length) console.log("remove", rez);
-        for (let x of rez) x.dispose();
+        for (let x of rez) x.v.dispose();
         actions_count = 0;
       } else if (typeof x === "string") {
         const index = childs_count++;
@@ -72,20 +72,20 @@ export function makeElementPith<S>(
         const index = childs_count++;
         const l = childNodes.length;
         for (let i = index; i < l; i++)
-          if (x.eq(childNodes[i])) {
+          if (x.v.eq(childNodes[i])) {
             if (index < i) {
               elm.insertBefore(childNodes[i], childNodes[index]);
               childPiths.splice(index, 0, ...childPiths.splice(i, 1));
             }
             console.log("reuse");
-            x.bark(childPiths[index]);
+            x.v.nar(childPiths[index]);
             return;
           }
         console.log("create");
-        const child = elm.insertBefore(x.ctor(), childNodes[index]);
+        const child = elm.insertBefore(x.v.ctor(), childNodes[index]);
         const ob = makeElementPith(o, child, depth + 1);
         childPiths.splice(index, 0, ob);
-        x.bark(ob);
+        x.v.nar(ob);
       } else if (x._ === "action") {
         const index = actions_count++;
         const l = actions.length;
@@ -99,7 +99,7 @@ export function makeElementPith<S>(
           }
         console.log("create");
         actions.splice(index, 0, x);
-        x.a(pith, elm);
+        x.v.nar(pith, elm);
       } else {
         const index = disposables_count++;
         const l = disposables.length;
@@ -119,9 +119,11 @@ export function elm<S>(tag: string, bark: ?((O<S>) => void) => void): Oelm<S> {
   const TAG = tag.toUpperCase();
   return {
     _: "elm",
-    ctor: () => document.createElement(TAG),
-    eq: (n) => (n instanceof HTMLElement && n.nodeName === TAG ? n : null),
-    bark: bark || (() => {}),
+    v: {
+      ctor: () => document.createElement(TAG),
+      eq: (n) => (n instanceof HTMLElement && n.nodeName === TAG ? n : null),
+      nar: bark || (() => {}),
+    },
   };
 }
 export function action<S>(
@@ -130,19 +132,21 @@ export function action<S>(
   var d;
   return {
     _: ("action": "action"),
-    a: (o, elm) => {
-      d = a(o, elm);
-    },
-    dispose: () => {
-      if (d) {
-        d();
-        d = null;
-      }
+    v: {
+      nar: (o, elm) => {
+        d = a(o, elm);
+      },
+      dispose: () => {
+        if (d) {
+          d();
+          d = null;
+        }
+      },
     },
   };
 }
 export function dispose<S>(dispose: () => void): Odispose {
-  return { _: ("dispose": "dispose"), dispose };
+  return { _: ("dispose": "dispose"), v: dispose };
 }
 export function ext<A: { ... }, B>(
   key: string,
@@ -161,11 +165,14 @@ export function ext<A: { ... }, B>(
       } else if (typeof x !== "object") {
         o(x);
       } else if (x._ === "elm") {
-        o({ ...x, bark: ext(key, b, x.bark) });
+        o({ _: "elm", v: { ...x.v, nar: ext(key, b, x.v.nar) } });
       } else if (x._ === "action") {
         o({
-          ...x,
-          a: (oa, elm) => ext(key, b, (o) => x.a(o, elm))(oa),
+          _: "action",
+          v: {
+            ...x.v,
+            nar: (oa, elm) => ext(key, b, (o) => x.v.nar(o, elm))(oa),
+          },
         });
       } else {
         o(x);
