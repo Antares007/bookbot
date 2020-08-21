@@ -16,7 +16,6 @@ export opaque type Oelm = {|
   },
 |};
 export opaque type Odispose = {| _: "dispose", v: () => void |};
-
 function empty(o) {}
 export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
   var childs_count = 0;
@@ -42,13 +41,13 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
 
         l = childPiths.length - childs_count;
         rez = childPiths.splice(childs_count, l);
-        if (tmp.length || rez.length) console.log("remove", tmp, rez);
+        if (tmp.length || rez.length) console.log("eremove", tmp, rez);
         for (let x of rez) x && x();
         childs_count = 0;
 
         l = disposables.length - disposables_count;
         rez = disposables.splice(disposables_count, l);
-        if (rez.length) console.log("remove", rez);
+        if (rez.length) console.log("dremove", rez);
         for (let x of rez) x.v();
         disposables_count = 0;
       } else if (typeof x === "string") {
@@ -77,14 +76,12 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
             if (ob) {
               console.log("reuse" + childNodes[i].nodeName);
               console.log("reuse" + childNodes[i].nodeName + "()");
-              return; //ob(x.v.nar);
+              return;
             }
             console.log("reuse" + childNodes[i].nodeName);
             console.log("create" + childNodes[i].nodeName + "()");
-            ob = makeElementPith(
-              static_cast<Element, *>(childNodes[i]),
-              depth + 1
-            );
+            const child = static_cast<Element, *>(childNodes[i]);
+            ob = makeElementPith(child, depth + 1);
             childPiths.splice(index, 0, ob);
             ob(x.v.nar);
             return;
@@ -114,14 +111,23 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
 }
 export function element(
   tag: string,
-  bark: ?((O) => void, Element) => void
+  bark: ?((O) => void, Element) => void,
+  str?: string
 ): ((Oelm) => void) => void {
   const TAG = tag.toUpperCase();
+  const key: ?string = str && "k_" + str;
   const elm = {
     _: "elm",
     v: {
-      ctor: () => document.createElement(TAG),
-      eq: (n) => n instanceof HTMLElement && n.nodeName === TAG,
+      ctor: () => {
+        const elm = document.createElement(TAG);
+        if (key) elm.setAttribute("key", key);
+        return elm;
+      },
+      eq: (n) =>
+        n instanceof HTMLElement &&
+        n.nodeName === TAG &&
+        (!key || n.getAttribute("key") === key),
       nar: bark || (() => {}),
     },
   };
