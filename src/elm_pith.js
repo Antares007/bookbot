@@ -5,16 +5,8 @@ export type O =
   | void
   | string
   | Oelm
-  | Oaction
   | Odispose
   | (((O) => void, Element) => void);
-export opaque type Oaction = {|
-  _: "action",
-  v: {
-    nar: ((O) => void, Element) => void,
-    dispose: () => void,
-  },
-|};
 export opaque type Oelm = {|
   _: "elm",
   v: {
@@ -30,8 +22,6 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
-  var actions_count = 0;
-  const actions = [];
   var disposables_count = 0;
   const disposables = [];
   return function pith(x) {
@@ -57,12 +47,6 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
         rez = disposables.splice(disposables_count, l);
         for (let x of rez) x.v();
         disposables_count = 0;
-
-        l = actions.length - actions_count;
-        rez = actions.splice(actions_count, l);
-        if (rez.length) console.log("remove", rez);
-        for (let x of rez) x.v.dispose();
-        actions_count = 0;
       } else if (typeof x === "string") {
         const index = childs_count++;
         const l = childNodes.length;
@@ -94,20 +78,6 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
         const ob = makeElementPith(child, depth + 1);
         childPiths.splice(index, 0, ob);
         ob(x.v.nar);
-      } else if (x._ === "action") {
-        const index = actions_count++;
-        const l = actions.length;
-        for (let i = index; i < l; i++)
-          if (actions[i] === x) {
-            if (index < i) {
-              actions.splice(index, 0, ...actions.splice(i, 1));
-            }
-            console.log("reuse");
-            return;
-          }
-        console.log("create");
-        actions.splice(index, 0, x);
-        x.v.nar(pith, elm);
       } else {
         const index = disposables_count++;
         const l = disposables.length;
@@ -123,9 +93,12 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
     }
   };
 }
-export function elm(tag: string, bark: ?((O) => void, Element) => void): Oelm {
+export function element(
+  tag: string,
+  bark: ?((O) => void, Element) => void
+): ((Oelm) => void) => void {
   const TAG = tag.toUpperCase();
-  return {
+  const elm = {
     _: "elm",
     v: {
       ctor: () => document.createElement(TAG),
@@ -133,26 +106,11 @@ export function elm(tag: string, bark: ?((O) => void, Element) => void): Oelm {
       nar: bark || (() => {}),
     },
   };
+  return (o) => o(elm);
 }
-export function action(a: ((O) => void, Element) => ?() => void): Oaction {
-  var d;
-  return {
-    _: ("action": "action"),
-    v: {
-      nar: (o, elm) => {
-        d = a(o, elm);
-      },
-      dispose: () => {
-        if (d) {
-          d();
-          d = null;
-        }
-      },
-    },
-  };
-}
-export function dispose(dispose: () => void): Odispose {
-  return { _: ("dispose": "dispose"), v: dispose };
+export function dispose(dispose: () => void): ((Odispose) => void) => void {
+  const d = { _: ("dispose": "dispose"), v: dispose };
+  return (o) => o(d);
 }
 // export function ext<A: { ... }, B>(
 //   key: string,

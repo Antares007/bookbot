@@ -1,28 +1,21 @@
 // @flow strict
 import * as E from "./elm_pith";
-const { dispose, action, elm, makeElementPith } = E;
-function act(
-  name: string,
-  b: ((E.O) => void, Element, Event) => void
-): E.Oaction {
-  return action((o, elm) => {
-    const l = (e: Event) => b.call(this, o, elm, e);
-    elm.addEventListener(name, l);
-    return () => {
-      console.log("d", l);
-      elm.removeEventListener(name, l);
-    };
+const { dispose, element, makeElementPith } = E;
+
+function button(label, listener: (e: MouseEvent) => void) {
+  return element("button", (o, elm) => {
+    o(label);
+    elm.addEventListener("click", listener);
+    dispose(elm.removeEventListener.bind(elm, "click", listener))(o);
   });
 }
-
-// prettier-ignore
-function counter(o, e, depth = 9): void {
-  o(elm("button", (o) => {
-    o("+");
-    if (depth > 0)
-      o(elm("div", (o, e) => counter(o, e, depth - 1)));
-  }));
-  o(depth + "");
+var i = 9;
+function counter(o, e): void {
+  button("+", (e) => {
+    i++;
+    o(counter);
+  })(o);
+  o(i + "");
 }
 const root = (document.body = document.createElement("body"));
 
@@ -34,9 +27,6 @@ o(counter);
 
 Object.assign(window, {
   o,
-  act,
-  action,
-  elm,
   dispose,
   makeElementPith,
   c: counter,
