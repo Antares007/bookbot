@@ -112,10 +112,9 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
 export function element(
   tag: string,
   bark: ?((O) => void, Element) => void,
-  str?: string
+  key?: string
 ): ((Oelm) => void) => void {
   const TAG = tag.toUpperCase();
-  const key: ?string = str && "k_" + str;
   const elm = {
     _: "elm",
     v: {
@@ -128,7 +127,7 @@ export function element(
         n instanceof HTMLElement &&
         n.nodeName === TAG &&
         (!key || n.getAttribute("key") === key),
-      nar: bark || (() => {}),
+      nar: bark || empty,
     },
   };
   return (o) => o(elm);

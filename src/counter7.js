@@ -15,24 +15,20 @@ const C = (i: number) => {
     "div",
     (o) => {
       element("button", (o, elm) => {
-        const listener = ((i) => (e: MouseEvent) => {
+        const listener = (e: MouseEvent) => {
           n++;
-          op((o) => {
-            o(n + "");
-          });
-        })(i);
+          op((o) => o(n + ""));
+        };
         elm.addEventListener("click", listener);
         dispose(elm.removeEventListener.bind(elm, "click", listener))(o);
         o("+");
         if (i > 0) C(i - 1)(o);
       })(o);
       element("button", (o, elm) => {
-        const listener = ((i) => (e: MouseEvent) => {
+        const listener = (e: MouseEvent) => {
           n--;
-          op((o) => {
-            o(n + "");
-          });
-        })(i);
+          op((o) => o(n + ""));
+        };
         elm.addEventListener("click", listener);
         dispose(elm.removeEventListener.bind(elm, "click", listener))(o);
         o("-");
@@ -43,13 +39,14 @@ const C = (i: number) => {
         o(n + "");
       })(o);
     },
-    i + ""
+    "C" + i
   );
 };
 const o = makeElementPith((document.body = document.createElement("body")));
 o(C(1));
 Object.assign(window, {
   o,
+  element,
   dispose,
   makeElementPith,
   C,
