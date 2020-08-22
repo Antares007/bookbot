@@ -1,23 +1,20 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
-
-export type O =
-  | void
-  | string
-  | Oelm
-  | Odispose
-  | (((O) => void, Element) => void);
+export type P<-O> = (O) => void;
+export type N<+O> = (P<O>) => void;
+export type N1<+O, -B> = (P<O>, B) => void;
+export type O = void | string | Oelm | Odispose | N1<O, Element>;
 export opaque type Oelm = {|
   _: "elm",
   v: {
     ctor: () => Element,
     eq: (Node) => boolean,
-    nar: ((O) => void, Element) => void,
+    nar: N1<O, Element>,
   },
 |};
 export opaque type Odispose = {| _: "dispose", v: () => void |};
 function empty(o) {}
-export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
+export function makeElementPith(elm: Element, depth: number = 0): P<O> {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths: Array<?(O) => void> = [];
@@ -111,9 +108,9 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
 }
 export function element(
   tag: string,
-  bark: ?((O) => void, Element) => void,
+  bark: ?N1<O, Element>,
   key?: string
-): ((Oelm) => void) => void {
+): N<Oelm> {
   const TAG = tag.toUpperCase();
   const elm = {
     _: "elm",
@@ -132,7 +129,7 @@ export function element(
   };
   return (o) => o(elm);
 }
-export function dispose(dispose: () => void): ((Odispose) => void) => void {
+export function dispose(dispose: () => void): N<Odispose> {
   const d = { _: ("dispose": "dispose"), v: dispose };
   return (o) => o(d);
 }
