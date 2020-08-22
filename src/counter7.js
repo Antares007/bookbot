@@ -1,13 +1,7 @@
 // @flow strict
 import * as E from "./elm_pith";
 const { dispose, element, makeElementPith } = E;
-function button(label, listener: (e: MouseEvent) => void) {
-  return element("button", (o, elm) => {
-    o(label);
-    elm.addEventListener("click", listener);
-    dispose(elm.removeEventListener.bind(elm, "click", listener))(o);
-  });
-}
+
 const C = (i: number) => {
   var n = 0;
   var op;
@@ -20,7 +14,7 @@ const C = (i: number) => {
           op((o) => o(n + ""));
         };
         elm.addEventListener("click", listener);
-        dispose(elm.removeEventListener.bind(elm, "click", listener))(o);
+        dispose(() => elm.removeEventListener("click", listener))(o);
         o("+");
         if (i > 0) C(i - 1)(o);
       })(o);
@@ -30,7 +24,7 @@ const C = (i: number) => {
           op((o) => o(n + ""));
         };
         elm.addEventListener("click", listener);
-        dispose(elm.removeEventListener.bind(elm, "click", listener))(o);
+        dispose(() => elm.removeEventListener("click", listener))(o);
         o("-");
         if (i > 0) C(i - 1)(o);
       })(o);
