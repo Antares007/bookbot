@@ -80,7 +80,7 @@ export function makeElementPith(elm: Element, depth: number = 0): (O) => void {
             }
             console.log("reuse" + childNodes[i].nodeName);
             console.log("create" + childNodes[i].nodeName + "()");
-            const child = static_cast<Element, *>(childNodes[i]);
+            const child = static_cast<Element>(childNodes[i]);
             ob = makeElementPith(child, depth + 1);
             childPiths.splice(index, 0, ob);
             ob(x.v.nar);

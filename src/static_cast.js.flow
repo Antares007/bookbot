@@ -1,2 +1,2 @@
 // @flow strict
-declare export function static_cast<B, A>(A): B;
+declare export function static_cast<B, A = *>(A): B;
