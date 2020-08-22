@@ -3,6 +3,15 @@ import { static_cast } from "./static_cast.js";
 export type P<-O> = (O) => void;
 export type N<+O> = (P<O>) => void;
 export type N1<+O, -B> = (P<O>, B) => void;
+export function cb<O, T>(
+  f: (O | T) => boolean,
+  cb: (T) => void
+): (P<O>) => P<O | T> {
+  return (o) => (x) => {
+    f(x) ? cb(static_cast<T>(x)) : o(static_cast<O>(x));
+  };
+}
+
 export type O = void | string | Oelm | Odispose | N1<O, Element>;
 export opaque type Oelm = {|
   _: "elm",
