@@ -1,4 +1,4 @@
-// @flow
+// flow
 import * as S from "./S";
 import * as M from "./M";
 import * as On from "./S/On";
@@ -137,7 +137,7 @@ export const node = <State>(
   create: $PropertyType<N<State>, "create">,
   eq: $PropertyType<N<State>, "eq">,
   pith: $PropertyType<N<State>, "pith">
-): N<State> => new N<State>(create, eq, pith);
+): N<State> => new N() < State > (create, eq, pith);
 
 export const elm = <State>(
   tag: string,
