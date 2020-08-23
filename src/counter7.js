@@ -5,9 +5,7 @@ const { dispose, element, makeElementPith, cbn } = E;
 function button(nar: N<O>, n: number): N<O | number> {
   return (op) => {
     element("button", (o, elm) => {
-      const listener = (e: MouseEvent) => {
-        op(n);
-      };
+      const listener = () => op(n);
       elm.addEventListener("click", listener);
       dispose(() => elm.removeEventListener("click", listener))(o);
       nar(o);
@@ -15,30 +13,35 @@ function button(nar: N<O>, n: number): N<O | number> {
   };
 }
 
-function C(i: number): N<O> {
+function C(depth: number): N<O> {
   var n = 0;
   var op;
   return (ob) =>
     element(
       "div",
       (o) => {
-        const ss = cbn((x) => {
+        const on = cbn((x) => {
           n += x;
           op((o) => o(n + ""));
         })(o);
-        button((o) => o("1"), 1)(ss);
-        button((o) => o("-1"), -1)(ss);
-        button((o) => o("-2"), -2)(ss);
+        button((o) => {
+          o("+");
+          depth > 0 && C(depth - 1)(o);
+        }, 1)(on);
+        button((o) => {
+          o("-");
+          depth > 0 && C(depth - 1)(o);
+        }, -1)(on);
         element("div", (o) => {
           op = o;
           o(n + "");
         })(o);
       },
-      "C" + i
+      "C" + depth
     )(ob);
 }
 const o = makeElementPith((document.body = document.createElement("body")));
-o((o) => C(1)((x) => (typeof x === "number" ? console.log(x) : o(x))));
+o((o) => C(1)(cbn((x) => console.log(x))(o)));
 Object.assign(window, {
   o,
   element,
