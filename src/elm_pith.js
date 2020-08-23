@@ -27,6 +27,7 @@ export opaque type Oelm = {|
 |};
 export opaque type Odispose = {| _: "dispose", v: () => void |};
 function empty(o) {}
+const log = (...a) => {}; //console.info.bind(console);
 export function makeElementPith(elm: Element, depth: number = 0): P<O> {
   var childs_count = 0;
   const { childNodes } = elm;
@@ -36,13 +37,13 @@ export function makeElementPith(elm: Element, depth: number = 0): P<O> {
   var prev;
   return function pith(x) {
     if (typeof x === "function") {
-      console.info("P" + depth, [x], elm);
+      log("P" + depth, [x], elm);
       if (prev === x) return;
       prev = x;
       x(pith, elm);
       pith();
     } else {
-      console.info("P" + depth, x, elm);
+      log("P" + depth, x, elm);
       if (x == null) {
         let rez, l;
         let tmp = [];
@@ -51,13 +52,13 @@ export function makeElementPith(elm: Element, depth: number = 0): P<O> {
 
         l = childPiths.length - childs_count;
         rez = childPiths.splice(childs_count, l);
-        if (tmp.length || rez.length) console.log("eremove", tmp, rez);
+        if (tmp.length || rez.length) log("eremove", tmp, rez);
         for (let x of rez) x && x();
         childs_count = 0;
 
         l = disposables.length - disposables_count;
         rez = disposables.splice(disposables_count, l);
-        if (rez.length) console.log("dremove", rez);
+        if (rez.length) log("dremove", rez);
         for (let x of rez) x.v();
         disposables_count = 0;
       } else if (typeof x === "string") {
@@ -84,12 +85,12 @@ export function makeElementPith(elm: Element, depth: number = 0): P<O> {
             }
             let ob = childPiths[index];
             if (ob) {
-              console.log("reuse" + childNodes[i].nodeName);
-              console.log("reuse" + childNodes[i].nodeName + "()");
+              log("reuse" + childNodes[i].nodeName);
+              log("reuse" + childNodes[i].nodeName + "()");
               return;
             }
-            console.log("reuse" + childNodes[i].nodeName);
-            console.log("create" + childNodes[i].nodeName + "()");
+            log("reuse" + childNodes[i].nodeName);
+            log("create" + childNodes[i].nodeName + "()");
             const child = static_cast<Element>(childNodes[i]);
             ob = makeElementPith(child, depth + 1);
             childPiths.splice(index, 0, ob);
@@ -97,8 +98,8 @@ export function makeElementPith(elm: Element, depth: number = 0): P<O> {
             return;
           }
         const child = elm.insertBefore(x.v.ctor(), childNodes[index]);
-        console.log("create" + child.nodeName);
-        console.log("create" + child.nodeName + "()");
+        log("create" + child.nodeName);
+        log("create" + child.nodeName + "()");
         const ob = makeElementPith(child, depth + 1);
         childPiths.splice(index, 0, ob);
         ob(x.v.nar);
@@ -110,10 +111,10 @@ export function makeElementPith(elm: Element, depth: number = 0): P<O> {
             if (index < i) {
               disposables.splice(index, 0, ...disposables.splice(i, 1));
             }
-            console.log("reuse");
+            log("reuse");
             return;
           }
-        console.log("create");
+        log("create");
         disposables.splice(index, 0, x);
       }
     }
