@@ -11,7 +11,11 @@ export function cb<O, T>(
     f(x) ? cb(static_cast<T>(x)) : o(static_cast<O>(x));
   };
 }
-
+export function cbn<O>(cb: (number) => void): (P<O>) => P<O | number> {
+  return (o) => (x) => {
+    typeof x === "number" ? cb(x) : o(static_cast<O>(x));
+  };
+}
 export type O = void | string | Oelm | Odispose | N1<O, Element>;
 export opaque type Oelm = {|
   _: "elm",

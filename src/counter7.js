@@ -1,7 +1,7 @@
 // @flow strict
 import * as E from "./elm_pith";
 import type { O, P, N, N1 } from "./elm_pith";
-const { dispose, element, makeElementPith, cb } = E;
+const { dispose, element, makeElementPith, cbn } = E;
 function button(nar: N<O>, n: number): N<O | number> {
   return (op) => {
     element("button", (o, elm) => {
@@ -22,14 +22,13 @@ function C(i: number): N<O> {
     element(
       "div",
       (o) => {
-        const xxx = cb<O, number>(
-          (x) => x == null,
-          (x) => {}
-        );
-        button((o) => {
-          o("+");
-          if (i > 0) C(i - 1)(o);
-        }, 1)((x) => (typeof x === "number" ? void 0 : o(x)));
+        const ss = cbn((x) => {
+          n += x;
+          op((o) => o(n + ""));
+        })(o);
+        button((o) => o("1"), 1)(ss);
+        button((o) => o("-1"), -1)(ss);
+        button((o) => o("-2"), -2)(ss);
         element("div", (o) => {
           op = o;
           o(n + "");
