@@ -27,7 +27,7 @@ export opaque type Oelm = {|
 |};
 export opaque type Odispose = {| _: "dispose", v: () => void |};
 function empty(o) {}
-const log = (...a) => {}; //console.info.bind(console);
+const log = console.info.bind(console); //(...a) => {}; //
 export function makeElementPith(elm: Element, depth: number = 0): P<O> {
   var childs_count = 0;
   const { childNodes } = elm;
