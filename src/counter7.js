@@ -3,30 +3,35 @@ import { static_cast } from "./static_cast.js";
 import * as E from "./elm_pith";
 import type { O, P, N, N1 } from "./elm_pith";
 const { dispose, element, makeElementPith, cbn } = E;
-function button(nar: N<O>, n: number): N<O | number> {
-  return (op) => {
-    element("button", (o, elm) => {
-      const listener = () => op(n);
-      elm.addEventListener("click", listener);
-      dispose(() => elm.removeEventListener("click", listener))(o);
-      nar(o);
-    })(op);
-  };
+function button<S, T>(nar: N<ORA<S, T>>, n: T): N<Relement<S, T>> {
+  return relement("button", (o, elm) => {
+    const listener = () => action(n)(o);
+    elm.addEventListener("click", listener);
+    dispose(() => elm.removeEventListener("click", listener))(o);
+    nar(o);
+  });
 }
-type Relement<S = *> = {|
+type Relement<S = *, T = *> = {|
   _: "relm",
   v: {
     tag: string,
     key?: string,
-    nar: N1<O | Relement<S> | R<S>, Element>,
+    nar: N1<ORA<S, T>, Element>,
   },
 |};
+type ORA<S = *, T = *> = O | Relement<S> | R<S> | A<T>;
+type A<T> = {| _: "a", v: T |};
 type R<S = *> = {| _: "r", v: (S) => S |};
-function relement<S>(
+
+function action<T>(v: T): N<A<T>> {
+  const a = { _: "a", v };
+  return (o) => o(a);
+}
+function relement<S, T>(
   tag: string,
-  nar: N1<O | Relement<S> | R<S>, Element>,
+  nar: N1<ORA<S, T>, Element>,
   key?: string
-): N<Relement<S>> {
+): N<Relement<S, T>> {
   const relm = {
     _: "relm",
     v: {
@@ -47,29 +52,16 @@ function C(
   depth: number = 0,
   key: string = "C",
   init: {| n: number |} = { n: 9 }
-): N<O | Relement<> | R<>> {
+): N<ORA<{| n: number |}, *>> {
   var n = 0;
   var op;
   return relement(
     "div",
     (o) => {
-      // const on = cbn((x) => {
-      //   op((o) => {
-      //     reduce((s) => {
-      //       return { n: s.n + x };
-      //     })(o);
-      //     reduce((s) => {
-      //       o(s.n + "");
-      //       return s;
-      //     })(o);
-      //   });
-      // })(o);
-
-      // button((o) => {
-      //   o("+");
-      //   depth > 0 && C(depth - 1, key, init)(cbr(ob)(o));
-      // }, 1)(on);
-
+      button((o) => {
+        o("+");
+        depth > 0 && C(depth - 1, key, init)(o);
+      }, 1)(o);
       relement("div", (o) => {
         op = o;
         reduce((s) => {
@@ -82,13 +74,14 @@ function C(
   );
 }
 var state = { n: 9 };
-const o = cbr((r) => {
-  state = r.v(state);
-})(makeElementPith((document.body = document.createElement("body"))));
+const o = makeElementPith((document.body = document.createElement("body")));
 
-const addstate = ring((r) => {
-  state = r.v(state);
-});
+const addstate = ring(
+  (r) => {
+    state = r.v(state);
+  },
+  (a) => console.log(a)
+);
 o(addstate(C(1)));
 
 Object.assign(window, {
@@ -114,17 +107,19 @@ function rmap<A: { ... }, B>(key: string, b: B): (P<R<A> | O>) => P<R<B> | O> {
     else o(x);
   };
 }
-function ring<S>(or: P<R<S>>): (N<O | Relement<S> | R<S>>) => N<O> {
+function ring<S, T>(or: P<R<S>>, oa: P<A<T>>): (N<ORA<S, T>>) => N<O> {
   return (nar) => (o) => {
-    nar(function (x) {
+    nar(function pith(x) {
       if (x == null || typeof x !== "object") {
         o(x);
+      } else if (x._ === "a") {
+        oa(x);
       } else if (x._ === "r") {
         or(x);
       } else if (x._ === "relm") {
         element(
           x.v.tag,
-          (o, elm) => ring(or)((o) => x.v.nar(o, elm))(o),
+          (o, elm) => ring(or, oa)((o) => x.v.nar(o, elm))(o),
           x.v.key
         )(o);
       } else {

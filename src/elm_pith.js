@@ -147,35 +147,3 @@ export function dispose(dispose: () => void): N<Odispose> {
   const d = { _: ("dispose": "dispose"), v: dispose };
   return (o) => o(d);
 }
-// export function ext<A: { ... }, B>(
-//   key: string,
-//   b: B,
-//   bark: ((O<B>) => void) => void
-// ): ((O<A>) => void) => void {
-//   return function ring(o: (O<A>) => void) {
-//     bark((x) => {
-//       if (typeof x === "function") {
-//         o((a) => {
-//           const ob = a[key] || b;
-//           const nb = x(ob);
-//           if (ob === nb) return a;
-//           return { ...a, [key]: nb };
-//         });
-//       } else if (typeof x !== "object") {
-//         o(x);
-//       } else if (x._ === "elm") {
-//         o({ _: "elm", v: { ...x.v, nar: ext(key, b, x.v.nar) } });
-//       } else if (x._ === "action") {
-//         o({
-//           _: "action",
-//           v: {
-//             ...x.v,
-//             nar: (oa, elm) => ext(key, b, (o) => x.v.nar(o, elm))(oa),
-//           },
-//         });
-//       } else {
-//         o(x);
-//       }
-//     });
-//   };
-// }
