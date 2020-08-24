@@ -2,7 +2,7 @@
 import { static_cast } from "./static_cast.js";
 import * as E from "./elm_pith";
 import type { O, P, N, N1 } from "./elm_pith";
-const { dispose, element, makeElementPith, cbn } = E;
+const { dispose, element, makeElementPith } = E;
 function button<S, T>(nar: N<ORA<S, T>>, n: T): N<Relement<S, T>> {
   return relement("button", (o, elm) => {
     const listener = () => action(n)(o);
@@ -42,10 +42,30 @@ function relement<S, T>(
   };
   return (o) => o(relm);
 }
-
 function reduce<S>(v: (S) => S): N<R<S>> {
   const r = { _: "r", v };
   return (o) => o(r);
+}
+function ring<S, T>(or: P<R<S>>, oa: P<A<T>>): (N<ORA<S, T>>) => N<O> {
+  return (nar) => (o) => {
+    nar(function pith(x) {
+      if (x == null || typeof x !== "object") {
+        o(x);
+      } else if (x._ === "a") {
+        oa(x);
+      } else if (x._ === "r") {
+        or(x);
+      } else if (x._ === "relm") {
+        element(
+          x.v.tag,
+          (o, elm) => ring(or, oa)((o) => x.v.nar(o, elm))(o),
+          x.v.key
+        )(o);
+      } else {
+        o(x);
+      }
+    });
+  };
 }
 
 function C(
@@ -91,40 +111,3 @@ Object.assign(window, {
   makeElementPith,
   C,
 });
-function cbr<S>(or: P<R<S>>): (P<O>) => P<O | R<S>> {
-  return (o) => (x) =>
-    x && typeof x === "object" && x._ === "r" ? or(x) : o(x);
-}
-function rmap<A: { ... }, B>(key: string, b: B): (P<R<A> | O>) => P<R<B> | O> {
-  return (o) => (x) => {
-    if (x && typeof x === "object" && x._ === "r")
-      reduce((a) => {
-        const ob = a[key] || b;
-        const nb = x.v(ob);
-        if (ob === nb) return a;
-        return { ...a, [key]: nb };
-      })(o);
-    else o(x);
-  };
-}
-function ring<S, T>(or: P<R<S>>, oa: P<A<T>>): (N<ORA<S, T>>) => N<O> {
-  return (nar) => (o) => {
-    nar(function pith(x) {
-      if (x == null || typeof x !== "object") {
-        o(x);
-      } else if (x._ === "a") {
-        oa(x);
-      } else if (x._ === "r") {
-        or(x);
-      } else if (x._ === "relm") {
-        element(
-          x.v.tag,
-          (o, elm) => ring(or, oa)((o) => x.v.nar(o, elm))(o),
-          x.v.key
-        )(o);
-      } else {
-        o(x);
-      }
-    });
-  };
-}

@@ -3,19 +3,7 @@ import { static_cast } from "./static_cast.js";
 export type P<-O> = (O) => void;
 export type N<+O> = (P<O>) => void;
 export type N1<+O, -B> = (P<O>, B) => void;
-export function cb<O, T>(
-  f: (O | T) => boolean,
-  cb: (T) => void
-): (P<O>) => P<O | T> {
-  return (o) => (x) => {
-    f(x) ? cb(static_cast<T>(x)) : o(static_cast<O>(x));
-  };
-}
-export function cbn<O>(cb: (number) => void): (P<O>) => P<O | number> {
-  return (o) => (x) => {
-    typeof x === "number" ? cb(x) : o(static_cast<O>(x));
-  };
-}
+
 export type O = void | string | Oelm | Odispose | N1<O, Element>;
 export opaque type Oelm = {|
   _: "elm",
@@ -27,7 +15,7 @@ export opaque type Oelm = {|
 |};
 export opaque type Odispose = {| _: "dispose", v: () => void |};
 function empty(o) {}
-const log = console.info.bind(console); //(...a) => {}; //
+const log = (...a) => {}; // console.info.bind(console); //
 export function makeElementPith(elm: Element, depth: number = 0): P<O> {
   var childs_count = 0;
   const { childNodes } = elm;
