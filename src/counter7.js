@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import { static_cast } from "./static_cast.js";
 import type { P, N, N1 } from "./NP";
 

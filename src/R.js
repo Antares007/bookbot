@@ -27,20 +27,34 @@ export function element<S>(
   const Relement = { _: "Relement", v: { tag, nar, key } };
   return (o) => o(Relement);
 }
-export function ring<S>(Ro: P<Rreduce<S>>): (N<Ro<S>>) => N<Eo> {
-  return (nar) => (Eo) => {
-    nar(function pith(x) {
+export function ring<S>(Rreduceo: P<Rreduce<S>>): (N<Ro<S>>) => N<Eo> {
+  return (nar: N<Ro<S>>) => (Eo: P<Eo>) => {
+    nar(function Rring_pmap(x: Ro<S>) {
       if ("Rreduce" === x._) {
-        Ro(x);
+        Rreduceo(x);
       } else if ("Relement" === x._) {
         E.element(
           x.v.tag,
-          (Eo, elm) => ring(Ro)((Ro) => x.v.nar(Ro, elm))(Eo),
+          function Rring_apply_elm(Eo, elm) {
+            ring(Rreduceo)(function Rring_apply_elm_narRo(Ro) {
+              x.v.nar(Ro, elm);
+            })(Eo);
+          },
           x.v.key
         )(Eo);
       } else {
         Eo(x);
       }
     });
+  };
+}
+export function make<S>(Rreduceo: P<Rreduce<S>>, elm: Element): P<Ro<S>> {
+  const Eo = E.makeElementPith(elm);
+  var Ro;
+  ring(Rreduceo)(function Rmake_nar(Ro_) {
+    Ro = Ro_;
+  })(Eo);
+  return function (x) {
+    Ro(x);
   };
 }
