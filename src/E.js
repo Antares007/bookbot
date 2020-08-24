@@ -4,35 +4,75 @@ export type P<-O> = (O) => void;
 export type N<+O> = (P<O>) => void;
 export type N1<+O, -B> = (P<O>, B) => void;
 
-export type O = void | string | Oelm | Odispose | N1<O, Element>;
-export opaque type Oelm = {|
-  _: "elm",
-  v: {
-    ctor: () => Element,
-    eq: (Node) => boolean,
-    nar: N1<O, Element>,
-  },
-|};
-export opaque type Odispose = {| _: "dispose", v: () => void |};
-function empty(o) {}
-const log = (...a) => {}; // console.info.bind(console); //
-export function makeElementPith(elm: Element, depth: number = 0): P<O> {
+export type Eo = Eend | Etext | Eelement | Edispose | Erender;
+
+export opaque type Eend = {| _: "Eend", v: void |};
+export opaque type Etext = {| _: "Etext", v: string |};
+export opaque type Eelement = {| _: "Eelement", v: t |};
+export opaque type Edispose = {| _: "Edispose", v: () => void |};
+export opaque type Erender = {| _: "Erender", v: N1<Eo, Element> |};
+type t = {
+  ctor: () => Element,
+  eq: (Node) => boolean,
+  nar: N1<Eo, Element>,
+};
+
+export function end(): N<Eend> {
+  return (o) => o({ _: "Eend", v: void 0 });
+}
+export function text(v: string): N<Etext> {
+  const Etext = { _: "Etext", v };
+  return (o) => o(Etext);
+}
+export function element(
+  tag: string,
+  bark: ?N1<Eo, Element>,
+  key?: string
+): N<Eelement> {
+  const TAG = tag.toUpperCase();
+  const elm = {
+    _: "Eelement",
+    v: {
+      ctor: () => {
+        const elm = document.createElement(TAG);
+        if (key) elm.setAttribute("key", key);
+        return elm;
+      },
+      eq: (n) =>
+        n instanceof HTMLElement &&
+        n.nodeName === TAG &&
+        (!key || n.getAttribute("key") === key),
+      nar: bark || empty,
+    },
+  };
+  return (o) => o(elm);
+}
+export function dispose(dispose: () => void): N<Edispose> {
+  const d = { _: ("Edispose": "Edispose"), v: dispose };
+  return (o) => o(d);
+}
+export function render(v: N1<Eo, Element>): N<Erender> {
+  const orender = { _: "Erender", v };
+  return (o) => o(orender);
+}
+export function makeElementPith(elm: Element, depth: number = 0): P<Eo> {
   var childs_count = 0;
   const { childNodes } = elm;
-  const childPiths: Array<?(O) => void> = [];
+  const childPiths: Array<?(Eo) => void> = [];
   var disposables_count = 0;
-  const disposables = [];
+  const disposables: Array<Edispose> = [];
   var prev;
   return function pith(x) {
-    if (typeof x === "function") {
-      log("P" + depth, [x], elm);
+    if (x._ === "Erender") {
+      log("P" + depth, x, elm);
       if (prev === x) return;
       prev = x;
-      x(pith, elm);
-      pith();
+      x.v(pith, elm);
+      text("")(pith);
+      end()(pith);
     } else {
       log("P" + depth, x, elm);
-      if (x == null) {
+      if ("Eend" === x._) {
         let rez, l;
         let tmp = [];
         for (l = childNodes.length; l > childs_count; l--)
@@ -41,7 +81,7 @@ export function makeElementPith(elm: Element, depth: number = 0): P<O> {
         l = childPiths.length - childs_count;
         rez = childPiths.splice(childs_count, l);
         if (tmp.length || rez.length) log("eremove", tmp, rez);
-        for (let x of rez) x && x();
+        for (let x of rez) x && end()(x);
         childs_count = 0;
 
         l = disposables.length - disposables_count;
@@ -49,7 +89,7 @@ export function makeElementPith(elm: Element, depth: number = 0): P<O> {
         if (rez.length) log("dremove", rez);
         for (let x of rez) x.v();
         disposables_count = 0;
-      } else if (typeof x === "string") {
+      } else if ("Etext" === x._) {
         const index = childs_count++;
         const l = childNodes.length;
         for (let i = index; i < l; i++)
@@ -60,9 +100,9 @@ export function makeElementPith(elm: Element, depth: number = 0): P<O> {
             }
             return;
           }
-        elm.insertBefore(document.createTextNode(x), childNodes[index]);
+        elm.insertBefore(document.createTextNode(x.v), childNodes[index]);
         childPiths.splice(index, 0, empty);
-      } else if (x._ === "elm") {
+      } else if ("Eelement" === x._) {
         const index = childs_count++;
         const l = childNodes.length;
         for (let i = index; i < l; i++)
@@ -79,10 +119,12 @@ export function makeElementPith(elm: Element, depth: number = 0): P<O> {
             }
             log("reuse" + childNodes[i].nodeName);
             log("create" + childNodes[i].nodeName + "()");
-            const child = static_cast<Element>(childNodes[i]);
-            ob = makeElementPith(child, depth + 1);
+            ob = makeElementPith(
+              static_cast<Element>(childNodes[i]),
+              depth + 1
+            );
             childPiths.splice(index, 0, ob);
-            ob(x.v.nar);
+            render(x.v.nar)(ob);
             return;
           }
         const child = elm.insertBefore(x.v.ctor(), childNodes[index]);
@@ -90,7 +132,7 @@ export function makeElementPith(elm: Element, depth: number = 0): P<O> {
         log("create" + child.nodeName + "()");
         const ob = makeElementPith(child, depth + 1);
         childPiths.splice(index, 0, ob);
-        ob(x.v.nar);
+        render(x.v.nar)(ob);
       } else {
         const index = disposables_count++;
         const l = disposables.length;
@@ -108,30 +150,7 @@ export function makeElementPith(elm: Element, depth: number = 0): P<O> {
     }
   };
 }
-export function element(
-  tag: string,
-  bark: ?N1<O, Element>,
-  key?: string
-): N<Oelm> {
-  const TAG = tag.toUpperCase();
-  const elm = {
-    _: "elm",
-    v: {
-      ctor: () => {
-        const elm = document.createElement(TAG);
-        if (key) elm.setAttribute("key", key);
-        return elm;
-      },
-      eq: (n) =>
-        n instanceof HTMLElement &&
-        n.nodeName === TAG &&
-        (!key || n.getAttribute("key") === key),
-      nar: bark || empty,
-    },
-  };
-  return (o) => o(elm);
-}
-export function dispose(dispose: () => void): N<Odispose> {
-  const d = { _: ("dispose": "dispose"), v: dispose };
-  return (o) => o(d);
+function empty(o) {}
+function log(...a) {
+  // console.info(...a);
 }

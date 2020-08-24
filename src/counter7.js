@@ -1,9 +1,8 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
-import * as E from "./elm_pith";
-import type { O, P, N, N1 } from "./elm_pith";
-const { dispose, element, makeElementPith } = E;
-
+import * as E from "./E";
+import type { Eo as O, P, N, N1 } from "./E";
+const { dispose, element, makeElementPith, text } = E;
 type ORA<S = *, T = *> = O | Relement<S> | R<S> | A<T> | On<S, T>;
 type On<S, T> = {| _: "on", v: N1<ORA<S, T>, A<T>> |};
 type A<+T> = {| _: "a", +v: T |};
@@ -92,21 +91,21 @@ function C(
       "div",
       (o) => {
         button((o) => {
-          o("+");
+          text("+")(o);
           depth > 0 && C(depth - 1, key, init)(o);
         }, 1)(o);
         on((o, a) => {
           reduce((s) => ({ n: s.n + 1 }))(o);
           reduce((s) => {
-            op(s.n + "");
+            //op(s.n + "");
             return s;
           })(op);
-          op();
+          E.end()(op);
         })(o);
         relement("div", (o) => {
           op = o;
           reduce((s) => {
-            o(s.n + "");
+            text(s.n + "")(o);
             return s;
           })(o);
         })(o);
@@ -123,7 +122,7 @@ const addstate = ring(
   },
   (a) => console.log(a)
 );
-o(addstate(C(1)));
+E.render(addstate(C(3)))(o);
 
 Object.assign(window, {
   ls() {
