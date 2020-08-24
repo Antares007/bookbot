@@ -4,11 +4,11 @@ import type { P, N, N1 } from "./NP.js";
 
 export type Eo = Eend | Etext | Eelement | Edispose | Erender;
 
-export opaque type Eend = {| _: "Eend", v: void |};
-export opaque type Etext = {| _: "Etext", v: string |};
-export opaque type Eelement = {| _: "Eelement", v: t |};
-export opaque type Edispose = {| _: "Edispose", v: () => void |};
-export opaque type Erender = {| _: "Erender", v: N1<Eo, Element> |};
+export type Eend = {| _: "Eend", v: void |};
+export type Etext = {| _: "Etext", v: string |};
+export type Eelement = {| _: "Eelement", v: t |};
+export type Edispose = {| _: "Edispose", v: () => void |};
+export type Erender = {| _: "Erender", v: N1<Eo, Element> |};
 type t = {
   ctor: () => Element,
   eq: (Node) => boolean,

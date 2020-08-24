@@ -1,9 +1,9 @@
 const path = require("path");
 
 module.exports = {
-  entry: "./src/counter6.js",
+  entry: "./src/counter7.js",
   output: {
-    filename: "counter6.js",
+    filename: "counter7.js",
     path: path.resolve(__dirname, "dist"),
   },
   module: {

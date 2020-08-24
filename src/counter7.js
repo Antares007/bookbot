@@ -1,10 +1,11 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
-import * as E from "./E";
-import type { Eo as O } from "./E";
 import type { P, N, N1 } from "./NP";
-const { dispose, element, makeElementPith, text } = E;
-type ORA<S = *, T = *> = O | Relement<S> | R<S> | A<T> | On<S, T>;
+
+import * as E from "./E";
+import type { Eo } from "./E";
+
+type ORA<S = *, T = *> = Eo | Relement<S> | R<S> | A<T> | On<S, T>;
 type On<S, T> = {| _: "on", v: N1<ORA<S, T>, A<T>> |};
 type A<+T> = {| _: "a", +v: T |};
 type R<S = *> = {| _: "r", v: (S) => S |};
@@ -43,7 +44,7 @@ function reduce<S>(v: (S) => S): N<R<S>> {
   const r = { _: "r", v };
   return (o) => o(r);
 }
-function ring<S, T>(or: P<R<S>>, oa: P<A<T>>): (N<ORA<S, T>>) => N<O> {
+function ring<S, T>(or: P<R<S>>, oa: P<A<T>>): (N<ORA<S, T>>) => N<Eo> {
   return (nar) => (o) => {
     const ons = [];
     nar(function pith(x) {
@@ -57,7 +58,7 @@ function ring<S, T>(or: P<R<S>>, oa: P<A<T>>): (N<ORA<S, T>>) => N<O> {
       } else if (x._ === "r") {
         or(x);
       } else if (x._ === "relm") {
-        element(
+        E.element(
           x.v.tag,
           (o, elm) =>
             ring(or, (a) => {
@@ -76,7 +77,7 @@ function button<S, T>(nar: N<ORA<S, T>>, n: T): N<Relement<S, T>> {
   return relement("button", (o, elm) => {
     const listener = () => action(n)(o);
     elm.addEventListener("click", listener);
-    dispose(() => elm.removeEventListener("click", listener))(o);
+    E.dispose(() => elm.removeEventListener("click", listener))(o);
     nar(o);
   });
 }
@@ -92,7 +93,7 @@ function C(
       "div",
       (o) => {
         button((o) => {
-          text("+")(o);
+          E.text("+")(o);
           depth > 0 && C(depth - 1, key, init)(o);
         }, 1)(o);
         on((o, a) => {
@@ -106,7 +107,7 @@ function C(
         relement("div", (o) => {
           op = o;
           reduce((s) => {
-            text(s.n + "")(o);
+            E.text(s.n + "")(o);
             return s;
           })(o);
         })(o);
@@ -115,7 +116,7 @@ function C(
     )(ob);
 }
 var state = { n: 9 };
-const o = makeElementPith((document.body = document.createElement("body")));
+const o = E.makeElementPith((document.body = document.createElement("body")));
 
 const addstate = ring(
   (r) => {
@@ -130,9 +131,7 @@ Object.assign(window, {
     console.log(state);
   },
   o,
-  element,
-  dispose,
-  makeElementPith,
+  E,
   C,
 });
 function rmap<A: { ... }, B, T>(
