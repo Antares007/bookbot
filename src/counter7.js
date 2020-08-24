@@ -1,7 +1,8 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
 import * as E from "./E";
-import type { Eo as O, P, N, N1 } from "./E";
+import type { Eo as O } from "./E";
+import type { P, N, N1 } from "./NP";
 const { dispose, element, makeElementPith, text } = E;
 type ORA<S = *, T = *> = O | Relement<S> | R<S> | A<T> | On<S, T>;
 type On<S, T> = {| _: "on", v: N1<ORA<S, T>, A<T>> |};

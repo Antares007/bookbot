@@ -1,8 +1,6 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
-export type P<-O> = (O) => void;
-export type N<+O> = (P<O>) => void;
-export type N1<+O, -B> = (P<O>, B) => void;
+import type { P, N, N1 } from "./NP.js";
 
 export type Eo = Eend | Etext | Eelement | Edispose | Erender;
 
