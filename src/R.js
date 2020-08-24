@@ -2,9 +2,9 @@
 import { static_cast } from "./static_cast.js";
 import type { P, N, N1 } from "./NP";
 import * as E from "./E.js";
-import type { Eo } from "./E.js";
+import type { Eo, Eend, Etext, Eelement, Edispose } from "./E.js";
 
-export type Ro<S> = Rreduce<S> | Relement<S> | Eo;
+export type Ro<S> = Rreduce<S> | Relement<S> | Eo | N1<Ro<S>, Element>;
 
 export type Rreduce<S> = {| _: "Rreduce", v: (S) => S |};
 export type Relement<S> = {|
@@ -29,16 +29,21 @@ export function element<S>(
 }
 export function ring<S>(Rreduceo: P<Rreduce<S>>): (N<Ro<S>>) => N<Eo> {
   return (nar: N<Ro<S>>) => (Eo: P<Eo>) => {
-    nar(function Rring_pmap(x: Ro<S>) {
-      if ("Rreduce" === x._) {
+    nar(function Ro(x: Ro<S>) {
+      if ("function" === typeof x) {
+        Eo(function nar(o, elm) {
+          x(Ro, elm);
+        });
+      } else if ("Rreduce" === x._) {
         Rreduceo(x);
       } else if ("Relement" === x._) {
         E.element(
           x.v.tag,
           function Rring_apply_elm(Eo, elm) {
-            ring(Rreduceo)(function Rring_apply_elm_narRo(Ro) {
+            ring(Rreduceo)(Rring_apply_elm_narRo)(Eo);
+            function Rring_apply_elm_narRo(Ro) {
               x.v.nar(Ro, elm);
-            })(Eo);
+            }
           },
           x.v.key
         )(Eo);
@@ -49,7 +54,7 @@ export function ring<S>(Rreduceo: P<Rreduce<S>>): (N<Ro<S>>) => N<Eo> {
   };
 }
 export function make<S>(Rreduceo: P<Rreduce<S>>, elm: Element): P<Ro<S>> {
-  const Eo = E.makeElementPith(elm);
+  const Eo = E.make(elm);
   var Ro;
   ring(Rreduceo)(function Rmake_nar(Ro_) {
     Ro = Ro_;

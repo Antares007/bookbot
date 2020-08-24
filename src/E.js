@@ -2,13 +2,12 @@
 import { static_cast } from "./static_cast.js";
 import type { P, N, N1 } from "./NP.js";
 
-export type Eo = Eend | Etext | Eelement | Edispose | Erender;
+export type Eo = Eend | Etext | Eelement | Edispose | N1<Eo, Element>;
 
 export type Eend = {| _: "Eend", v: void |};
 export type Etext = {| _: "Etext", v: string |};
 export type Eelement = {| _: "Eelement", v: t |};
 export type Edispose = {| _: "Edispose", v: () => void |};
-export type Erender = {| _: "Erender", v: N1<Eo, Element> |};
 type t = {
   ctor: () => Element,
   eq: (Node) => boolean,
@@ -49,11 +48,7 @@ export function dispose(dispose: () => void): N<Edispose> {
   const d = { _: ("Edispose": "Edispose"), v: dispose };
   return (o) => o(d);
 }
-export function render(v: N1<Eo, Element>): N<Erender> {
-  const orender = { _: "Erender", v };
-  return (o) => o(orender);
-}
-export function makeElementPith(elm: Element, depth: number = 0): P<Eo> {
+export function make(elm: Element, depth: number = 0): P<Eo> {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths: Array<?(Eo) => void> = [];
@@ -61,12 +56,11 @@ export function makeElementPith(elm: Element, depth: number = 0): P<Eo> {
   const disposables: Array<Edispose> = [];
   var prev;
   return function pith(x) {
-    if (x._ === "Erender") {
+    if (typeof x === "function") {
       log("P" + depth, x, elm);
       if (prev === x) return;
       prev = x;
-      x.v(pith, elm);
-      text("")(pith);
+      x(pith, elm);
       end()(pith);
     } else {
       log("P" + depth, x, elm);
@@ -117,20 +111,17 @@ export function makeElementPith(elm: Element, depth: number = 0): P<Eo> {
             }
             log("reuse" + childNodes[i].nodeName);
             log("create" + childNodes[i].nodeName + "()");
-            ob = makeElementPith(
-              static_cast<Element>(childNodes[i]),
-              depth + 1
-            );
+            ob = make(static_cast<Element>(childNodes[i]), depth + 1);
             childPiths.splice(index, 0, ob);
-            render(x.v.nar)(ob);
+            ob(x.v.nar);
             return;
           }
         const child = elm.insertBefore(x.v.ctor(), childNodes[index]);
         log("create" + child.nodeName);
         log("create" + child.nodeName + "()");
-        const ob = makeElementPith(child, depth + 1);
+        const ob = make(child, depth + 1);
         childPiths.splice(index, 0, ob);
-        render(x.v.nar)(ob);
+        ob(x.v.nar);
       } else {
         const index = disposables_count++;
         const l = disposables.length;
