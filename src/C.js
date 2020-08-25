@@ -11,32 +11,44 @@ import type { Ao } from "./A.js";
 var state = { n: 9 };
 
 const o = R.make((r) => {
+  const oldstate = state;
   state = r.v(state);
+  if (state !== oldstate) console.info(state);
 }, (document.body = document.createElement("body")));
-
-const C = (depth = 1, key: string = "C", init? = { n: 9 }): N<Ro<*>> => (Ro) =>
-  R.element("div", function (o) {
-    R.element(
-      "div",
-      A.ring(console.log.bind(console))((o) => {
-        A.value(1)(o);
-      })
-    )(o);
-    R.element("button", function (o) {
-      E.text("+")(o);
-      depth > 0 && C(depth - 1, key + "+")(o);
-    })(o);
-    R.element("button", function (o) {
-      E.text("-")(o);
-      depth > 0 && C(depth - 1, key + "-")(o);
-    })(o);
-    R.reduce((s) => {
-      R.element("div", E.text(s.n + ""))(o);
-      return s;
-    })(o);
-  })(function map({ v }) {
-    R.element(v.tag, v.nar, key + depth)(Ro);
+const button = (nar, l: MouseEventHandler) =>
+  R.element("button", function (o, elm) {
+    elm.addEventListener("click", l);
+    E.dispose(() => elm.removeEventListener("click", l));
+    nar(o, elm);
   });
+const C = (depth = 2, key: string = "C", init = { n: 9 }): N<Ro<*>> =>
+  R.element(
+    "div",
+    function (o) {
+      var op;
+      const l = (n) => {
+        var ns = init;
+        R.reduce((s) => (ns = { n: s.n + n }))(op);
+        E.text(ns.n + "")(op);
+        E.end()(op);
+      };
+      button(
+        function (o, elm) {
+          E.text("+")(o);
+          depth > 0 && R.map("+", { n: 2 })(C(depth - 1, key))(o, elm);
+        },
+        () => l(1)
+      )(o);
+      R.reduce((s) => {
+        R.element("div", (o) => {
+          op = o;
+          E.text(s.n + "")(o);
+        })(o);
+        return s;
+      })(o);
+    },
+    key + depth
+  );
 
 o(C());
 

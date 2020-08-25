@@ -141,5 +141,5 @@ export function make(elm: Element, depth: number = 0): P<Eo> {
 }
 function empty(o) {}
 function log(...a) {
-  // console.info(...a);
+  console.info(...a);
 }

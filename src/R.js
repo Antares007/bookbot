@@ -27,8 +27,10 @@ export function element<S>(
   const vRelement = { _: "Relement", v: { tag, nar, key } };
   return (o) => o(vRelement);
 }
-export function ring<S>(Rreduceo: P<Rreduce<S>>): (N<Ro<S>>) => N<Eo> {
-  return (nar: N<Ro<S>>) => (Eo: P<Eo>) => {
+export function ring<S>(
+  Rreduceo: P<Rreduce<S>>
+): (N1<Ro<S>, Element>) => N1<Eo, Element> {
+  return (nar: N1<Ro<S>, Element>) => (Eo: P<Eo>, elm) => {
     nar(function Ro(x: Ro<S>) {
       if ("function" === typeof x) {
         Eo(function nar(o, elm) {
@@ -37,15 +39,11 @@ export function ring<S>(Rreduceo: P<Rreduce<S>>): (N<Ro<S>>) => N<Eo> {
       } else if ("Rreduce" === x._) {
         Rreduceo(x);
       } else if ("Relement" === x._) {
-        E.element(
-          x.v.tag,
-          (Eo, elm) => ring(Rreduceo)((Ro) => x.v.nar(Ro, elm))(Eo),
-          x.v.key
-        )(Eo);
+        E.element(x.v.tag, ring(Rreduceo)(x.v.nar), x.v.key)(Eo);
       } else {
         Eo(x);
       }
-    });
+    }, elm);
   };
 }
 export function make<S>(Rreduceo: P<Rreduce<S>>, elm: Element): P<Ro<S>> {
@@ -53,7 +51,7 @@ export function make<S>(Rreduceo: P<Rreduce<S>>, elm: Element): P<Ro<S>> {
   var Ro;
   ring(Rreduceo)(function Rmake_nar(Ro_) {
     Ro = Ro_;
-  })(Eo);
+  })(Eo, elm);
   return function (x) {
     Ro(x);
   };
@@ -72,10 +70,14 @@ export function map<A: { ... }, B>(
           const oldb = a[key] || b;
           const newb = v(oldb);
           if (oldb === newb) return a;
-          else return { ...a, [key]: newb };
+          return { ...a, [key]: newb };
         })(roa);
+      } else if ("Relement" === x._) {
+        const { v } = x;
+        element(v.tag, map(key, b)(v.nar), v.key)(roa);
+      } else {
+        roa(x);
       }
-      //
     }, elm);
   };
 }
