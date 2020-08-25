@@ -17,35 +17,30 @@ export type Aelement<T> = {|
   },
 |};
 export function value<T>(v: T): N<Avalue<T>> {
-  const Rreduce = { _: "Avalue", v };
-  return (o) => o(Rreduce);
+  const vAvalue = { _: "Avalue", v };
+  return (o) => o(vAvalue);
 }
 export function element<T>(
   tag: string,
   nar: N1<Ao<T>, Element>,
   key?: string
 ): N<Aelement<T>> {
-  const Aelement = { _: "Aelement", v: { tag, nar, key } };
-  return (o) => o(Aelement);
+  const vAelement = { _: "Aelement", v: { tag, nar, key } };
+  return (o) => o(vAelement);
 }
 export function ring<S>(Avalueo: P<Avalue<S>>): (N<Ao<S>>) => N<Eo> {
   return (nar) => (Eo) => {
-    nar(function Ro(x) {
+    nar(function Ao(x) {
       if ("function" === typeof x) {
         Eo(function nar(o, elm) {
-          x(Ro, elm);
+          x(Ao, elm);
         });
       } else if ("Avalue" === x._) {
         Avalueo(x);
       } else if ("Aelement" === x._) {
         E.element(
           x.v.tag,
-          function Enar(Eo, elm) {
-            ring(Avalueo)(Rnar)(Eo);
-            function Rnar(Ro) {
-              x.v.nar(Ro, elm);
-            }
-          },
+          (Eo, elm) => ring(Avalueo)((Ao) => x.v.nar(Ao, elm))(Eo),
           x.v.key
         )(Eo);
       } else {

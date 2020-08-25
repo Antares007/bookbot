@@ -13,13 +13,13 @@ type t = {
   eq: (Node) => boolean,
   nar: N1<Eo, Element>,
 };
-
+const vEend = { _: "Eend", v: void 0 };
 export function end(): N<Eend> {
-  return (o) => o({ _: "Eend", v: void 0 });
+  return (o) => o(vEend);
 }
 export function text(v: string): N<Etext> {
-  const Etext = { _: "Etext", v };
-  return (o) => o(Etext);
+  const vEtext = { _: "Etext", v };
+  return (o) => o(vEtext);
 }
 export function element(
   tag: string,
@@ -27,7 +27,7 @@ export function element(
   key?: string
 ): N<Eelement> {
   const TAG = tag.toUpperCase();
-  const elm = {
+  const vEelement = {
     _: "Eelement",
     v: {
       ctor: () => {
@@ -42,11 +42,11 @@ export function element(
       nar: bark || empty,
     },
   };
-  return (o) => o(elm);
+  return (o) => o(vEelement);
 }
 export function dispose(dispose: () => void): N<Edispose> {
-  const d = { _: ("Edispose": "Edispose"), v: dispose };
-  return (o) => o(d);
+  const vEdispose = { _: ("Edispose": "Edispose"), v: dispose };
+  return (o) => o(vEdispose);
 }
 export function make(elm: Element, depth: number = 0): P<Eo> {
   var childs_count = 0;

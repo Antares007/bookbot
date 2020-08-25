@@ -16,16 +16,16 @@ export type Relement<S> = {|
   },
 |};
 export function reduce<S>(v: (S) => S): N<Rreduce<S>> {
-  const Rreduce = { _: "Rreduce", v };
-  return (o) => o(Rreduce);
+  const vRreduce = { _: "Rreduce", v };
+  return (o) => o(vRreduce);
 }
 export function element<S>(
   tag: string,
   nar: N1<Ro<S>, Element>,
   key?: string
 ): N<Relement<S>> {
-  const Relement = { _: "Relement", v: { tag, nar, key } };
-  return (o) => o(Relement);
+  const vRelement = { _: "Relement", v: { tag, nar, key } };
+  return (o) => o(vRelement);
 }
 export function ring<S>(Rreduceo: P<Rreduce<S>>): (N<Ro<S>>) => N<Eo> {
   return (nar: N<Ro<S>>) => (Eo: P<Eo>) => {
@@ -39,12 +39,7 @@ export function ring<S>(Rreduceo: P<Rreduce<S>>): (N<Ro<S>>) => N<Eo> {
       } else if ("Relement" === x._) {
         E.element(
           x.v.tag,
-          function Rring_apply_elm(Eo, elm) {
-            ring(Rreduceo)(Rring_apply_elm_narRo)(Eo);
-            function Rring_apply_elm_narRo(Ro) {
-              x.v.nar(Ro, elm);
-            }
-          },
+          (Eo, elm) => ring(Rreduceo)((Ro) => x.v.nar(Ro, elm))(Eo),
           x.v.key
         )(Eo);
       } else {
