@@ -2,8 +2,9 @@
 import { static_cast } from "./static_cast.js";
 import type { P, N } from "./NP.js";
 
-export type Eo = Eend | Etext | Eelement | Edispose | N<Eo>;
+export type Eo = Eget | Eend | Etext | Eelement | Edispose | N<Eo>;
 
+export type Eget = {| _: "Eget", v: (Element) => void |};
 export type Eend = {| _: "Eend", v: void |};
 export type Etext = {| _: "Etext", v: string |};
 export type Eelement = {| _: "Eelement", v: t |};
@@ -13,6 +14,10 @@ type t = {
   eq: (Node) => boolean,
   nar: N<Eo>,
 };
+export function get(v: (Element) => void): N<Eget> {
+  const vEget = { _: "Eget", v };
+  return (o) => o(vEget);
+}
 const vEend = { _: "Eend", v: void 0 };
 export function end(): N<Eend> {
   return (o) => o(vEend);
@@ -118,6 +123,8 @@ export function make(elm: Element, depth: number = 0): P<Eo> {
         const ob = make(child, depth + 1);
         childPiths.splice(index, 0, ob);
         ob(x.v.nar);
+      } else if ("Eget" === x._) {
+        x.v(elm);
       } else {
         const index = disposables_count++;
         const l = disposables.length;
@@ -137,5 +144,5 @@ export function make(elm: Element, depth: number = 0): P<Eo> {
 }
 function empty(o) {}
 function log(...a) {
-  console.info(...a);
+  //console.info(...a);
 }

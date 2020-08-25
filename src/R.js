@@ -60,8 +60,8 @@ export function map<A: { ... }, B>(key: string, b: B): (N<Ro<B>>) => N<Ro<A>> {
       if ("function" === typeof x) {
         map(key, b)(x)(roa);
       } else if ("Rreduce" === x._) {
-        const { v } = x;
         reduce((a) => {
+          const { v } = x;
           const oldb = a[key] || b;
           const newb = v(oldb);
           if (oldb === newb) return a;
