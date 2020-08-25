@@ -2,11 +2,8 @@
 import { static_cast } from "./static_cast.js";
 import type { P, N } from "./NP";
 import * as E from "./E.js";
-import type { Eo } from "./E.js";
 import * as R from "./R.js";
-import type { Ro } from "./R.js";
-import * as A from "./A.js";
-import type { Ao } from "./A.js";
+import type { Ro, Relement } from "./R.js";
 
 var state = { n: 9, "+": { n: 3 }, "-": { n: 6 } };
 
@@ -15,7 +12,7 @@ const o = R.make((r) => {
   state = r.v(state);
   if (state !== oldstate) console.info(state);
 }, (document.body = document.createElement("body")));
-const button = (nar, l: MouseEventHandler) =>
+const button = <S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> =>
   R.element("button", function (o) {
     E.get((elm) => {
       elm.addEventListener("click", l);
@@ -23,7 +20,7 @@ const button = (nar, l: MouseEventHandler) =>
     })(o);
     nar(o);
   });
-const C = (depth = 2, key: string = "C", init = { n: 0 }): N<Ro<*>> =>
+const C = (depth: number = 2, init: {| n: number |} = { n: 0 }): N<Ro<*>> =>
   R.element(
     "div",
     function (o) {
@@ -38,14 +35,14 @@ const C = (depth = 2, key: string = "C", init = { n: 0 }): N<Ro<*>> =>
       button(
         function (o, elm) {
           E.text("+")(o);
-          depth > 0 && R.map("+", init)(C(depth - 1, key))(o);
+          depth > 0 && R.map("+", init)(C(depth - 1))(o);
         },
         () => l(1)
       )(o);
       button(
         function (o, elm) {
           E.text("-")(o);
-          depth > 0 && R.map("-", init)(C(depth - 1, key))(o);
+          depth > 0 && R.map("-", init)(C(depth - 1))(o);
         },
         () => l(-1)
       )(o);
@@ -57,9 +54,9 @@ const C = (depth = 2, key: string = "C", init = { n: 0 }): N<Ro<*>> =>
         })(o);
       })(o);
     },
-    key + depth
+    "C" + depth
   );
 
 o(C());
 
-Object.assign(window, { o, C, E, R, A });
+Object.assign(window, { o, C, E, R });
