@@ -1,8 +1,8 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
-import type { P, N, N1 } from "./NP.js";
+import type { P, N } from "./NP.js";
 
-export type Eo = Eend | Etext | Eelement | Edispose | N1<Eo, Element>;
+export type Eo = Eend | Etext | Eelement | Edispose | N<Eo>;
 
 export type Eend = {| _: "Eend", v: void |};
 export type Etext = {| _: "Etext", v: string |};
@@ -11,7 +11,7 @@ export type Edispose = {| _: "Edispose", v: () => void |};
 type t = {
   ctor: () => Element,
   eq: (Node) => boolean,
-  nar: N1<Eo, Element>,
+  nar: N<Eo>,
 };
 const vEend = { _: "Eend", v: void 0 };
 export function end(): N<Eend> {
@@ -21,11 +21,7 @@ export function text(v: string): N<Etext> {
   const vEtext = { _: "Etext", v };
   return (o) => o(vEtext);
 }
-export function element(
-  tag: string,
-  bark: ?N1<Eo, Element>,
-  key?: string
-): N<Eelement> {
+export function element(tag: string, bark: ?N<Eo>, key?: string): N<Eelement> {
   const TAG = tag.toUpperCase();
   const vEelement = {
     _: "Eelement",
@@ -60,7 +56,7 @@ export function make(elm: Element, depth: number = 0): P<Eo> {
       log("P" + depth, x, elm);
       if (prev === x) return;
       prev = x;
-      x(pith, elm);
+      x(pith);
       end()(pith);
     } else {
       log("P" + depth, x, elm);

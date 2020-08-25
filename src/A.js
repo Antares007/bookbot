@@ -1,19 +1,19 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
-import type { P, N, N1 } from "./NP";
+import type { P, N } from "./NP";
 import * as E from "./E.js";
 import type { Eo } from "./E.js";
 import * as R from "./R.js";
 import type { Ro } from "./R.js";
 
-export type Ao<T> = Avalue<T> | Aelement<T> | Eo | N1<Ao<T>, Element>;
+export type Ao<T> = Avalue<T> | Aelement<T> | Eo | N<Ao<T>>;
 export type Avalue<+T> = {| _: "Avalue", +v: T |};
 export type Aelement<T> = {|
   _: "Aelement",
   v: {
     tag: string,
     key?: string,
-    nar: N1<Ao<T>, Element>,
+    nar: N<Ao<T>>,
   },
 |};
 export function value<T>(v: T): N<Avalue<T>> {
@@ -22,7 +22,7 @@ export function value<T>(v: T): N<Avalue<T>> {
 }
 export function element<T>(
   tag: string,
-  nar: N1<Ao<T>, Element>,
+  nar: N<Ao<T>>,
   key?: string
 ): N<Aelement<T>> {
   const vAelement = { _: "Aelement", v: { tag, nar, key } };
@@ -32,15 +32,15 @@ export function ring<S>(Avalueo: P<Avalue<S>>): (N<Ao<S>>) => N<Eo> {
   return (nar) => (Eo) => {
     nar(function Ao(x) {
       if ("function" === typeof x) {
-        Eo(function nar(o, elm) {
-          x(Ao, elm);
+        Eo(function nar(o) {
+          x(Ao);
         });
       } else if ("Avalue" === x._) {
         Avalueo(x);
       } else if ("Aelement" === x._) {
         E.element(
           x.v.tag,
-          (Eo, elm) => ring(Avalueo)((Ao) => x.v.nar(Ao, elm))(Eo),
+          (Eo) => ring(Avalueo)((Ao) => x.v.nar(Ao))(Eo),
           x.v.key
         )(Eo);
       } else {

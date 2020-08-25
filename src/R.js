@@ -1,10 +1,10 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
-import type { P, N, N1 } from "./NP";
+import type { P, N } from "./NP";
 import * as E from "./E.js";
 import type { Eo, Eend, Etext, Eelement, Edispose } from "./E.js";
 
-export type Ro<S> = Rreduce<S> | Relement<S> | Eo | N1<Ro<S>, Element>;
+export type Ro<S> = Rreduce<S> | Relement<S> | Eo | N<Ro<S>>;
 
 export type Rreduce<S> = {| _: "Rreduce", v: (S) => S |};
 export type Relement<S> = {|
@@ -12,7 +12,7 @@ export type Relement<S> = {|
   v: {
     tag: string,
     key?: string,
-    nar: N1<Ro<S>, Element>,
+    nar: N<Ro<S>>,
   },
 |};
 export function reduce<S>(v: (S) => S): N<Rreduce<S>> {
@@ -21,20 +21,18 @@ export function reduce<S>(v: (S) => S): N<Rreduce<S>> {
 }
 export function element<S>(
   tag: string,
-  nar: N1<Ro<S>, Element>,
+  nar: N<Ro<S>>,
   key?: string
 ): N<Relement<S>> {
   const vRelement = { _: "Relement", v: { tag, nar, key } };
   return (o) => o(vRelement);
 }
-export function ring<S>(
-  Rreduceo: P<Rreduce<S>>
-): (N1<Ro<S>, Element>) => N1<Eo, Element> {
-  return (nar: N1<Ro<S>, Element>) => (Eo: P<Eo>, elm) => {
+export function ring<S>(Rreduceo: P<Rreduce<S>>): (N<Ro<S>>) => N<Eo> {
+  return (nar: N<Ro<S>>) => (Eo: P<Eo>) => {
     nar(function Ro(x: Ro<S>) {
       if ("function" === typeof x) {
-        Eo(function nar(o, elm) {
-          x(Ro, elm);
+        Eo(function nar(o) {
+          x(Ro);
         });
       } else if ("Rreduce" === x._) {
         Rreduceo(x);
@@ -43,7 +41,7 @@ export function ring<S>(
       } else {
         Eo(x);
       }
-    }, elm);
+    });
   };
 }
 export function make<S>(Rreduceo: P<Rreduce<S>>, elm: Element): P<Ro<S>> {
@@ -51,19 +49,16 @@ export function make<S>(Rreduceo: P<Rreduce<S>>, elm: Element): P<Ro<S>> {
   var Ro;
   ring(Rreduceo)(function Rmake_nar(Ro_) {
     Ro = Ro_;
-  })(Eo, elm);
+  })(Eo);
   return function (x) {
     Ro(x);
   };
 }
-export function map<A: { ... }, B>(
-  key: string,
-  b: B
-): (N1<Ro<B>, Element>) => N1<Ro<A>, Element> {
-  return (nar) => (roa, elm) => {
+export function map<A: { ... }, B>(key: string, b: B): (N<Ro<B>>) => N<Ro<A>> {
+  return (nar) => (roa) => {
     nar(function rob(x) {
       if ("function" === typeof x) {
-        map(key, b)(x)(roa, elm);
+        map(key, b)(x)(roa);
       } else if ("Rreduce" === x._) {
         const { v } = x;
         reduce((a) => {
@@ -78,6 +73,6 @@ export function map<A: { ... }, B>(
       } else {
         roa(x);
       }
-    }, elm);
+    });
   };
 }

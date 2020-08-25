@@ -1,6 +1,6 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
-import type { P, N, N1 } from "./NP";
+import type { P, N } from "./NP";
 import * as E from "./E.js";
 import type { Eo } from "./E.js";
 import * as R from "./R.js";
@@ -16,10 +16,10 @@ const o = R.make((r) => {
   if (state !== oldstate) console.info(state);
 }, (document.body = document.createElement("body")));
 const button = (nar, l: MouseEventHandler) =>
-  R.element("button", function (o, elm) {
-    elm.addEventListener("click", l);
-    E.dispose(() => elm.removeEventListener("click", l));
-    nar(o, elm);
+  R.element("button", function (o) {
+    //elm.addEventListener("click", l);
+    //E.dispose(() => elm.removeEventListener("click", l));
+    nar(o);
   });
 const C = (depth = 2, key: string = "C", init = { n: 9 }): N<Ro<*>> =>
   R.element(
@@ -35,7 +35,7 @@ const C = (depth = 2, key: string = "C", init = { n: 9 }): N<Ro<*>> =>
       button(
         function (o, elm) {
           E.text("+")(o);
-          depth > 0 && R.map("+", { n: 2 })(C(depth - 1, key))(o, elm);
+          depth > 0 && R.map("+", { n: 2 })(C(depth - 1, key))(o);
         },
         () => l(1)
       )(o);
