@@ -14,31 +14,29 @@ const o = R.make((r) => {
   state = r.v(state);
 }, (document.body = document.createElement("body")));
 
-const C = (depth = 1): N<Ro<*>> =>
-  R.element(
-    "div",
-    function (o) {
-      R.element(
-        "div",
-        A.ring((x) => {})((o) => {
-          A.value(1)(o);
-        })
-      )(o);
-      R.element("button", function (o) {
-        E.text("+")(o);
-        depth > 0 && C(depth - 1)(o);
-      })(o);
-      R.element("button", function (o) {
-        E.text("-")(o);
-        depth > 0 && C(depth - 1)(o);
-      })(o);
-      R.reduce((s) => {
-        R.element("div", E.text(s.n + ""))(o);
-        return s;
-      })(o);
-    },
-    "C" + depth
-  );
+const C = (depth = 1, key: string = "C", init? = { n: 9 }): N<Ro<*>> => (Ro) =>
+  R.element("div", function (o) {
+    R.element(
+      "div",
+      A.ring(console.log.bind(console))((o) => {
+        A.value(1)(o);
+      })
+    )(o);
+    R.element("button", function (o) {
+      E.text("+")(o);
+      depth > 0 && C(depth - 1, key + "+")(o);
+    })(o);
+    R.element("button", function (o) {
+      E.text("-")(o);
+      depth > 0 && C(depth - 1, key + "-")(o);
+    })(o);
+    R.reduce((s) => {
+      R.element("div", E.text(s.n + ""))(o);
+      return s;
+    })(o);
+  })(function map({ v }) {
+    R.element(v.tag, v.nar, key + depth)(Ro);
+  });
 
 o(C());
 

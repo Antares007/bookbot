@@ -58,3 +58,24 @@ export function make<S>(Rreduceo: P<Rreduce<S>>, elm: Element): P<Ro<S>> {
     Ro(x);
   };
 }
+export function map<A: { ... }, B>(
+  key: string,
+  b: B
+): (N1<Ro<B>, Element>) => N1<Ro<A>, Element> {
+  return (nar) => (roa, elm) => {
+    nar(function rob(x) {
+      if ("function" === typeof x) {
+        map(key, b)(x)(roa, elm);
+      } else if ("Rreduce" === x._) {
+        const { v } = x;
+        reduce((a) => {
+          const oldb = a[key] || b;
+          const newb = v(oldb);
+          if (oldb === newb) return a;
+          else return { ...a, [key]: newb };
+        })(roa);
+      }
+      //
+    }, elm);
+  };
+}
