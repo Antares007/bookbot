@@ -19,9 +19,7 @@ export function get(v: (Element) => void): N<Eget> {
   return (o) => o(vEget);
 }
 const vEend = { _: "Eend", v: void 0 };
-export function end(): N<Eend> {
-  return (o) => o(vEend);
-}
+export const end: N<Eend> = (o) => o(vEend);
 export function text(v: string): N<Etext> {
   const vEtext = { _: "Etext", v };
   return (o) => o(vEtext);
@@ -62,7 +60,7 @@ export function make(elm: Element, depth: number = 0): P<Eo> {
       if (prev === x) return;
       prev = x;
       x(pith);
-      end()(pith);
+      end(pith);
     } else {
       log("P" + depth, x, elm);
       if ("Eend" === x._) {
@@ -74,7 +72,7 @@ export function make(elm: Element, depth: number = 0): P<Eo> {
         l = childPiths.length - childs_count;
         rez = childPiths.splice(childs_count, l);
         if (tmp.length || rez.length) log("eremove", tmp, rez);
-        for (let x of rez) x && end()(x);
+        for (let x of rez) x && end(x);
         childs_count = 0;
 
         l = disposables.length - disposables_count;

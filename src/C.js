@@ -20,7 +20,10 @@ const button = <S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> =>
     })(o);
     nar(o);
   });
-const C = (depth: number = 2, init: {| n: number |} = { n: 0 }): N<Ro<*>> =>
+const C = (
+  depth: number = 2,
+  init: {| n: number |} = { n: 0 }
+): N<Ro<{ n: number }>> =>
   R.element(
     "div",
     function (o) {
@@ -29,7 +32,7 @@ const C = (depth: number = 2, init: {| n: number |} = { n: 0 }): N<Ro<*>> =>
         R.reduce((s) => {
           const ns = { ...s, n: s.n + n };
           E.text(ns.n + "")(op);
-          E.end()(op);
+          E.end(op);
           return ns;
         })(op);
       button(
