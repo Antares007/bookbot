@@ -5,18 +5,19 @@ import * as E from "./E.js";
 import * as R from "./R.js";
 import type { Ro, Relement } from "./R.js";
 
-var state = { n: 9, "+": { n: 3 }, "-": { n: 6 } };
+var state = { n: 99, "+": { n: 33 }, "-": { n: 66 } };
 
 const o = R.make((r) => {
   const oldstate = state;
   state = r.v(state);
   if (state !== oldstate) console.info(state);
 }, (document.body = document.createElement("body")));
+
 const button = <S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> =>
   R.element("button", function (o) {
     E.get((elm) => {
       elm.addEventListener("click", l);
-      E.dispose(() => elm.removeEventListener("click", l));
+      E.dispose(() => elm.removeEventListener("click", l))(o);
     })(o);
     nar(o);
   });
@@ -36,14 +37,14 @@ const C = (
           return ns;
         })(op);
       button(
-        function (o, elm) {
+        function (o) {
           E.text("+")(o);
           depth > 0 && R.map("+", init)(C(depth - 1))(o);
         },
         () => l(1)
       )(o);
       button(
-        function (o, elm) {
+        function (o) {
           E.text("-")(o);
           depth > 0 && R.map("-", init)(C(depth - 1))(o);
         },

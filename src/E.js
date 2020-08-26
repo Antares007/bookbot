@@ -1,7 +1,7 @@
 // @flow strict
 import { static_cast } from "./static_cast.js";
 import type { P, N } from "./NP.js";
-
+const see = static_cast<number>("");
 export type Eo = Eget | Eend | Etext | Eelement | Edispose | N<Eo>;
 
 export type Eget = {| _: "Eget", v: (Element) => void |};
