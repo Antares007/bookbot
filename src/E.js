@@ -14,8 +14,8 @@ type t = {
   eq: (Node) => boolean,
   nar: N<Eo>,
 };
-export function get(v: (Element) => void): N<Eget> {
-  const vEget = { _: "Eget", v };
+export function get<T: Element>(v: (T) => void): N<Eget> {
+  const vEget = { _: "Eget", v: static_cast<(Element) => void>(v) };
   return (o) => o(vEget);
 }
 const vEend = { _: "Eend", v: void 0 };

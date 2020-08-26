@@ -39,7 +39,7 @@ const button = <S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> =>
     nar(o);
   });
 const C = (
-  depth: number = 2,
+  depth: number = 0,
   init: {| n: number |} = { n: 0 }
 ): N<Ro<{ n: number }>> => (o) => {
   R.element(
@@ -65,6 +65,18 @@ const C = (
       button(
         function (o) {
           width50percent(o);
+          const anim = (i) =>
+            E.get<HTMLElement>((elm) => {
+              elm.style.position = "relative";
+              elm.style.left = i + "px";
+              elm.style.fontSize = "8px";
+            })(o);
+          anim(0);
+          var id = requestAnimationFrame(function frame(t) {
+            anim(Math.sin(t) * 10);
+            id = requestAnimationFrame(frame);
+          });
+          E.dispose(() => cancelAnimationFrame(id))(o);
           E.text("-")(o);
           depth > 0 && R.map("-", init)(C(depth - 1))(o);
         },
