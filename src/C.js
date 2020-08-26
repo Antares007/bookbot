@@ -12,11 +12,11 @@ const o = R.make((r) => {
   state = r.v(state);
   if (state !== oldstate) console.info(state);
 }, (document.body = document.createElement("body")));
-const width50percent = E.get((elm) => {
-  static_cast<HTMLElement>(elm).style.width = "50%";
+const width50percent = E.get<HTMLElement>((elm) => {
+  elm.style.width = "50%";
 });
-const css = E.get((elm) => {
-  const s = static_cast<HTMLElement>(elm).style;
+const css = E.get<HTMLElement>((elm) => {
+  const s = elm.style;
   s.width = "50%";
   s.height = "1.5em";
   s.backgroundColor = "black";
@@ -30,8 +30,8 @@ const css = E.get((elm) => {
 });
 const button = <S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> =>
   R.element("button", function (o) {
-    E.get((elm) => {
-      const s = static_cast<HTMLElement>(elm).style;
+    E.get<HTMLElement>((elm) => {
+      const s = elm.style;
       s.borderRadius = "10px";
       elm.addEventListener("click", l);
       E.dispose(() => elm.removeEventListener("click", l))(o);
@@ -39,7 +39,8 @@ const button = <S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> =>
     nar(o);
   });
 const C = (
-  depth: number = 0,
+  depth: number = 3,
+  anim: boolean = false,
   init: {| n: number |} = { n: 0 }
 ): N<Ro<{ n: number }>> => (o) => {
   R.element(
@@ -57,28 +58,18 @@ const C = (
       button(
         function (o) {
           width50percent(o);
+          pstyles(anim)(o);
           E.text("+")(o);
-          depth > 0 && R.map("+", init)(C(depth - 1))(o);
+          depth > 0 && R.map("+", init)(C(depth - 1, anim))(o);
         },
         () => l(1)
       )(o);
       button(
         function (o) {
           width50percent(o);
-          const anim = (i) =>
-            E.get<HTMLElement>((elm) => {
-              elm.style.position = "relative";
-              elm.style.left = i + "px";
-              elm.style.fontSize = "8px";
-            })(o);
-          anim(0);
-          var id = requestAnimationFrame(function frame(t) {
-            anim(Math.sin(t) * 10);
-            id = requestAnimationFrame(frame);
-          });
-          E.dispose(() => cancelAnimationFrame(id))(o);
+          mstyles(anim)(o);
           E.text("-")(o);
-          depth > 0 && R.map("-", init)(C(depth - 1))(o);
+          depth > 0 && R.map("-", init)(C(depth - 1, anim))(o);
         },
         () => l(-1)
       )(o);
@@ -91,10 +82,56 @@ const C = (
         })(o);
       })(o);
     },
-    "C" + depth
+    "C" + depth + anim.toString()
   )(o);
 };
-
-o(C());
+o((o: P<Ro<*>>) => {
+  C(0)(o);
+  C(1)(o);
+  C(2)(o);
+  C(3)(o);
+});
 
 Object.assign(window, { o, C, E, R });
+function pstyles(anim) {
+  return E.get<HTMLElement>((elm) => {
+    elm.style.position = "relative";
+    elm.style.fontSize = "18px";
+    var id = requestAnimationFrame(frame);
+    var t = 0;
+    function frame() {
+      t = t > 6.28 ? 0 : t + 0.1;
+      elm.style.borderRadius = Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
+      if (anim) {
+        elm.style.left = Math.floor(Math.cos(t) * 10) + "px";
+        elm.style.top = Math.floor(Math.sin(t) * 10) + "px";
+      }
+      elm.style.backgroundColor = `rgb(255, ${
+        Math.floor(Math.cos(t) * 30) + 100
+      }, ${Math.floor(Math.sin(t) * 30) + 100})`;
+      id = requestAnimationFrame(frame);
+    }
+    E.dispose(() => cancelAnimationFrame(id))(o);
+  });
+}
+function mstyles(anim) {
+  return E.get<HTMLElement>((elm) => {
+    elm.style.position = "relative";
+    elm.style.fontSize = "18px";
+    var id = requestAnimationFrame(frame);
+    var t = 0;
+    function frame() {
+      t = t > 6.28 ? 0 : t + 0.1;
+      elm.style.borderRadius = Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
+      if (anim) {
+        elm.style.left = Math.floor(Math.sin(t) * 10) + "px";
+        elm.style.top = Math.floor(Math.cos(t) * 10) + "px";
+      }
+      elm.style.backgroundColor = `rgb(${Math.floor(Math.cos(t) * 30) + 100}, ${
+        Math.floor(Math.sin(t) * 30) + 100
+      }, 255)`;
+      id = requestAnimationFrame(frame);
+    }
+    E.dispose(() => cancelAnimationFrame(id))(o);
+  });
+}
