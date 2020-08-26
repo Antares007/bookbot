@@ -12,10 +12,27 @@ const o = R.make((r) => {
   state = r.v(state);
   if (state !== oldstate) console.info(state);
 }, (document.body = document.createElement("body")));
-
+const width50percent = E.get((elm) => {
+  static_cast<HTMLElement>(elm).style.width = "50%";
+});
+const css = E.get((elm) => {
+  const s = static_cast<HTMLElement>(elm).style;
+  s.width = "50%";
+  s.height = "1.5em";
+  s.backgroundColor = "black";
+  s.color = "white";
+  s.marginLeft = "auto";
+  s.marginRight = "auto";
+  s.textAlign = "center";
+  s.borderRadius = "10px";
+  s.marginTop = "10px";
+  s.marginBottom = "10px";
+});
 const button = <S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> =>
   R.element("button", function (o) {
     E.get((elm) => {
+      const s = static_cast<HTMLElement>(elm).style;
+      s.borderRadius = "10px";
       elm.addEventListener("click", l);
       E.dispose(() => elm.removeEventListener("click", l))(o);
     })(o);
@@ -24,7 +41,7 @@ const button = <S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> =>
 const C = (
   depth: number = 2,
   init: {| n: number |} = { n: 0 }
-): N<Ro<{ n: number }>> =>
+): N<Ro<{ n: number }>> => (o) => {
   R.element(
     "div",
     function (o) {
@@ -36,8 +53,10 @@ const C = (
           E.end(op);
           return ns;
         })(op);
+
       button(
         function (o) {
+          width50percent(o);
           E.text("+")(o);
           depth > 0 && R.map("+", init)(C(depth - 1))(o);
         },
@@ -45,12 +64,14 @@ const C = (
       )(o);
       button(
         function (o) {
+          width50percent(o);
           E.text("-")(o);
           depth > 0 && R.map("-", init)(C(depth - 1))(o);
         },
         () => l(-1)
       )(o);
       R.element("div", (o) => {
+        css(o);
         R.reduce((s) => {
           op = o;
           E.text(s.n + "")(o);
@@ -59,7 +80,8 @@ const C = (
       })(o);
     },
     "C" + depth
-  );
+  )(o);
+};
 
 o(C());
 
