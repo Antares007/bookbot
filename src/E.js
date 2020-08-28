@@ -38,7 +38,7 @@ export function element(tag: string, bark: ?N<Eo>, key?: string): N<Eelement> {
         n instanceof HTMLElement &&
         n.nodeName === TAG &&
         (!key || n.getAttribute("key") === key),
-      nar: bark || empty,
+      nar: bark || ((o) => {}),
     },
   };
   return (o) => o(vEelement);
@@ -54,13 +54,16 @@ export function make(elm: Element, depth: number = 0): P<Eo> {
   var disposables_count = 0;
   const disposables: Array<Edispose> = [];
   var prev;
+  function log(...a) {
+    //console.info(...a);
+  }
   return function pith(x) {
     if (typeof x === "function") {
       log("P" + depth, x, elm);
       if (prev === x) return;
       prev = x;
       x(pith);
-      end(pith);
+      pith({ _: "Eend", v: void 0 });
     } else {
       log("P" + depth, x, elm);
       if ("Eend" === x._) {
@@ -72,7 +75,7 @@ export function make(elm: Element, depth: number = 0): P<Eo> {
         l = childPiths.length - childs_count;
         rez = childPiths.splice(childs_count, l);
         if (tmp.length || rez.length) log("eremove", tmp, rez);
-        for (let x of rez) x && end(x);
+        for (let x of rez) x && x({ _: "Eend", v: void 0 });
         childs_count = 0;
 
         l = disposables.length - disposables_count;
@@ -92,7 +95,7 @@ export function make(elm: Element, depth: number = 0): P<Eo> {
             return;
           }
         elm.insertBefore(document.createTextNode(x.v), childNodes[index]);
-        childPiths.splice(index, 0, empty);
+        childPiths.splice(index, 0, () => {});
       } else if ("Eelement" === x._) {
         const index = childs_count++;
         const l = childNodes.length;
@@ -139,8 +142,4 @@ export function make(elm: Element, depth: number = 0): P<Eo> {
       }
     }
   };
-}
-function empty(o) {}
-function log(...a) {
-  //console.info(...a);
 }

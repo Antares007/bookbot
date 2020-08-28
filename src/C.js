@@ -52,23 +52,23 @@ const C = (
       )(o);
       var op;
       R.element("div", (o) => {
+        op = o;
         css(o);
         R.reduce((s) => {
-          op = o;
           E.text(s.n + "")(o);
           return s;
         })(o);
       })(o);
-      const action = (n) =>
-        [
-          R.reduce(function (s) {
-            return { ...s, n: s.n + n };
-          }),
-          R.reduce((s) => {
-            op(E.text(s.n + ""));
-            return s;
-          }),
-        ].forEach(o);
+      const action = (n) => {
+        R.reduce(function (s) {
+          return { ...s, n: s.n + n };
+        })(o);
+        R.reduce((s) => {
+          E.text(s.n + "")(op);
+          E.end(op);
+          return s;
+        })(o);
+      };
     },
     "C" + depth + anim.toString()
   )(o);
