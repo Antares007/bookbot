@@ -12,24 +12,9 @@ const o = R.make((r) => {
   state = r.v(state);
   if (state !== oldstate) console.info(state);
 }, (document.body = document.createElement("body")));
-const width50percent = E.get<HTMLElement>((elm) => {
-  elm.style.width = "50%";
-});
-const css = E.get<HTMLElement>((elm) => {
-  const s = elm.style;
-  s.width = "50%";
-  s.height = "1.5em";
-  s.backgroundColor = "black";
-  s.color = "white";
-  s.marginLeft = "auto";
-  s.marginRight = "auto";
-  s.textAlign = "center";
-  s.borderRadius = "10px";
-  s.marginTop = "10px";
-  s.marginBottom = "10px";
-});
-const button = <S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> =>
-  R.element("button", function (o) {
+
+function button<S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> {
+  return R.element("button", function (o) {
     E.get<HTMLElement>((elm) => {
       const s = elm.style;
       s.borderRadius = "10px";
@@ -38,6 +23,7 @@ const button = <S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> =>
     })(o);
     nar(o);
   });
+}
 const C = (
   depth: number = 3,
   anim: boolean = false,
@@ -46,15 +32,6 @@ const C = (
   R.element(
     "div",
     function (o) {
-      var op;
-      const l = (n) =>
-        R.reduce((s) => {
-          const ns = { ...s, n: s.n + n };
-          E.text(ns.n + "")(op);
-          E.end(op);
-          return ns;
-        })(op);
-
       button(
         function (o) {
           width50percent(o);
@@ -62,7 +39,7 @@ const C = (
           E.text("+")(o);
           depth > 0 && R.map("+", init)(C(depth - 1, anim))(o);
         },
-        () => l(1)
+        () => action(1)
       )(o);
       button(
         function (o) {
@@ -71,8 +48,9 @@ const C = (
           E.text("-")(o);
           depth > 0 && R.map("-", init)(C(depth - 1, anim))(o);
         },
-        () => l(-1)
+        () => action(-1)
       )(o);
+      var op;
       R.element("div", (o) => {
         css(o);
         R.reduce((s) => {
@@ -81,18 +59,26 @@ const C = (
           return s;
         })(o);
       })(o);
+      const action = (n) =>
+        [
+          R.reduce(function (s) {
+            return { ...s, n: s.n + n };
+          }),
+          R.reduce((s) => {
+            op(E.text(s.n + ""));
+            return s;
+          }),
+        ].forEach(o);
     },
     "C" + depth + anim.toString()
   )(o);
 };
 o((o: P<Ro<*>>) => {
-  C(0)(o);
-  C(1)(o);
   C(2)(o);
-  C(3)(o);
 });
 
 Object.assign(window, { o, C, E, R });
+
 function pstyles(anim) {
   return (o) =>
     E.get<HTMLElement>((elm) => {
@@ -136,4 +122,24 @@ function mstyles(anim) {
       }
       E.dispose(() => cancelAnimationFrame(id))(o);
     })(o);
+}
+function css(o) {
+  return E.get<HTMLElement>((elm) => {
+    const s = elm.style;
+    s.width = "50%";
+    s.height = "1.5em";
+    s.backgroundColor = "black";
+    s.color = "white";
+    s.marginLeft = "auto";
+    s.marginRight = "auto";
+    s.textAlign = "center";
+    s.borderRadius = "10px";
+    s.marginTop = "10px";
+    s.marginBottom = "10px";
+  })(o);
+}
+function width50percent(o) {
+  return E.get<HTMLElement>((elm) => {
+    elm.style.width = "50%";
+  })(o);
 }
