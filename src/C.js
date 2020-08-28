@@ -94,44 +94,46 @@ o((o: P<Ro<*>>) => {
 
 Object.assign(window, { o, C, E, R });
 function pstyles(anim) {
-  return E.get<HTMLElement>((elm) => {
-    elm.style.position = "relative";
-    elm.style.fontSize = "18px";
-    var id = requestAnimationFrame(frame);
-    var t = 0;
-    function frame() {
-      t = t > 6.28 ? 0 : t + 0.1;
-      elm.style.borderRadius = Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
-      if (anim) {
-        elm.style.left = Math.floor(Math.cos(t) * 10) + "px";
-        elm.style.top = Math.floor(Math.sin(t) * 10) + "px";
+  return (o) =>
+    E.get<HTMLElement>((elm) => {
+      elm.style.position = "relative";
+      elm.style.fontSize = "18px";
+      var id = requestAnimationFrame(frame);
+      var t = 0;
+      function frame() {
+        t = t > 6.28 ? 0 : t + 0.1;
+        elm.style.borderRadius = Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
+        if (anim) {
+          elm.style.left = Math.floor(Math.cos(t) * 10) + "px";
+          elm.style.top = Math.floor(Math.sin(t) * 10) + "px";
+        }
+        elm.style.backgroundColor = `rgb(255, ${
+          Math.floor(Math.cos(t) * 30) + 100
+        }, ${Math.floor(Math.sin(t) * 30) + 100})`;
+        id = requestAnimationFrame(frame);
       }
-      elm.style.backgroundColor = `rgb(255, ${
-        Math.floor(Math.cos(t) * 30) + 100
-      }, ${Math.floor(Math.sin(t) * 30) + 100})`;
-      id = requestAnimationFrame(frame);
-    }
-    E.dispose(() => cancelAnimationFrame(id))(o);
-  });
+      E.dispose(() => cancelAnimationFrame(id))(o);
+    })(o);
 }
 function mstyles(anim) {
-  return E.get<HTMLElement>((elm) => {
-    elm.style.position = "relative";
-    elm.style.fontSize = "18px";
-    var id = requestAnimationFrame(frame);
-    var t = 0;
-    function frame() {
-      t = t > 6.28 ? 0 : t + 0.1;
-      elm.style.borderRadius = Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
-      if (anim) {
-        elm.style.left = Math.floor(Math.sin(t) * 10) + "px";
-        elm.style.top = Math.floor(Math.cos(t) * 10) + "px";
+  return (o) =>
+    E.get<HTMLElement>((elm) => {
+      elm.style.position = "relative";
+      elm.style.fontSize = "18px";
+      var id = requestAnimationFrame(frame);
+      var t = 0;
+      function frame() {
+        t = t > 6.28 ? 0 : t + 0.1;
+        elm.style.borderRadius = Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
+        if (anim) {
+          elm.style.left = Math.floor(Math.sin(t) * 10) + "px";
+          elm.style.top = Math.floor(Math.cos(t) * 10) + "px";
+        }
+        elm.style.backgroundColor = `rgb(${
+          Math.floor(Math.cos(t) * 30) + 100
+        }, ${Math.floor(Math.sin(t) * 30) + 100}, 255)`;
+        id = requestAnimationFrame(frame);
       }
-      elm.style.backgroundColor = `rgb(${Math.floor(Math.cos(t) * 30) + 100}, ${
-        Math.floor(Math.sin(t) * 30) + 100
-      }, 255)`;
-      id = requestAnimationFrame(frame);
-    }
-    E.dispose(() => cancelAnimationFrame(id))(o);
-  });
+      E.dispose(() => cancelAnimationFrame(id))(o);
+    })(o);
 }
