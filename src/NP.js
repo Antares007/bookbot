@@ -10,7 +10,20 @@ export type N<+O> = (P<O>) => void;
 // declare var g: (B) => C;
 // var fg = (x: A) => g(f(x));
 // declare var n1: ((A) => void) => void;
-
+function ring(nar) {
+  return (o) =>
+    nar(function pith1(x) {
+      if ("function" === typeof x) {
+        o((o) => x(pith1));
+      } else if ("number" === typeof x) {
+        o(x);
+      } else if ("string" === typeof x) {
+        o(x.length);
+      } else {
+        o(x ? 1 : 0);
+      }
+    });
+}
 function nar2(o) {
   o(1);
   o(2);
@@ -28,19 +41,15 @@ function makepith1(o) {
   return function pith1(x) {
     if ("function" === typeof x) {
       x(pith1);
-    } else if ("number" === typeof x) {
-      o((sum += x));
-    } else if ("string" === typeof x) {
-      o((sum += x.length));
     } else {
-      o((sum += x ? 1 : 0));
+      o((sum += x));
     }
   };
 }
 function pith2(x) {
   console.log(x);
 }
-nar2(makepith1(pith2));
+ring(nar2)(makepith1(pith2));
 
 // function n(o) {
 //   o(1, 2, 3);
