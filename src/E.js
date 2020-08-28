@@ -54,92 +54,72 @@ export function make(elm: Element, depth: number = 0): P<Eo> {
   var disposables_count = 0;
   const disposables: Array<Edispose> = [];
   var prev;
-  function log(...a) {
-    //console.info(...a);
-  }
   return function pith(x) {
-    if (typeof x === "function") {
-      log("P" + depth, x, elm);
+    if ("function" === typeof x) {
       if (prev === x) return;
       prev = x;
       x(pith);
       pith({ _: "Eend", v: void 0 });
+    } else if ("Eend" === x._) {
+      let rez, l;
+      for (l = childNodes.length; l > childs_count; l--)
+        elm.removeChild(childNodes[childs_count]);
+      l = childPiths.length - childs_count;
+      rez = childPiths.splice(childs_count, l);
+      for (let x of rez) x && x({ _: "Eend", v: void 0 });
+      childs_count = 0;
+      l = disposables.length - disposables_count;
+      rez = disposables.splice(disposables_count, l);
+      for (let x of rez) x.v();
+      disposables_count = 0;
+    } else if ("Etext" === x._) {
+      const index = childs_count++;
+      const l = childNodes.length;
+      for (let i = index; i < l; i++)
+        if (childNodes[i].nodeType === 3 && childNodes[i].textContent === x) {
+          if (index < i) {
+            elm.insertBefore(childNodes[i], childNodes[index]);
+            childPiths.splice(index, 0, ...childPiths.splice(i, 1));
+          }
+          return;
+        }
+      elm.insertBefore(document.createTextNode(x.v), childNodes[index]);
+      childPiths.splice(index, 0, () => {});
+    } else if ("Eelement" === x._) {
+      const index = childs_count++;
+      const l = childNodes.length;
+      for (let i = index; i < l; i++)
+        if (x.v.eq(childNodes[i])) {
+          if (index < i) {
+            elm.insertBefore(childNodes[i], childNodes[index]);
+            childPiths.splice(index, 0, ...childPiths.splice(i, 1));
+          }
+          let ob = childPiths[index];
+          if (ob) {
+            return;
+          }
+          ob = make(static_cast<Element>(childNodes[i]), depth + 1);
+          childPiths.splice(index, 0, ob);
+          ob(x.v.nar);
+          return;
+        }
+      const child = elm.insertBefore(x.v.ctor(), childNodes[index]);
+      const ob = make(child, depth + 1);
+      childPiths.splice(index, 0, ob);
+      ob(x.v.nar);
+    } else if ("Eget" === x._) {
+      x.v(elm);
     } else {
-      log("P" + depth, x, elm);
-      if ("Eend" === x._) {
-        let rez, l;
-        let tmp = [];
-        for (l = childNodes.length; l > childs_count; l--)
-          tmp.push(elm.removeChild(childNodes[childs_count]));
-
-        l = childPiths.length - childs_count;
-        rez = childPiths.splice(childs_count, l);
-        if (tmp.length || rez.length) log("eremove", tmp, rez);
-        for (let x of rez) x && x({ _: "Eend", v: void 0 });
-        childs_count = 0;
-
-        l = disposables.length - disposables_count;
-        rez = disposables.splice(disposables_count, l);
-        if (rez.length) log("dremove", rez);
-        for (let x of rez) x.v();
-        disposables_count = 0;
-      } else if ("Etext" === x._) {
-        const index = childs_count++;
-        const l = childNodes.length;
-        for (let i = index; i < l; i++)
-          if (childNodes[i].nodeType === 3 && childNodes[i].textContent === x) {
-            if (index < i) {
-              elm.insertBefore(childNodes[i], childNodes[index]);
-              childPiths.splice(index, 0, ...childPiths.splice(i, 1));
-            }
-            return;
+      const index = disposables_count++;
+      const l = disposables.length;
+      for (let i = index; i < l; i++)
+        if (disposables[i] === x) {
+          if (index < i) {
+            disposables.splice(index, 0, ...disposables.splice(i, 1));
           }
-        elm.insertBefore(document.createTextNode(x.v), childNodes[index]);
-        childPiths.splice(index, 0, () => {});
-      } else if ("Eelement" === x._) {
-        const index = childs_count++;
-        const l = childNodes.length;
-        for (let i = index; i < l; i++)
-          if (x.v.eq(childNodes[i])) {
-            if (index < i) {
-              elm.insertBefore(childNodes[i], childNodes[index]);
-              childPiths.splice(index, 0, ...childPiths.splice(i, 1));
-            }
-            let ob = childPiths[index];
-            if (ob) {
-              log("reuse" + childNodes[i].nodeName);
-              log("reuse" + childNodes[i].nodeName + "()");
-              return;
-            }
-            log("reuse" + childNodes[i].nodeName);
-            log("create" + childNodes[i].nodeName + "()");
-            ob = make(static_cast<Element>(childNodes[i]), depth + 1);
-            childPiths.splice(index, 0, ob);
-            ob(x.v.nar);
-            return;
-          }
-        const child = elm.insertBefore(x.v.ctor(), childNodes[index]);
-        log("create" + child.nodeName);
-        log("create" + child.nodeName + "()");
-        const ob = make(child, depth + 1);
-        childPiths.splice(index, 0, ob);
-        ob(x.v.nar);
-      } else if ("Eget" === x._) {
-        x.v(elm);
-      } else {
-        const index = disposables_count++;
-        const l = disposables.length;
-        for (let i = index; i < l; i++)
-          if (disposables[i] === x) {
-            if (index < i) {
-              disposables.splice(index, 0, ...disposables.splice(i, 1));
-            }
-            log("reuse");
-            return;
-          }
-        log("create");
-        disposables.splice(index, 0, x);
-      }
+          return;
+        }
+      disposables.splice(index, 0, x);
     }
   };
 }
