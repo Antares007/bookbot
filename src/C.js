@@ -43,7 +43,7 @@ const C = (
           width50percent(o);
           pstyles(anim)(o);
           E.text("+")(o);
-          depth > 0 && E.map("+", init)(C(depth - 1, anim))(o);
+          depth > 0 && E.rmap("+", init)(C(depth - 1, anim))(o);
         },
         () => action(1)
       )(o);
@@ -52,7 +52,7 @@ const C = (
           width50percent(o);
           mstyles(anim)(o);
           E.text("-")(o);
-          depth > 0 && E.map("-", init)(C(depth - 1, anim))(o);
+          depth > 0 && E.rmap("-", init)(C(depth - 1, anim))(o);
         },
         () => action(-1)
       )(o);

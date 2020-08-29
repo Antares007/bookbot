@@ -154,27 +154,25 @@ export function make<S, V>(
     }
   };
 }
-export function map<A: { ... }, B, V>(
+export function rmap<A: { ... }, B, V>(
   key: string,
   b: B
 ): (N<Eo<B, V>>) => N<Eo<A, V>> {
-  return (nar) => (roa) => {
-    nar(function rob(x) {
+  return (nar) => (o) => {
+    nar(function rmap_pith(x) {
       if ("function" === typeof x) {
-        map(key, b)(x)(roa);
+        o(rmap(key, b)(x));
       } else if ("Ereduce" === x._) {
         reduce((a) => {
-          const { v } = x;
           const oldb = a[key] || b;
-          const newb = v(oldb);
+          const newb = x.v(oldb);
           if (oldb === newb) return a;
           return { ...a, [key]: newb };
-        })(roa);
+        })(o);
       } else if ("Eelement" === x._) {
-        const { v } = x;
-        roa({ ...x, v: { ...v, nar: map(key, b)(v.nar) } });
+        o({ ...x, v: { ...x.v, nar: rmap(key, b)(x.v.nar) } });
       } else {
-        roa(x);
+        o(x);
       }
     });
   };
