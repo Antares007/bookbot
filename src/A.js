@@ -9,28 +9,32 @@ export function value<T>(v: T): N<Avalue<T>> {
   return (o) => o(vAvalue);
 }
 export function ring<T>(Avalueo: P<Avalue<T>>): (N<Ao<T>>) => N<Do> {
-  return (nar) => (o) => {
-    nar(function Ao(x) {
-      if ("function" === typeof x) {
-        o(() => x(Ao));
-      } else if (x && "object" === typeof x && x._ === "Avalue") {
-        Avalueo(x);
-      } else {
-        o(x);
-      }
-    });
+  return function (nar) {
+    return (o) => {
+      nar(function Ao(x) {
+        if ("function" === typeof x) {
+          o(ring(Avalueo)(x));
+        } else if (x && "object" === typeof x && x._ === "Avalue") {
+          Avalueo(x);
+        } else {
+          o(x);
+        }
+      });
+    };
   };
 }
 export function map<A: { ... }, B>(f: (A) => B): (N<Ao<A>>) => N<Ao<B>> {
-  return (nar) => (o) => {
-    nar(function Ao(x) {
-      if ("function" === typeof x) {
-        o(() => x(Ao));
-      } else if ("object" === typeof x && x && x._ === "Avalue") {
-        o({ _: "Avalue", v: f(x.v) });
-      } else {
-        o(x);
-      }
-    });
+  return function (nar) {
+    return (o) => {
+      nar(function Ao(x) {
+        if ("function" === typeof x) {
+          o(map(f)(x));
+        } else if ("object" === typeof x && x && x._ === "Avalue") {
+          o({ _: "Avalue", v: f(x.v) });
+        } else {
+          o(x);
+        }
+      });
+    };
   };
 }

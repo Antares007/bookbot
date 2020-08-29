@@ -5,7 +5,7 @@ import * as E from "./E.js";
 import * as R from "./R.js";
 import type { Ro, Relement } from "./R.js";
 
-var state = { n: 99, "+": { n: 36 }, "-": { n: 63 } };
+var state = { n: 0 };
 
 const o = R.make((r) => {
   const oldstate = state;
