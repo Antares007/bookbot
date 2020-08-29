@@ -2,19 +2,25 @@
 import { static_cast } from "./static_cast.js";
 import type { P, N } from "./NP";
 import * as E from "./E.js";
-import * as R from "./R.js";
-import type { Ro, Relement } from "./R.js";
+import type { Eo, Eelement } from "./E.js";
 
 var state = { n: 0 };
 
-const o = R.make((r) => {
-  const oldstate = state;
-  state = r.v(state);
-  if (state !== oldstate) console.info(state);
-}, (document.body = document.createElement("body")));
+const o = E.make(
+  (r) => {
+    const oldstate = state;
+    state = r.v(state);
+    if (state !== oldstate) console.info(state);
+  },
+  (v) => console.log(v),
+  (document.body = document.createElement("body"))
+);
 
-function button<S>(nar: N<Ro<S>>, l: MouseEventHandler): N<Relement<S>> {
-  return R.element("button", function (o) {
+function button<S, V>(
+  nar: N<Eo<S, V>>,
+  l: MouseEventHandler
+): N<Eelement<S, V>> {
+  return E.element("button", function (o) {
     E.get<HTMLElement>((elm) => {
       const s = elm.style;
       s.borderRadius = "10px";
@@ -28,8 +34,8 @@ const C = (
   depth: number = 3,
   anim: boolean = false,
   init: {| n: number |} = { n: 0 }
-): N<Ro<{ n: number }>> => (o) => {
-  R.element(
+): N<Eo<{ n: number }, *>> => (o) => {
+  E.element(
     "div",
     function (o) {
       button(
@@ -37,7 +43,7 @@ const C = (
           width50percent(o);
           pstyles(anim)(o);
           E.text("+")(o);
-          depth > 0 && R.map("+", init)(C(depth - 1, anim))(o);
+          depth > 0 && E.map("+", init)(C(depth - 1, anim))(o);
         },
         () => action(1)
       )(o);
@@ -46,24 +52,24 @@ const C = (
           width50percent(o);
           mstyles(anim)(o);
           E.text("-")(o);
-          depth > 0 && R.map("-", init)(C(depth - 1, anim))(o);
+          depth > 0 && E.map("-", init)(C(depth - 1, anim))(o);
         },
         () => action(-1)
       )(o);
       var op;
-      R.element("div", (o) => {
+      E.element("div", (o) => {
         op = o;
         css(o);
-        R.reduce((s) => {
+        E.reduce((s) => {
           E.text(s.n + "")(o);
           return s;
         })(o);
       })(o);
       const action = (n) => {
-        R.reduce(function (s) {
+        E.reduce(function (s) {
           return { ...s, n: s.n + n };
         })(o);
-        R.reduce((s) => {
+        E.reduce((s) => {
           E.text(s.n + "")(op);
           E.end(op);
           return s;
@@ -73,11 +79,11 @@ const C = (
     "C" + depth + anim.toString()
   )(o);
 };
-o((o: P<Ro<*>>) => {
+o((o: P<Eo<*, *>>) => {
   C(2)(o);
 });
 
-Object.assign(window, { o, C, E, R });
+Object.assign(window, { o, C, E });
 
 function pstyles(anim) {
   return (o) =>
