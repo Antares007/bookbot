@@ -16,15 +16,13 @@ const o = E.make(
   (document.body = document.createElement("body"))
 );
 
-function button<S, V>(
-  nar: N<Eo<S, V>>,
-  l: MouseEventHandler
-): N<Eelement<S, V>> {
+function button(nar: N<Eo<*, *>>, l: MouseEventHandler): N<Eelement<*, *>> {
   return E.element("button", function (o) {
     E.get<HTMLElement>((elm) => {
       const s = elm.style;
       s.borderRadius = "10px";
       elm.addEventListener("click", l);
+      E.value(1)(o);
       E.dispose(() => elm.removeEventListener("click", l))(o);
     })(o);
     nar(o);
@@ -40,6 +38,7 @@ const C = (
     function (o) {
       button(
         function (o) {
+          E.value("")(o);
           width50percent(o);
           pstyles(anim)(o);
           E.text("+")(o);
