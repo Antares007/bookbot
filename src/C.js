@@ -16,105 +16,99 @@ const o = E.make(
   (document.body = document.createElement("body"))
 );
 
-function button(nar: N<Eo<*, *>>, l: MouseEventHandler): N<Eelement<*, *>> {
-  return (o) =>
-    o(
-      E.element("button", function (o) {
-        o(
-          E.get((elm) => {
-            if (!(elm instanceof HTMLElement)) return;
-            const s = elm.style;
-            s.borderRadius = "10px";
-            elm.addEventListener("click", l);
-            o(E.dispose(() => elm.removeEventListener("click", l)));
-          })
-        );
-        nar(o);
-      })
-    );
-}
-function style(f) {
-  return (o) => {
+function button(nar, l) {
+  return E.element("button", function (o) {
     o(
       E.get((elm) => {
-        if (elm instanceof HTMLElement) f(elm.style);
+        if (!(elm instanceof HTMLElement)) return;
+        const s = elm.style;
+        s.borderRadius = "10px";
+        elm.addEventListener("click", l);
+        o(E.dispose(() => elm.removeEventListener("click", l)));
       })
     );
-  };
+    nar(o);
+  });
+}
+function style(f) {
+  return E.get((elm) => {
+    if (elm instanceof HTMLElement) f(elm.style);
+  });
 }
 const api = (nar) => (o) => {
   nar((x) => {
     if ("string" === typeof x) {
       o({ _: "Etext", v: x });
+    } else if ("number" === typeof x) {
+      o({ _: "Etext", v: x + "" });
     } else if ("Eelement" === x._) {
       o({ _: "Eelement", v: { ...x.v, nar: E.mmap(api)(x.v.nar) } });
     } else o(x);
   });
 };
+
 const C = (
   depth: number = 3,
   anim: boolean = false,
   init: {| n: number |} = { n: 0 }
-): N<Eo<{ n: number }, *>> => (o) => {
-  function pith(o) {
-    o("a");
-    o({
-      _: "Eelement",
-      v: {
-        tag: "div",
-        nar: (o) => {
-          o("aa");
-        },
-      },
-    });
-
-    button(
-      function (o) {
-        width50percent(o);
-        pstyles(anim)(o);
-        o(E.text("+"));
-        depth > 0 && E.rmap("+", init)(C(depth - 1, anim))(o);
-      },
-      () => action(1)
-    )(o);
-    button(
-      function (o) {
-        width50percent(o);
-        mstyles(anim)(o);
-        o(E.text("-"));
-        depth > 0 && E.rmap("-", init)(C(depth - 1, anim))(o);
-      },
-      () => action(-1)
-    )(o);
-    var op;
-    o(
-      E.element("div", (o) => {
-        op = o;
-        css(o);
+) => (o) => {
+  o(
+    E.element(
+      "div",
+      api(function pith(o) {
         o(
-          E.reduce((s) => {
-            o(E.text(s.n + ""));
-            return s;
+          button(
+            function (o) {
+              width50percent(o);
+              pstyles(anim)(o);
+              o(E.text("+"));
+              depth > 0 && E.rmap("+", init)(C(depth - 1, anim))(o);
+            },
+            () => action(1)
+          )
+        );
+        o(
+          button(
+            function (o) {
+              width50percent(o);
+              mstyles(anim)(o);
+              o(E.text("-"));
+              depth > 0 && E.rmap("-", init)(C(depth - 1, anim))(o);
+            },
+            () => action(-1)
+          )
+        );
+        var op;
+        o(
+          E.element("div", (o) => {
+            op = o;
+            css(o);
+            o(
+              E.reduce((s) => {
+                o(E.text(s.n + ""));
+                return s;
+              })
+            );
           })
         );
-      })
-    );
-    const action = (n) => {
-      o(
-        E.reduce(function (s) {
-          return { ...s, n: s.n + n };
-        })
-      );
-      o(
-        E.reduce((s) => {
-          op(E.text(s.n + ""));
-          op(E.end);
-          return s;
-        })
-      );
-    };
-  }
-  o(E.element("div", api(pith), "C" + depth + anim.toString()));
+        const action = (n) => {
+          o(
+            E.reduce(function (s) {
+              return { ...s, n: s.n + n };
+            })
+          );
+          o(
+            E.reduce((s) => {
+              op(E.text(s.n + ""));
+              op(E.end);
+              return s;
+            })
+          );
+        };
+      }),
+      "C" + depth + anim.toString()
+    )
+  );
 };
 C(2)(o);
 o(E.end);
