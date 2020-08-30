@@ -9,8 +9,7 @@ export type Eo<S, V> =
   | Eend
   | Etext
   | Eelement<S, V>
-  | Edispose
-  | N<Eo<S, V>>;
+  | Edispose;
 
 export type Eelement<S, V> = {| _: "Eelement", v: t<S, V> |};
 export type Etext = {| _: "Etext", v: string |};
@@ -19,6 +18,7 @@ export type Edispose = {| _: "Edispose", v: () => void |};
 export type Eget = {| _: "Eget", v: (Element) => void |};
 export type Evalue<+V> = {| _: "Evalue", +v: V |};
 export type Ereduce<S> = {| _: "Ereduce", +v: (S) => S |};
+
 type t<S, V> = {
   ctor: () => Element,
   eq: (Node) => boolean,
@@ -57,7 +57,7 @@ export function dispose(dispose: () => void): N<Edispose> {
   const vEdispose = { _: ("Edispose": "Edispose"), v: dispose };
   return (o) => o(vEdispose);
 }
-export function get<T: Element>(v: (T) => void): N<Eget> {
+export function get(v: (Element) => void): N<Eget> {
   const vEget = { _: "Eget", v: static_cast<(Element) => void>(v) };
   return (o) => o(vEget);
 }
@@ -82,12 +82,7 @@ export function make<S, V>(
   const disposables: Array<Edispose> = [];
   var prev;
   return function pith(x) {
-    if ("function" === typeof x) {
-      if (prev === x) return;
-      prev = x;
-      x(pith);
-      pith({ _: "Eend", v: void 0 });
-    } else if ("Eend" === x._) {
+    if ("Eend" === x._) {
       let rez, l;
       for (l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
@@ -127,13 +122,15 @@ export function make<S, V>(
           }
           ob = make(ro, vo, static_cast<Element>(childNodes[i]), depth + 1);
           childPiths.splice(index, 0, ob);
-          ob(x.v.nar);
+          x.v.nar(ob);
+          ob({ _: "Eend", v: void 0 });
           return;
         }
       const child = elm.insertBefore(x.v.ctor(), childNodes[index]);
       const ob = make(ro, vo, child, depth + 1);
       childPiths.splice(index, 0, ob);
-      ob(x.v.nar);
+      x.v.nar(ob);
+      ob({ _: "Eend", v: void 0 });
     } else if ("Evalue" === x._) {
       vo(x);
     } else if ("Ereduce" === x._) {
@@ -160,9 +157,7 @@ export function rmap<A: { ... }, B, V>(
 ): (N<Eo<B, V>>) => N<Eo<A, V>> {
   return (nar) => (o) => {
     nar(function rmap_pith(x) {
-      if ("function" === typeof x) {
-        o(rmap(key, b)(x));
-      } else if ("Ereduce" === x._) {
+      if ("Ereduce" === x._) {
         reduce((a) => {
           const oldb = a[key] || b;
           const newb = x.v(oldb);

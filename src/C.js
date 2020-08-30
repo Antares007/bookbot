@@ -18,15 +18,22 @@ const o = E.make(
 
 function button(nar: N<Eo<*, *>>, l: MouseEventHandler): N<Eelement<*, *>> {
   return E.element("button", function (o) {
-    E.get<HTMLElement>((elm) => {
+    E.get((elm) => {
+      if (!(elm instanceof HTMLElement)) return;
       const s = elm.style;
       s.borderRadius = "10px";
       elm.addEventListener("click", l);
-      E.value(1)(o);
       E.dispose(() => elm.removeEventListener("click", l))(o);
     })(o);
     nar(o);
   });
+}
+function style(f) {
+  return (o) => {
+    E.get((elm) => {
+      if (elm instanceof HTMLElement) f(elm.style);
+    })(o);
+  };
 }
 const C = (
   depth: number = 3,
@@ -38,7 +45,6 @@ const C = (
     function (o) {
       button(
         function (o) {
-          E.value("")(o);
           width50percent(o);
           pstyles(anim)(o);
           E.text("+")(o);
@@ -78,15 +84,15 @@ const C = (
     "C" + depth + anim.toString()
   )(o);
 };
-o((o: P<Eo<*, *>>) => {
-  C(2)(o);
-});
+C(2)(o);
+E.end(o);
 
 Object.assign(window, { o, C, E });
 
 function pstyles(anim) {
   return (o) =>
-    E.get<HTMLElement>((elm) => {
+    E.get((elm) => {
+      if (!(elm instanceof HTMLElement)) return;
       elm.style.position = "relative";
       elm.style.fontSize = "18px";
       var id = requestAnimationFrame(frame);
@@ -108,7 +114,8 @@ function pstyles(anim) {
 }
 function mstyles(anim) {
   return (o) =>
-    E.get<HTMLElement>((elm) => {
+    E.get((elm) => {
+      if (!(elm instanceof HTMLElement)) return;
       elm.style.position = "relative";
       elm.style.fontSize = "18px";
       var id = requestAnimationFrame(frame);
@@ -129,7 +136,8 @@ function mstyles(anim) {
     })(o);
 }
 function css(o) {
-  return E.get<HTMLElement>((elm) => {
+  return E.get((elm) => {
+    if (!(elm instanceof HTMLElement)) return;
     const s = elm.style;
     s.width = "50%";
     s.height = "1.5em";
@@ -144,7 +152,8 @@ function css(o) {
   })(o);
 }
 function width50percent(o) {
-  return E.get<HTMLElement>((elm) => {
+  return E.get((elm) => {
+    if (!(elm instanceof HTMLElement)) return;
     elm.style.width = "50%";
   })(o);
 }
