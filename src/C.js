@@ -3,24 +3,24 @@ import { static_cast } from "./static_cast.js";
 import type { P, N } from "./NP";
 import * as E from "./E.js";
 
-const end = { _: "Eend" };
+const end = { _: "end" };
 function element(tag, nar, key) {
-  return { _: "Eelement", v: { tag, nar, key } };
+  return { _: "element", v: { tag, nar, key } };
 }
 function text(v) {
-  return { _: "Etext", v };
+  return { _: "text", v };
 }
 function dispose(v) {
-  return { _: "Edispose", v };
+  return { _: "dispose", v };
 }
 function get(v) {
-  return { _: "Eget", v };
+  return { _: "get", v };
 }
 function value(v) {
-  return { _: "Evalue", v };
+  return { _: "value", v };
 }
 function reduce(v) {
-  return { _: "Ereduce", v };
+  return { _: "reduce", v };
 }
 var state = { n: 0 };
 
@@ -56,11 +56,11 @@ function style(f) {
 const api = (nar) => (o) => {
   nar((x) => {
     if ("string" === typeof x) {
-      o({ _: "Etext", v: x });
+      o({ _: "text", v: x });
     } else if ("number" === typeof x) {
-      o({ _: "Etext", v: x + "" });
-    } else if ("Eelement" === x._) {
-      o({ _: "Eelement", v: { ...x.v, nar: E.mmap(api)(x.v.nar) } });
+      o({ _: "text", v: x + "" });
+    } else if ("element" === x._) {
+      o({ _: "element", v: { ...x.v, nar: E.mmap(api)(x.v.nar) } });
     } else o(x);
   });
 };

@@ -1,50 +1,49 @@
 // @flow strict
 import type { P, N } from "./NP.js";
-export type O<S, V> =
-  | Evalue<V>
-  | Ereduce<S>
-  | Eget
-  | Eend
-  | Etext
-  | Eelement<S, V>
-  | Edispose;
-
-export type Etext = {| _: "Etext", v: string |};
-export type Eend = {| _: "Eend", v?: void |};
-export type Edispose = {| _: "Edispose", v: () => void |};
-export type Eget = {| _: "Eget", v: (Element) => void |};
-export type Evalue<+V> = {| _: "Evalue", +v: V |};
-export type Ereduce<S> = {| _: "Ereduce", +v: (S) => S |};
-export type Eelement<S, V> = {|
-  _: "Eelement",
-  v: { tag: string, nar?: ?N<O<S, V>>, key?: ?string },
+export type o_t<S, V> =
+  | value_t<V>
+  | reduce_t<S>
+  | get_t
+  | end_t
+  | text_t
+  | element_t<S, V>
+  | dispose_t;
+export type text_t = {| _: "text", v: string |};
+export type end_t = {| _: "end", v?: void |};
+export type dispose_t = {| _: "dispose", v: () => void |};
+export type get_t = {| _: "get", v: (Element) => void |};
+export type value_t<+V> = {| _: "value", +v: V |};
+export type reduce_t<S> = {| _: "reduce", +v: (S) => S |};
+export type element_t<S, V> = {|
+  _: "element",
+  v: { tag: string, nar?: ?N<o_t<S, V>>, key?: ?string },
 |};
 export function make<S, V>(
-  ro: P<Ereduce<S>>,
-  vo: P<Evalue<V>>,
+  ro: P<reduce_t<S>>,
+  vo: P<value_t<V>>,
   elm: Element,
   depth: number = 0
-): P<O<S, V>> {
+): P<o_t<S, V>> {
   var childs_count = 0;
   const { childNodes } = elm;
-  const childPiths: Array<?P<O<S, V>>> = [];
+  const childPiths: Array<?P<o_t<S, V>>> = [];
   var disposables_count = 0;
-  const disposables: Array<Edispose> = [];
+  const disposables: Array<dispose_t> = [];
   var prev;
   return function pith(x) {
-    if ("Eend" === x._) {
+    if ("end" === x._) {
       let rez, l;
       for (l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
       l = childPiths.length - childs_count;
       rez = childPiths.splice(childs_count, l);
-      for (let x of rez) x && x({ _: "Eend", v: void 0 });
+      for (let x of rez) x && x({ _: "end", v: void 0 });
       childs_count = 0;
       l = disposables.length - disposables_count;
       rez = disposables.splice(disposables_count, l);
       for (let x of rez) x.v();
       disposables_count = 0;
-    } else if ("Etext" === x._) {
+    } else if ("text" === x._) {
       const index = childs_count++;
       const l = childNodes.length;
       for (let i = index; i < l; i++)
@@ -57,10 +56,9 @@ export function make<S, V>(
         }
       elm.insertBefore(document.createTextNode(x.v), childNodes[index]);
       childPiths.splice(index, 0, () => {});
-    } else if ("Eelement" === x._) {
+    } else if ("element" === x._) {
       const index = childs_count++;
       const l = childNodes.length;
-
       const TAG = x.v.tag.toUpperCase();
       const nar = x.v.nar;
       const key = x.v.key;
@@ -80,13 +78,13 @@ export function make<S, V>(
           if (ob) {
             if (key) return;
             nar && nar(ob);
-            ob({ _: "Eend", v: void 0 });
+            ob({ _: "end", v: void 0 });
             return;
           }
           ob = make(ro, vo, n, depth + 1);
           childPiths.splice(index, 0, ob);
           nar && nar(ob);
-          ob({ _: "Eend", v: void 0 });
+          ob({ _: "end", v: void 0 });
           return;
         }
       const child = elm.insertBefore(
@@ -97,12 +95,12 @@ export function make<S, V>(
       const ob = make(ro, vo, child, depth + 1);
       childPiths.splice(index, 0, ob);
       nar && nar(ob);
-      ob({ _: "Eend", v: void 0 });
-    } else if ("Evalue" === x._) {
+      ob({ _: "end", v: void 0 });
+    } else if ("value" === x._) {
       vo(x);
-    } else if ("Ereduce" === x._) {
+    } else if ("reduce" === x._) {
       ro(x);
-    } else if ("Eget" === x._) {
+    } else if ("get" === x._) {
       x.v(elm);
     } else {
       const index = disposables_count++;
@@ -124,12 +122,12 @@ export function mmap<A, B>(f: (A) => B): (?A) => ?B {
 export function rmap<A: { ... }, B, V>(
   key: string,
   b: B
-): (N<O<B, V>>) => N<O<A, V>> {
+): (N<o_t<B, V>>) => N<o_t<A, V>> {
   return (nar) => (o) => {
     nar(function rmap_pith(x) {
-      if ("Ereduce" === x._) {
+      if ("reduce" === x._) {
         o({
-          _: "Ereduce",
+          _: "reduce",
           v: (a) => {
             const oldb = a[key] || b;
             const newb = x.v(oldb);
@@ -137,7 +135,7 @@ export function rmap<A: { ... }, B, V>(
             return { ...a, [key]: newb };
           },
         });
-      } else if ("Eelement" === x._) {
+      } else if ("element" === x._) {
         o({ ...x, v: { ...x.v, nar: mmap(rmap(key, b))(x.v.nar) } });
       } else {
         o(x);
