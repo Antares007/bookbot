@@ -17,143 +17,185 @@ const o = E.make(
 );
 
 function button(nar: N<Eo<*, *>>, l: MouseEventHandler): N<Eelement<*, *>> {
-  return E.element("button", function (o) {
-    E.get((elm) => {
-      if (!(elm instanceof HTMLElement)) return;
-      const s = elm.style;
-      s.borderRadius = "10px";
-      elm.addEventListener("click", l);
-      E.dispose(() => elm.removeEventListener("click", l))(o);
-    })(o);
-    nar(o);
-  });
+  return (o) =>
+    o(
+      E.element("button", function (o) {
+        o(
+          E.get((elm) => {
+            if (!(elm instanceof HTMLElement)) return;
+            const s = elm.style;
+            s.borderRadius = "10px";
+            elm.addEventListener("click", l);
+            o(E.dispose(() => elm.removeEventListener("click", l)));
+          })
+        );
+        nar(o);
+      })
+    );
 }
 function style(f) {
   return (o) => {
-    E.get((elm) => {
-      if (elm instanceof HTMLElement) f(elm.style);
-    })(o);
+    o(
+      E.get((elm) => {
+        if (elm instanceof HTMLElement) f(elm.style);
+      })
+    );
   };
 }
+const api = (nar) => (o) => {
+  nar((x) => {
+    if ("string" === typeof x) {
+      o({ _: "Etext", v: x });
+    } else if ("Eelement" === x._) {
+      o({ _: "Eelement", v: { ...x.v, nar: E.mmap(api)(x.v.nar) } });
+    } else o(x);
+  });
+};
 const C = (
   depth: number = 3,
   anim: boolean = false,
   init: {| n: number |} = { n: 0 }
 ): N<Eo<{ n: number }, *>> => (o) => {
-  E.element(
-    "div",
-    function (o) {
-      button(
-        function (o) {
-          width50percent(o);
-          pstyles(anim)(o);
-          E.text("+")(o);
-          depth > 0 && E.rmap("+", init)(C(depth - 1, anim))(o);
+  function pith(o) {
+    o("a");
+    o({
+      _: "Eelement",
+      v: {
+        tag: "div",
+        nar: (o) => {
+          o("aa");
         },
-        () => action(1)
-      )(o);
-      button(
-        function (o) {
-          width50percent(o);
-          mstyles(anim)(o);
-          E.text("-")(o);
-          depth > 0 && E.rmap("-", init)(C(depth - 1, anim))(o);
-        },
-        () => action(-1)
-      )(o);
-      var op;
+      },
+    });
+
+    button(
+      function (o) {
+        width50percent(o);
+        pstyles(anim)(o);
+        o(E.text("+"));
+        depth > 0 && E.rmap("+", init)(C(depth - 1, anim))(o);
+      },
+      () => action(1)
+    )(o);
+    button(
+      function (o) {
+        width50percent(o);
+        mstyles(anim)(o);
+        o(E.text("-"));
+        depth > 0 && E.rmap("-", init)(C(depth - 1, anim))(o);
+      },
+      () => action(-1)
+    )(o);
+    var op;
+    o(
       E.element("div", (o) => {
         op = o;
         css(o);
-        E.reduce((s) => {
-          E.text(s.n + "")(o);
-          return s;
-        })(o);
-      })(o);
-      const action = (n) => {
+        o(
+          E.reduce((s) => {
+            o(E.text(s.n + ""));
+            return s;
+          })
+        );
+      })
+    );
+    const action = (n) => {
+      o(
         E.reduce(function (s) {
           return { ...s, n: s.n + n };
-        })(o);
+        })
+      );
+      o(
         E.reduce((s) => {
-          E.text(s.n + "")(op);
-          E.end(op);
+          op(E.text(s.n + ""));
+          op(E.end);
           return s;
-        })(o);
-      };
-    },
-    "C" + depth + anim.toString()
-  )(o);
+        })
+      );
+    };
+  }
+  o(E.element("div", api(pith), "C" + depth + anim.toString()));
 };
 C(2)(o);
-E.end(o);
+o(E.end);
 
 Object.assign(window, { o, C, E });
 
 function pstyles(anim) {
   return (o) =>
-    E.get((elm) => {
-      if (!(elm instanceof HTMLElement)) return;
-      elm.style.position = "relative";
-      elm.style.fontSize = "18px";
-      var id = requestAnimationFrame(frame);
-      var t = 0;
-      function frame() {
-        t = t > 6.28 ? 0 : t + 0.1;
-        elm.style.borderRadius = Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
-        if (anim) {
-          elm.style.left = Math.floor(Math.cos(t) * 10) + "px";
-          elm.style.top = Math.floor(Math.sin(t) * 10) + "px";
+    o(
+      E.get((elm) => {
+        if (!(elm instanceof HTMLElement)) return;
+        elm.style.position = "relative";
+        elm.style.fontSize = "18px";
+        var id = requestAnimationFrame(frame);
+        var t = 0;
+        function frame() {
+          t = t > 6.28 ? 0 : t + 0.1;
+          elm.style.borderRadius =
+            Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
+          if (anim) {
+            elm.style.left = Math.floor(Math.cos(t) * 10) + "px";
+            elm.style.top = Math.floor(Math.sin(t) * 10) + "px";
+          }
+          elm.style.backgroundColor = `rgb(255, ${
+            Math.floor(Math.cos(t) * 30) + 100
+          }, ${Math.floor(Math.sin(t) * 30) + 100})`;
+          id = requestAnimationFrame(frame);
         }
-        elm.style.backgroundColor = `rgb(255, ${
-          Math.floor(Math.cos(t) * 30) + 100
-        }, ${Math.floor(Math.sin(t) * 30) + 100})`;
-        id = requestAnimationFrame(frame);
-      }
-      E.dispose(() => cancelAnimationFrame(id))(o);
-    })(o);
+        o(E.dispose(() => cancelAnimationFrame(id)));
+      })
+    );
 }
 function mstyles(anim) {
   return (o) =>
-    E.get((elm) => {
-      if (!(elm instanceof HTMLElement)) return;
-      elm.style.position = "relative";
-      elm.style.fontSize = "18px";
-      var id = requestAnimationFrame(frame);
-      var t = 0;
-      function frame() {
-        t = t > 6.28 ? 0 : t + 0.1;
-        elm.style.borderRadius = Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
-        if (anim) {
-          elm.style.left = Math.floor(Math.sin(t) * 10) + "px";
-          elm.style.top = Math.floor(Math.cos(t) * 10) + "px";
+    o(
+      E.get((elm) => {
+        if (!(elm instanceof HTMLElement)) return;
+        elm.style.position = "relative";
+        elm.style.fontSize = "18px";
+        var id = requestAnimationFrame(frame);
+        var t = 0;
+        function frame() {
+          t = t > 6.28 ? 0 : t + 0.1;
+          elm.style.borderRadius =
+            Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
+          if (anim) {
+            elm.style.left = Math.floor(Math.sin(t) * 10) + "px";
+            elm.style.top = Math.floor(Math.cos(t) * 10) + "px";
+          }
+          elm.style.backgroundColor = `rgb(${
+            Math.floor(Math.cos(t) * 30) + 100
+          }, ${Math.floor(Math.sin(t) * 30) + 100}, 255)`;
+          id = requestAnimationFrame(frame);
         }
-        elm.style.backgroundColor = `rgb(${
-          Math.floor(Math.cos(t) * 30) + 100
-        }, ${Math.floor(Math.sin(t) * 30) + 100}, 255)`;
-        id = requestAnimationFrame(frame);
-      }
-      E.dispose(() => cancelAnimationFrame(id))(o);
-    })(o);
+        o(E.dispose(() => cancelAnimationFrame(id)));
+      })
+    );
 }
 function css(o) {
-  return E.get((elm) => {
-    if (!(elm instanceof HTMLElement)) return;
-    const s = elm.style;
-    s.width = "50%";
-    s.height = "1.5em";
-    s.backgroundColor = "black";
-    s.color = "white";
-    s.marginLeft = "auto";
-    s.marginRight = "auto";
-    s.textAlign = "center";
-    s.borderRadius = "10px";
-    s.marginTop = "10px";
-    s.marginBottom = "10px";
-  })(o);
+  return o(
+    E.get((elm) => {
+      if (!(elm instanceof HTMLElement)) return;
+      const s = elm.style;
+      s.width = "50%";
+      s.height = "1.5em";
+      s.backgroundColor = "black";
+      s.color = "white";
+      s.marginLeft = "auto";
+      s.marginRight = "auto";
+      s.textAlign = "center";
+      s.borderRadius = "10px";
+      s.marginTop = "10px";
+      s.marginBottom = "10px";
+    })
+  );
 }
 function width50percent(o) {
-  return E.get((elm) => {
-    if (!(elm instanceof HTMLElement)) return;
-    elm.style.width = "50%";
-  })(o);
+  return o(
+    E.get((elm) => {
+      if (!(elm instanceof HTMLElement)) return;
+      elm.style.width = "50%";
+    })
+  );
 }

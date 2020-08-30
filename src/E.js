@@ -14,46 +14,34 @@ export type Eelement<S, V> = {|
   v: { tag: string, nar?: ?N<Eo<S, V>>, key?: ?string },
 |};
 export type Etext = {| _: "Etext", v: string |};
-export type Eend = {| _: "Eend", v: void |};
+export type Eend = {| _: "Eend", v?: void |};
 export type Edispose = {| _: "Edispose", v: () => void |};
 export type Eget = {| _: "Eget", v: (Element) => void |};
 export type Evalue<+V> = {| _: "Evalue", +v: V |};
 export type Ereduce<S> = {| _: "Ereduce", +v: (S) => S |};
 
-type t<S, V> = {
-  ctor: () => Element,
-  eq: (Node) => boolean,
-  nar: N<Eo<S, V>>,
-};
+export const end: Eend = { _: "Eend" };
 export function element<S, V>(
   tag: string,
   nar?: N<Eo<S, V>>,
   key?: string
-): N<Eelement<S, V>> {
-  const vEelement = { _: "Eelement", v: { tag, nar, key } };
-  return (o) => o(vEelement);
+): Eelement<S, V> {
+  return { _: "Eelement", v: { tag, nar, key } };
 }
-export function text(v: string): N<Etext> {
-  const vEtext = { _: "Etext", v };
-  return (o) => o(vEtext);
+export function text(v: string): Etext {
+  return { _: "Etext", v };
 }
-const vEend = { _: "Eend", v: void 0 };
-export const end: N<Eend> = (o) => o(vEend);
-export function dispose(dispose: () => void): N<Edispose> {
-  const vEdispose = { _: ("Edispose": "Edispose"), v: dispose };
-  return (o) => o(vEdispose);
+export function dispose(dispose: () => void): Edispose {
+  return { _: ("Edispose": "Edispose"), v: dispose };
 }
-export function get(v: (Element) => void): N<Eget> {
-  const vEget = { _: "Eget", v };
-  return (o) => o(vEget);
+export function get(v: (Element) => void): Eget {
+  return { _: "Eget", v };
 }
-export function value<V>(v: V): N<Evalue<V>> {
-  const vEvalue = { _: "Evalue", v };
-  return (o) => o(vEvalue);
+export function value<V>(v: V): Evalue<V> {
+  return { _: "Evalue", v };
 }
-export function reduce<S>(v: (S) => S): N<Ereduce<S>> {
-  const vEreduce = { _: "Ereduce", v };
-  return (o) => o(vEreduce);
+export function reduce<S>(v: (S) => S): Ereduce<S> {
+  return { _: "Ereduce", v };
 }
 export function make<S, V>(
   ro: P<Ereduce<S>>,
@@ -164,12 +152,14 @@ export function rmap<A: { ... }, B, V>(
   return (nar) => (o) => {
     nar(function rmap_pith(x) {
       if ("Ereduce" === x._) {
-        reduce((a) => {
-          const oldb = a[key] || b;
-          const newb = x.v(oldb);
-          if (oldb === newb) return a;
-          return { ...a, [key]: newb };
-        })(o);
+        o(
+          reduce((a) => {
+            const oldb = a[key] || b;
+            const newb = x.v(oldb);
+            if (oldb === newb) return a;
+            return { ...a, [key]: newb };
+          })
+        );
       } else if ("Eelement" === x._) {
         o({ ...x, v: { ...x.v, nar: mmap(rmap(key, b))(x.v.nar) } });
       } else {
