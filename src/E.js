@@ -11,7 +11,10 @@ export type Eo<S, V> =
   | Eelement<S, V>
   | Edispose;
 
-export type Eelement<S, V> = {| _: "Eelement", v: t<S, V> |};
+export type Eelement<S, V> = {|
+  _: "Eelement",
+  v: { tag: string, nar?: ?N<Eo<S, V>>, key?: ?string },
+|};
 export type Etext = {| _: "Etext", v: string |};
 export type Eend = {| _: "Eend", v: void |};
 export type Edispose = {| _: "Edispose", v: () => void |};
@@ -26,25 +29,10 @@ type t<S, V> = {
 };
 export function element<S, V>(
   tag: string,
-  bark: ?N<Eo<S, V>>,
+  nar?: N<Eo<S, V>>,
   key?: string
 ): N<Eelement<S, V>> {
-  const TAG = tag.toUpperCase();
-  const vEelement = {
-    _: "Eelement",
-    v: {
-      ctor: () => {
-        const elm = document.createElement(TAG);
-        if (key) elm.setAttribute("key", key);
-        return elm;
-      },
-      eq: (n) =>
-        n instanceof HTMLElement &&
-        n.nodeName === TAG &&
-        (!key || n.getAttribute("key") === key),
-      nar: bark || ((o) => {}),
-    },
-  };
+  const vEelement = { _: "Eelement", v: { tag, nar, key } };
   return (o) => o(vEelement);
 }
 export function text(v: string): N<Etext> {
@@ -110,26 +98,43 @@ export function make<S, V>(
     } else if ("Eelement" === x._) {
       const index = childs_count++;
       const l = childNodes.length;
+
+      const TAG = x.v.tag.toUpperCase();
+      const nar = x.v.nar;
+      const key = x.v.key;
+      var n;
       for (let i = index; i < l; i++)
-        if (x.v.eq(childNodes[i])) {
+        if (
+          (n = childNodes[i]) &&
+          n instanceof HTMLElement &&
+          n.nodeName === TAG &&
+          (!key || n.getAttribute("key") === key)
+        ) {
           if (index < i) {
-            elm.insertBefore(childNodes[i], childNodes[index]);
+            elm.insertBefore(n, childNodes[index]);
             childPiths.splice(index, 0, ...childPiths.splice(i, 1));
           }
           let ob = childPiths[index];
           if (ob) {
+            if (key) return;
+            nar && nar(ob);
+            ob({ _: "Eend", v: void 0 });
             return;
           }
-          ob = make(ro, vo, static_cast<Element>(childNodes[i]), depth + 1);
+          ob = make(ro, vo, n, depth + 1);
           childPiths.splice(index, 0, ob);
-          x.v.nar(ob);
+          nar && nar(ob);
           ob({ _: "Eend", v: void 0 });
           return;
         }
-      const child = elm.insertBefore(x.v.ctor(), childNodes[index]);
+      const child = elm.insertBefore(
+        document.createElement(x.v.tag),
+        childNodes[index]
+      );
+      if (key) child.setAttribute("key", key);
       const ob = make(ro, vo, child, depth + 1);
       childPiths.splice(index, 0, ob);
-      x.v.nar(ob);
+      nar && nar(ob);
       ob({ _: "Eend", v: void 0 });
     } else if ("Evalue" === x._) {
       vo(x);
@@ -151,6 +156,9 @@ export function make<S, V>(
     }
   };
 }
+export function mmap<A, B>(f: (A) => B): (?A) => ?B {
+  return (x) => (x ? f(x) : null);
+}
 export function rmap<A: { ... }, B, V>(
   key: string,
   b: B
@@ -165,10 +173,18 @@ export function rmap<A: { ... }, B, V>(
           return { ...a, [key]: newb };
         })(o);
       } else if ("Eelement" === x._) {
-        o({ ...x, v: { ...x.v, nar: rmap(key, b)(x.v.nar) } });
+        o({ ...x, v: { ...x.v, nar: mmap(rmap(key, b))(x.v.nar) } });
       } else {
         o(x);
       }
     });
   };
+}
+function hashCode(x: string): number {
+  var hash = 0;
+  for (let i = 0; i < x.length; i++) {
+    hash = (hash << 5) - hash + x.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  return hash;
 }
