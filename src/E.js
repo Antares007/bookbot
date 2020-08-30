@@ -1,7 +1,5 @@
 // @flow strict
-import { static_cast } from "./static_cast.js";
 import type { P, N } from "./NP.js";
-const see = static_cast<number>("");
 export type Eo<S, V> =
   | Evalue<V>
   | Ereduce<S>
@@ -46,7 +44,7 @@ export function dispose(dispose: () => void): N<Edispose> {
   return (o) => o(vEdispose);
 }
 export function get(v: (Element) => void): N<Eget> {
-  const vEget = { _: "Eget", v: static_cast<(Element) => void>(v) };
+  const vEget = { _: "Eget", v };
   return (o) => o(vEget);
 }
 export function value<V>(v: V): N<Evalue<V>> {
