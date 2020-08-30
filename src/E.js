@@ -1,6 +1,6 @@
 // @flow strict
 import type { P, N } from "./NP.js";
-export type Eo<S, V> =
+export type O<S, V> =
   | Evalue<V>
   | Ereduce<S>
   | Eget
@@ -9,49 +9,25 @@ export type Eo<S, V> =
   | Eelement<S, V>
   | Edispose;
 
-export type Eelement<S, V> = {|
-  _: "Eelement",
-  v: { tag: string, nar?: ?N<Eo<S, V>>, key?: ?string },
-|};
 export type Etext = {| _: "Etext", v: string |};
 export type Eend = {| _: "Eend", v?: void |};
 export type Edispose = {| _: "Edispose", v: () => void |};
 export type Eget = {| _: "Eget", v: (Element) => void |};
 export type Evalue<+V> = {| _: "Evalue", +v: V |};
 export type Ereduce<S> = {| _: "Ereduce", +v: (S) => S |};
-
-export const end: Eend = { _: "Eend" };
-export function element<S, V>(
-  tag: string,
-  nar?: N<Eo<S, V>>,
-  key?: string
-): Eelement<S, V> {
-  return { _: "Eelement", v: { tag, nar, key } };
-}
-export function text(v: string): Etext {
-  return { _: "Etext", v };
-}
-export function dispose(dispose: () => void): Edispose {
-  return { _: ("Edispose": "Edispose"), v: dispose };
-}
-export function get(v: (Element) => void): Eget {
-  return { _: "Eget", v };
-}
-export function value<V>(v: V): Evalue<V> {
-  return { _: "Evalue", v };
-}
-export function reduce<S>(v: (S) => S): Ereduce<S> {
-  return { _: "Ereduce", v };
-}
+export type Eelement<S, V> = {|
+  _: "Eelement",
+  v: { tag: string, nar?: ?N<O<S, V>>, key?: ?string },
+|};
 export function make<S, V>(
   ro: P<Ereduce<S>>,
   vo: P<Evalue<V>>,
   elm: Element,
   depth: number = 0
-): P<Eo<S, V>> {
+): P<O<S, V>> {
   var childs_count = 0;
   const { childNodes } = elm;
-  const childPiths: Array<?P<Eo<S, V>>> = [];
+  const childPiths: Array<?P<O<S, V>>> = [];
   var disposables_count = 0;
   const disposables: Array<Edispose> = [];
   var prev;
@@ -148,18 +124,19 @@ export function mmap<A, B>(f: (A) => B): (?A) => ?B {
 export function rmap<A: { ... }, B, V>(
   key: string,
   b: B
-): (N<Eo<B, V>>) => N<Eo<A, V>> {
+): (N<O<B, V>>) => N<O<A, V>> {
   return (nar) => (o) => {
     nar(function rmap_pith(x) {
       if ("Ereduce" === x._) {
-        o(
-          reduce((a) => {
+        o({
+          _: "Ereduce",
+          v: (a) => {
             const oldb = a[key] || b;
             const newb = x.v(oldb);
             if (oldb === newb) return a;
             return { ...a, [key]: newb };
-          })
-        );
+          },
+        });
       } else if ("Eelement" === x._) {
         o({ ...x, v: { ...x.v, nar: mmap(rmap(key, b))(x.v.nar) } });
       } else {

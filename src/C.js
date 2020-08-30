@@ -2,8 +2,26 @@
 import { static_cast } from "./static_cast.js";
 import type { P, N } from "./NP";
 import * as E from "./E.js";
-import type { Eo, Eelement } from "./E.js";
 
+const end = { _: "Eend" };
+function element(tag, nar, key) {
+  return { _: "Eelement", v: { tag, nar, key } };
+}
+function text(v) {
+  return { _: "Etext", v };
+}
+function dispose(v) {
+  return { _: "Edispose", v };
+}
+function get(v) {
+  return { _: "Eget", v };
+}
+function value(v) {
+  return { _: "Evalue", v };
+}
+function reduce(v) {
+  return { _: "Ereduce", v };
+}
 var state = { n: 0 };
 
 const o = E.make(
@@ -17,21 +35,21 @@ const o = E.make(
 );
 
 function button(nar, l) {
-  return E.element("button", function (o) {
+  return element("button", function (o) {
     o(
-      E.get((elm) => {
+      get((elm) => {
         if (!(elm instanceof HTMLElement)) return;
         const s = elm.style;
         s.borderRadius = "10px";
         elm.addEventListener("click", l);
-        o(E.dispose(() => elm.removeEventListener("click", l)));
+        o(dispose(() => elm.removeEventListener("click", l)));
       })
     );
     nar(o);
   });
 }
 function style(f) {
-  return E.get((elm) => {
+  return get((elm) => {
     if (elm instanceof HTMLElement) f(elm.style);
   });
 }
@@ -53,15 +71,15 @@ const C = (
   init: {| n: number |} = { n: 0 }
 ) => (o) => {
   o(
-    E.element(
+    element(
       "div",
       api(function pith(o) {
         o(
           button(
             function (o) {
-              width50percent(o);
-              pstyles(anim)(o);
-              o(E.text("+"));
+              o(width50percent());
+              o(pstyles(anim));
+              o(text("+"));
               depth > 0 && E.rmap("+", init)(C(depth - 1, anim))(o);
             },
             () => action(1)
@@ -70,9 +88,9 @@ const C = (
         o(
           button(
             function (o) {
-              width50percent(o);
-              mstyles(anim)(o);
-              o(E.text("-"));
+              o(width50percent());
+              o(mstyles(anim));
+              o(text("-"));
               depth > 0 && E.rmap("-", init)(C(depth - 1, anim))(o);
             },
             () => action(-1)
@@ -80,12 +98,12 @@ const C = (
         );
         var op;
         o(
-          E.element("div", (o) => {
+          element("div", (o) => {
             op = o;
-            css(o);
+            o(css());
             o(
-              E.reduce((s) => {
-                o(E.text(s.n + ""));
+              reduce((s) => {
+                o(text(s.n + ""));
                 return s;
               })
             );
@@ -93,14 +111,14 @@ const C = (
         );
         const action = (n) => {
           o(
-            E.reduce(function (s) {
+            reduce(function (s) {
               return { ...s, n: s.n + n };
             })
           );
           o(
-            E.reduce((s) => {
-              op(E.text(s.n + ""));
-              op(E.end);
+            reduce((s) => {
+              op(text(s.n + ""));
+              op(end);
               return s;
             })
           );
@@ -111,85 +129,73 @@ const C = (
   );
 };
 C(2)(o);
-o(E.end);
+o(end);
 
 Object.assign(window, { o, C, E });
 
 function pstyles(anim) {
-  return (o) =>
-    o(
-      E.get((elm) => {
-        if (!(elm instanceof HTMLElement)) return;
-        elm.style.position = "relative";
-        elm.style.fontSize = "18px";
-        var id = requestAnimationFrame(frame);
-        var t = 0;
-        function frame() {
-          t = t > 6.28 ? 0 : t + 0.1;
-          elm.style.borderRadius =
-            Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
-          if (anim) {
-            elm.style.left = Math.floor(Math.cos(t) * 10) + "px";
-            elm.style.top = Math.floor(Math.sin(t) * 10) + "px";
-          }
-          elm.style.backgroundColor = `rgb(255, ${
-            Math.floor(Math.cos(t) * 30) + 100
-          }, ${Math.floor(Math.sin(t) * 30) + 100})`;
-          id = requestAnimationFrame(frame);
-        }
-        o(E.dispose(() => cancelAnimationFrame(id)));
-      })
-    );
+  return get((elm) => {
+    if (!(elm instanceof HTMLElement)) return;
+    elm.style.position = "relative";
+    elm.style.fontSize = "18px";
+    var id = requestAnimationFrame(frame);
+    var t = 0;
+    function frame() {
+      t = t > 6.28 ? 0 : t + 0.1;
+      elm.style.borderRadius = Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
+      if (anim) {
+        elm.style.left = Math.floor(Math.cos(t) * 10) + "px";
+        elm.style.top = Math.floor(Math.sin(t) * 10) + "px";
+      }
+      elm.style.backgroundColor = `rgb(255, ${
+        Math.floor(Math.cos(t) * 30) + 100
+      }, ${Math.floor(Math.sin(t) * 30) + 100})`;
+      id = requestAnimationFrame(frame);
+    }
+    o(dispose(() => cancelAnimationFrame(id)));
+  });
 }
 function mstyles(anim) {
-  return (o) =>
-    o(
-      E.get((elm) => {
-        if (!(elm instanceof HTMLElement)) return;
-        elm.style.position = "relative";
-        elm.style.fontSize = "18px";
-        var id = requestAnimationFrame(frame);
-        var t = 0;
-        function frame() {
-          t = t > 6.28 ? 0 : t + 0.1;
-          elm.style.borderRadius =
-            Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
-          if (anim) {
-            elm.style.left = Math.floor(Math.sin(t) * 10) + "px";
-            elm.style.top = Math.floor(Math.cos(t) * 10) + "px";
-          }
-          elm.style.backgroundColor = `rgb(${
-            Math.floor(Math.cos(t) * 30) + 100
-          }, ${Math.floor(Math.sin(t) * 30) + 100}, 255)`;
-          id = requestAnimationFrame(frame);
-        }
-        o(E.dispose(() => cancelAnimationFrame(id)));
-      })
-    );
+  return get((elm) => {
+    if (!(elm instanceof HTMLElement)) return;
+    elm.style.position = "relative";
+    elm.style.fontSize = "18px";
+    var id = requestAnimationFrame(frame);
+    var t = 0;
+    function frame() {
+      t = t > 6.28 ? 0 : t + 0.1;
+      elm.style.borderRadius = Math.abs(Math.floor(Math.sin(t) * 10)) + "px";
+      if (anim) {
+        elm.style.left = Math.floor(Math.sin(t) * 10) + "px";
+        elm.style.top = Math.floor(Math.cos(t) * 10) + "px";
+      }
+      elm.style.backgroundColor = `rgb(${Math.floor(Math.cos(t) * 30) + 100}, ${
+        Math.floor(Math.sin(t) * 30) + 100
+      }, 255)`;
+      id = requestAnimationFrame(frame);
+    }
+    o(dispose(() => cancelAnimationFrame(id)));
+  });
 }
-function css(o) {
-  return o(
-    E.get((elm) => {
-      if (!(elm instanceof HTMLElement)) return;
-      const s = elm.style;
-      s.width = "50%";
-      s.height = "1.5em";
-      s.backgroundColor = "black";
-      s.color = "white";
-      s.marginLeft = "auto";
-      s.marginRight = "auto";
-      s.textAlign = "center";
-      s.borderRadius = "10px";
-      s.marginTop = "10px";
-      s.marginBottom = "10px";
-    })
-  );
+function css() {
+  return get((elm) => {
+    if (!(elm instanceof HTMLElement)) return;
+    const s = elm.style;
+    s.width = "50%";
+    s.height = "1.5em";
+    s.backgroundColor = "black";
+    s.color = "white";
+    s.marginLeft = "auto";
+    s.marginRight = "auto";
+    s.textAlign = "center";
+    s.borderRadius = "10px";
+    s.marginTop = "10px";
+    s.marginBottom = "10px";
+  });
 }
-function width50percent(o) {
-  return o(
-    E.get((elm) => {
-      if (!(elm instanceof HTMLElement)) return;
-      elm.style.width = "50%";
-    })
-  );
+function width50percent() {
+  return get((elm) => {
+    if (!(elm instanceof HTMLElement)) return;
+    elm.style.width = "50%";
+  });
 }
