@@ -3,15 +3,13 @@ import type { P, N } from "./NP.js";
 export type o_t<S, V> =
   | value_t<V>
   | reduce_t<S>
-  | get_t
+  | action_t
   | end_t
   | text_t
-  | element_t<S, V>
-  | dispose_t;
+  | element_t<S, V>;
 export type text_t = {| _: "text", v: string |};
 export type end_t = {| _: "end", v?: void |};
-export type dispose_t = {| _: "dispose", v: () => void |};
-export type get_t = {| _: "get", v: (Element) => void |};
+export type action_t = {| _: "action", v: (Element) => ?() => void |};
 export type value_t<+V> = {| _: "value", +v: V |};
 export type reduce_t<S> = {| _: "reduce", +v: (S) => S |};
 export type element_t<S, V> = {|
@@ -27,35 +25,24 @@ export function make<S, V>(
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths: Array<?P<o_t<S, V>>> = [];
-  var disposables_count = 0;
-  const disposables: Array<dispose_t> = [];
+  var actions_count = 0;
+  const actions: Array<[action_t, ?() => void]> = [];
   var prev;
   return function pith(x) {
     if ("end" === x._) {
       let rez, l;
       for (l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
+
       l = childPiths.length - childs_count;
       rez = childPiths.splice(childs_count, l);
-      for (let x of rez) x && x({ _: "end", v: void 0 });
       childs_count = 0;
-      l = disposables.length - disposables_count;
-      rez = disposables.splice(disposables_count, l);
-      for (let x of rez) x.v();
-      disposables_count = 0;
-    } else if ("text" === x._) {
-      const index = childs_count++;
-      const l = childNodes.length;
-      for (let i = index; i < l; i++)
-        if (childNodes[i].nodeType === 3 && childNodes[i].textContent === x) {
-          if (index < i) {
-            elm.insertBefore(childNodes[i], childNodes[index]);
-            childPiths.splice(index, 0, ...childPiths.splice(i, 1));
-          }
-          return;
-        }
-      elm.insertBefore(document.createTextNode(x.v), childNodes[index]);
-      childPiths.splice(index, 0, () => {});
+      for (let x of rez) x && x({ _: "end", v: void 0 });
+
+      l = actions.length - actions_count;
+      rez = actions.splice(actions_count, l);
+      actions_count = 0;
+      for (let [x, d] of rez) d && d();
     } else if ("element" === x._) {
       const index = childs_count++;
       const l = childNodes.length;
@@ -96,23 +83,36 @@ export function make<S, V>(
       childPiths.splice(index, 0, ob);
       nar && nar(ob);
       ob({ _: "end", v: void 0 });
-    } else if ("value" === x._) {
-      vo(x);
-    } else if ("reduce" === x._) {
-      ro(x);
-    } else if ("get" === x._) {
-      x.v(elm);
-    } else {
-      const index = disposables_count++;
-      const l = disposables.length;
+    } else if ("text" === x._) {
+      const index = childs_count++;
+      const l = childNodes.length;
       for (let i = index; i < l; i++)
-        if (disposables[i] === x) {
+        if (childNodes[i].nodeType === 3 && childNodes[i].textContent === x) {
           if (index < i) {
-            disposables.splice(index, 0, ...disposables.splice(i, 1));
+            elm.insertBefore(childNodes[i], childNodes[index]);
+            childPiths.splice(index, 0, ...childPiths.splice(i, 1));
           }
           return;
         }
-      disposables.splice(index, 0, x);
+      elm.insertBefore(document.createTextNode(x.v), childNodes[index]);
+      childPiths.splice(index, 0, () => {});
+    } else if ("reduce" === x._) {
+      ro(x);
+    } else if ("value" === x._) {
+      vo(x);
+    } else if ("action" === x._) {
+      const index = actions_count++;
+      const l = actions.length;
+      for (let i = index; i < l; i++)
+        if (actions[i][0] === x) {
+          if (index < i) {
+            actions.splice(index, 0, ...actions.splice(i, 1));
+          }
+          return;
+        }
+      actions.splice(index, 0, [x, x.v(elm)]);
+    } else {
+      throw new Error("undefined o");
     }
   };
 }

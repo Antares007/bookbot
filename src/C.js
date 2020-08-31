@@ -10,11 +10,8 @@ function element(tag, nar, key) {
 function text(v) {
   return { _: "text", v };
 }
-function dispose(v) {
-  return { _: "dispose", v };
-}
-function get(v) {
-  return { _: "get", v };
+function action(v) {
+  return { _: "action", v };
 }
 function value(v) {
   return { _: "value", v };
@@ -37,19 +34,19 @@ const o = E.make(
 function button(nar, l) {
   return element("button", function (o) {
     o(
-      get((elm) => {
+      action((elm) => {
         if (!(elm instanceof HTMLElement)) return;
         const s = elm.style;
         s.borderRadius = "10px";
         elm.addEventListener("click", l);
-        o(dispose(() => elm.removeEventListener("click", l)));
+        return () => elm.removeEventListener("click", l);
       })
     );
     nar(o);
   });
 }
 function style(f) {
-  return get((elm) => {
+  return action((elm) => {
     if (elm instanceof HTMLElement) f(elm.style);
   });
 }
@@ -134,7 +131,7 @@ o(end);
 Object.assign(window, { o, C, E });
 
 function pstyles(anim) {
-  return get((elm) => {
+  return action((elm) => {
     if (!(elm instanceof HTMLElement)) return;
     elm.style.position = "relative";
     elm.style.fontSize = "18px";
@@ -152,11 +149,11 @@ function pstyles(anim) {
       }, ${Math.floor(Math.sin(t) * 30) + 100})`;
       id = requestAnimationFrame(frame);
     }
-    o(dispose(() => cancelAnimationFrame(id)));
+    return () => cancelAnimationFrame(id);
   });
 }
 function mstyles(anim) {
-  return get((elm) => {
+  return action((elm) => {
     if (!(elm instanceof HTMLElement)) return;
     elm.style.position = "relative";
     elm.style.fontSize = "18px";
@@ -174,11 +171,11 @@ function mstyles(anim) {
       }, 255)`;
       id = requestAnimationFrame(frame);
     }
-    o(dispose(() => cancelAnimationFrame(id)));
+    return () => cancelAnimationFrame(id);
   });
 }
 function css() {
-  return get((elm) => {
+  return action((elm) => {
     if (!(elm instanceof HTMLElement)) return;
     const s = elm.style;
     s.width = "50%";
@@ -194,7 +191,7 @@ function css() {
   });
 }
 function width50percent() {
-  return get((elm) => {
+  return action((elm) => {
     if (!(elm instanceof HTMLElement)) return;
     elm.style.width = "50%";
   });
