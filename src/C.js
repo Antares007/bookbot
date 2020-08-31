@@ -62,69 +62,46 @@ const api = (nar) => (o) => {
   });
 };
 
+// prettier-ignore
 const C = (
   depth: number = 3,
   anim: boolean = false,
   init: {| n: number |} = { n: 0 }
-) => (o) => {
-  o(
-    element(
-      "div",
-      api(function pith(o) {
-        o(
-          button(
-            function (o) {
-              o(width50percent());
-              o(pstyles(anim));
-              o(text("+"));
-              depth > 0 && E.rmap("+", init)(C(depth - 1, anim))(o);
-            },
-            () => action(1)
-          )
-        );
-        o(
-          button(
-            function (o) {
-              o(width50percent());
-              o(mstyles(anim));
-              o(text("-"));
-              depth > 0 && E.rmap("-", init)(C(depth - 1, anim))(o);
-            },
-            () => action(-1)
-          )
-        );
-        var op;
-        o(
-          element("div", (o) => {
-            op = o;
-            o(css());
-            o(
-              reduce((s) => {
-                o(text(s.n + ""));
-                return s;
-              })
-            );
-          })
-        );
-        const action = (n) => {
-          o(
-            reduce(function (s) {
-              return { ...s, n: s.n + n };
-            })
-          );
-          o(
-            reduce((s) => {
-              op(text(s.n + ""));
-              op(end);
-              return s;
-            })
-          );
-        };
-      }),
-      "C" + depth + anim.toString()
-    )
-  );
-};
+) => (o) =>
+  o(element("div", api(function pith(o) {
+    o(button(function (o) {
+      o(width50percent());
+      o(pstyles(anim));
+      o(text("+"));
+      depth > 0 && E.rmap("+", init)(C(depth - 1, anim))(o);
+    }, () => action(1)));
+    o(button(function (o) {
+      o(width50percent());
+      o(mstyles(anim));
+      o(text("-"));
+      depth > 0 && E.rmap("-", init)(C(depth - 1, anim))(o);
+    }, () => action(-1)));
+    var op;
+    o(element("div", (o) => {
+      op = o;
+      o(css());
+      o(reduce((s) => {
+        o(text(s.n + ""));
+        return s;
+      }));
+    }));
+    const action = (n) => {
+      o(reduce(function (s) {
+        return { ...s, n: s.n + n };
+      }));
+      o(reduce((s) => {
+        op(text(s.n + ""));
+        op(end);
+        return s;
+      }));
+    };
+  }),
+  "C" + depth + anim.toString()));
 C(2)(o);
 o(end);
 
