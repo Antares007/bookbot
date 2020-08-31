@@ -29,21 +29,7 @@ export function make<S, V>(
   const actions: Array<[action_t, ?() => void]> = [];
   var prev;
   return function pith(x) {
-    if ("end" === x._) {
-      let rez, l;
-      for (l = childNodes.length; l > childs_count; l--)
-        elm.removeChild(childNodes[childs_count]);
-
-      l = childPiths.length - childs_count;
-      rez = childPiths.splice(childs_count, l);
-      childs_count = 0;
-      for (let x of rez) x && x({ _: "end", v: void 0 });
-
-      l = actions.length - actions_count;
-      rez = actions.splice(actions_count, l);
-      actions_count = 0;
-      for (let [x, d] of rez) d && d();
-    } else if ("element" === x._) {
+    if ("element" === x._) {
       const index = childs_count++;
       const l = childNodes.length;
       const TAG = x.v.tag.toUpperCase();
@@ -111,6 +97,20 @@ export function make<S, V>(
           return;
         }
       actions.splice(index, 0, [x, x.v(elm)]);
+    } else if ("end" === x._) {
+      let rez, l;
+      for (l = childNodes.length; l > childs_count; l--)
+        elm.removeChild(childNodes[childs_count]);
+
+      l = childPiths.length - childs_count;
+      rez = childPiths.splice(childs_count, l);
+      childs_count = 0;
+      for (let x of rez) x && x({ _: "end", v: void 0 });
+
+      l = actions.length - actions_count;
+      rez = actions.splice(actions_count, l);
+      actions_count = 0;
+      for (let [x, d] of rez) d && d();
     } else {
       throw new Error("undefined o");
     }
