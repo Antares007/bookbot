@@ -4,8 +4,8 @@ import type { P, N } from "./NP";
 import * as E from "./E.js";
 
 const end = { _: "end" };
-function element(tag, nar, key) {
-  return { _: "element", v: { tag, nar, key } };
+function element(sel, nar, key) {
+  return { _: "element", v: { sel, nar, key } };
 }
 function text(v) {
   return { _: "text", v };

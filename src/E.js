@@ -14,7 +14,7 @@ export type value_t<+V> = {| _: "value", +v: V |};
 export type reduce_t<S> = {| _: "reduce", +v: (S) => S |};
 export type element_t<S, V> = {|
   _: "element",
-  v: { tag: string, nar?: ?N<o_t<S, V>>, key?: ?string },
+  v: { sel: string, nar?: ?N<o_t<S, V>>, key?: ?string },
 |};
 export function make<S, V>(
   ro: P<reduce_t<S>>,
@@ -32,7 +32,7 @@ export function make<S, V>(
     if ("element" === x._) {
       const index = childs_count++;
       const l = childNodes.length;
-      const TAG = x.v.tag.toUpperCase();
+      const { tag, classList, id } = parseSelector(x.v.sel);
       const nar = x.v.nar;
       const key = x.v.key;
       var n;
@@ -40,7 +40,7 @@ export function make<S, V>(
         if (
           (n = childNodes[i]) &&
           n instanceof HTMLElement &&
-          n.nodeName === TAG &&
+          n.nodeName === tag &&
           (!key || n.getAttribute("key") === key)
         ) {
           if (index < i) {
@@ -61,7 +61,7 @@ export function make<S, V>(
           return;
         }
       const child = elm.insertBefore(
-        document.createElement(x.v.tag),
+        document.createElement(tag),
         childNodes[index]
       );
       if (key) child.setAttribute("key", key);
@@ -150,4 +150,25 @@ function hashCode(x: string): number {
     hash |= 0; // Convert to 32bit integer
   }
   return hash;
+}
+function parseSelector(sel) {
+  const classList = [];
+  const l = sel.length;
+  var tag = "";
+  var i = 0;
+  var id;
+  var tmp;
+  while (i < l && sel[i] !== "." && sel[i] !== "#") tag += sel[i++];
+  tag = tag.length ? tag.toUpperCase() : "DIV";
+  while (i < l) {
+    tmp = "";
+    if (sel[i] === ".") {
+      while (++i < l && sel[i] !== "." && sel[i] !== "#") tmp += sel[i];
+      if (tmp.length) classList.push(tmp);
+    } else if (sel[i] === "#") {
+      while (++i < l && sel[i] !== "." && sel[i] !== "#") tmp += sel[i];
+      if (tmp.length) id = tmp;
+    }
+  }
+  return { tag, classList, id };
 }
