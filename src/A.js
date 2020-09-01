@@ -1,38 +1,62 @@
 // @flow strict
-function nard(o) {
-  o({ _: ("action": "action"), v: nard });
-  o({ _: ("dispose": "dispose"), v: () => {} });
-  o({ _: ("end": "end") });
+function nargo(o) {
+  o({ t: ("go": "go"), v: nargo });
+  o({ t: ("dispose": "dispose"), v: () => {} });
+  o({ t: ("end": "end") });
 }
-function makeD() {
-  var count = 0;
-  const list = [];
-  return function pith(x) {
-    if ("action" === x._) {
-    } else if ("dispose" === x._) {
-      const index = count++;
-      const l = list.length;
+function makeNargosPith() {
+  var nargos_count = 0;
+  const nargos = [];
+  const nargo_piths = [];
+  var disposables_count = 0;
+  const disposables = [];
+  return function pith(r) {
+    if ("go" === r.t) {
+      const index = nargos_count++;
+      const l = nargos.length;
       for (let i = index; i < l; i++)
-        if (list[i] === x) {
+        if (nargos[i] === r.v) {
           if (index < i) {
-            list.splice(index, 0, ...list.splice(i, 1));
+            nargos.splice(index, 0, ...nargos.splice(i, 1));
+            nargo_piths.splice(index, 0, ...nargo_piths.splice(i, 1));
           }
           return;
         }
-      list.splice(index, 0, x);
-    } else if ("end" === x._) {
-      const l = list.length - count;
-      const rez = list.splice(count, l);
-      count = 0;
-      for (let r of rez) r.v();
+      const o = makeNargosPith();
+      nargos.splice(index, 0, r.v);
+      nargo_piths.splice(index, 0, o);
+      r.v(o);
+      o({ t: "end" });
+    } else if ("dispose" === r.t) {
+      const index = disposables_count++;
+      const l = disposables.length;
+      for (let i = index; i < l; i++)
+        if (disposables[i] === r.v) {
+          if (index < i) {
+            disposables.splice(index, 0, ...disposables.splice(i, 1));
+          }
+          return;
+        }
+      disposables.splice(index, 0, r.v);
+    } else if ("end" === r.t) {
+      let l, rez;
+      l = nargos.length - nargos_count;
+      rez = nargos.splice(nargos_count, l);
+      rez = nargo_piths.splice(nargos_count, l);
+      nargos_count = 0;
+      for (let r of rez) r({ t: "end" });
+
+      l = disposables.length - disposables_count;
+      rez = disposables.splice(disposables_count, l);
+      disposables_count = 0;
+      for (let r of rez) r();
     } else {
-      (x: empty);
+      (r: empty);
       throw new Error("A");
     }
   };
 }
 
 if (false) {
-  const o = makeD();
-  nard(o);
+  nargo(makeNargosPith());
 }
