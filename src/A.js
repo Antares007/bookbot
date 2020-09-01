@@ -1,37 +1,38 @@
 // @flow strict
-function nar(o) {
-  o({ _: ("action": "action"), v: nar });
+function nard(o) {
+  o({ _: ("action": "action"), v: nard });
   o({ _: ("dispose": "dispose"), v: () => {} });
   o({ _: ("end": "end") });
 }
-
-function make() {
-  var actions_count = 0;
-  const actions = [];
+function makeD() {
+  var count = 0;
+  const list = [];
   return function pith(x) {
     if ("action" === x._) {
-      x;
-      //     const index = actions_count++;
-      //     const l = actions.length;
-      //     for (let i = index; i < l; i++)
-      //       if (actions[i][0] === x) {
-      //         if (index < i) {
-      //           actions.splice(index, 0, ...actions.splice(i, 1));
-      //         }
-      //         return;
-      //       }
-      //     actions.splice(index, 0, [x, x.v]);
     } else if ("dispose" === x._) {
-      x;
+      const index = count++;
+      const l = list.length;
+      for (let i = index; i < l; i++)
+        if (list[i] === x) {
+          if (index < i) {
+            list.splice(index, 0, ...list.splice(i, 1));
+          }
+          return;
+        }
+      list.splice(index, 0, x);
     } else if ("end" === x._) {
-      //     const l = actions.length - actions_count;
-      //     const rez = actions.splice(actions_count, l);
-      //     actions_count = 0;
-      //     for (let [x, d] of rez) d && d();
+      const l = list.length - count;
+      const rez = list.splice(count, l);
+      count = 0;
+      for (let r of rez) r.v();
     } else {
       (x: empty);
       throw new Error("A");
     }
   };
 }
-if (false) nar(make());
+
+if (false) {
+  const o = makeD();
+  nard(o);
+}
