@@ -1,0 +1,25 @@
+{
+  "languageserver": {
+    "clangd": {
+      "command": "clangd",
+      "rootPatterns": ["compile_flags.txt", "compile_commands.json"],
+      "filetypes": ["c", "cc", "cpp", "c++", "objc", "objcpp"]
+    },
+    "flow": {
+      "command": "./node_modules/.bin/flow",
+      "args": ["lsp"],
+      "filetypes": ["javascript", "javascriptreact"],
+      "initializationOptions": {},
+      "requireRootPattern": true,
+      "settings": {},
+      "rootPatterns": [".flowconfig"]
+    }
+  },
+  "coc.preferences.formatOnSaveFiletypes": [
+    "cpp",
+    "c",
+    "javascript",
+    "css",
+    "markdown"
+  ]
+}
