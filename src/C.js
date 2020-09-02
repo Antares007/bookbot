@@ -3,21 +3,21 @@ import { static_cast } from "./static_cast.js";
 import type { P, N } from "./NP";
 import * as E from "./E.js";
 
-const end = { _: "end" };
+const end = { t: "end" };
 function element(sel, nar, key) {
-  return { _: "element", v: { sel, nar, key } };
+  return { t: "element", v: { sel, nar, key } };
 }
 function text(v) {
-  return { _: "text", v };
+  return { t: "string", v };
 }
 function action(v) {
-  return { _: "action", v };
+  return { t: "action", v };
 }
 function value(v) {
   return { _: "value", v };
 }
 function reduce(v) {
-  return { _: "reduce", v };
+  return { t: "reduce", v };
 }
 var state = { n: 0 };
 
@@ -53,11 +53,11 @@ function style(f) {
 const api = (nar) => (o) => {
   nar((x) => {
     if ("string" === typeof x) {
-      o({ _: "text", v: x });
+      o({ t: "string", v: x });
     } else if ("number" === typeof x) {
-      o({ _: "text", v: x + "" });
-    } else if ("element" === x._) {
-      o({ _: "element", v: { ...x.v, nar: E.mmap(api)(x.v.nar) } });
+      o({ t: "string", v: x + "" });
+    } else if ("element" === x.t) {
+      o({ t: "element", v: { ...x.v, nar: E.mmap(api)(x.v.nar) } });
     } else o(x);
   });
 };
