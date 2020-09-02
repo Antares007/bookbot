@@ -143,13 +143,10 @@ export function rmap<A: { ... }, B, V>(
     });
   };
 }
-function hashCode(x: string): number {
-  var hash = 0;
-  for (let i = 0; i < x.length; i++) {
-    hash = (hash << 5) - hash + x.charCodeAt(i);
-    hash |= 0; // Convert to 32bit integer
-  }
-  return hash;
+function hashString(s) {
+  for (var i = 0, h = 0; i < s.length; i++)
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return h;
 }
 function parseSelector(sel) {
   const classList = [];
