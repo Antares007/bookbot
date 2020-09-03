@@ -1,21 +1,20 @@
 // @flow strict
-function nar0(o) {
-  o({
-    t: ("element": "element"),
-    v: { tag: "string", nar0, key: "string" },
-  });
-  o({
-    t: ("element": "element"),
-    v: { tag: "string", nar0 },
-  });
-  o({ t: ("text": "text"), v: "string" });
-  o({ t: ("end": "end") });
-}
+import type { N, P } from "./NP";
 
-function make(elm, depth = 0) {
+type o_t = element_t | text_t | end_t;
+
+type element_t = {|
+  t: "element",
+  v: {| tag: string, nar: N<o_t>, key?: ?string |},
+|};
+type text_t = {| t: "text", v: string |};
+type end_t = {| t: "end" |};
+type action_t = {| t: "action", v: ((o_t) => void, Element) => void |};
+
+function make(elm: Element, depth: number = 0): P<o_t> {
   var childs_count = 0;
   const { childNodes } = elm;
-  const childPiths = [];
+  const childPiths: Array<?P<o_t>> = [];
   return function pith(r) {
     if ("element" === r.t) {
       const index = childs_count++;
@@ -36,13 +35,13 @@ function make(elm, depth = 0) {
           let ob = childPiths[index];
           if (ob) {
             if (r.v.key) return;
-            r.v.nar && r.v.nar(ob);
+            r.v.nar(ob);
             ob({ t: "end" });
             return;
           }
           ob = make(n, depth + 1);
           childPiths.splice(index, 0, ob);
-          r.v.nar && r.v.nar(ob);
+          r.v.nar(ob);
           ob({ t: "end" });
           return;
         }
@@ -53,7 +52,7 @@ function make(elm, depth = 0) {
       if (r.v.key) child.setAttribute("key", r.v.key);
       const ob = make(child, depth + 1);
       childPiths.splice(index, 0, ob);
-      r.v.nar && r.v.nar(ob);
+      r.v.nar(ob);
       ob({ t: "end" });
     } else if ("text" === r.t) {
       const index = childs_count++;
@@ -67,7 +66,7 @@ function make(elm, depth = 0) {
           return;
         }
       elm.insertBefore(document.createTextNode(r.v), childNodes[index]);
-      childPiths.splice(index, 0, (o) => {});
+      childPiths.splice(index, 0, null);
     } else if ("end" === r.t) {
       for (let l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);

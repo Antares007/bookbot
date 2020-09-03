@@ -57,7 +57,7 @@ const api = (nar) => (o) => {
     } else if ("number" === typeof x) {
       o({ t: "string", v: x + "" });
     } else if ("element" === x.t) {
-      o({ t: "element", v: { ...x.v, nar: E.mmap(api)(x.v.nar) } });
+      o({ t: "element", v: { ...x.v, nar: api(x.v.nar) } });
     } else o(x);
   });
 };

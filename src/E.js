@@ -14,8 +14,28 @@ export type value_t<+V> = {| t: "value", +v: V |};
 export type reduce_t<S> = {| t: "reduce", +v: (S) => S |};
 export type element_t<S, V> = {|
   t: "element",
-  v: { sel: string, nar?: ?N<o_t<S, V>>, key?: ?string },
+  v: { sel: string, nar: N<o_t<S, V>>, key?: ?string },
 |};
+export const end: end_t = { t: "end" };
+export function element<S, V, T>(
+  pmap: (T) => N<o_t<S, V>>
+): (string, T, ?string) => element_t<S, V> {
+  return (sel, t, key) => {
+    return { t: "element", v: { sel, nar: pmap(t), key } };
+  };
+}
+export function text(v: string): string_t {
+  return { t: "string", v };
+}
+export function action(v: (Element) => ?() => void): action_t {
+  return { t: "action", v };
+}
+export function value<V>(v: V): value_t<V> {
+  return { t: "value", v };
+}
+export function reduce<S>(v: (S) => S): reduce_t<S> {
+  return { t: "reduce", v };
+}
 export function make<S, V>(
   ro: P<reduce_t<S>>,
   vo: P<value_t<V>>,
@@ -50,14 +70,14 @@ export function make<S, V>(
           let ob = childPiths[index];
           if (ob) {
             if (key) return;
-            nar && nar(ob);
-            ob({ t: "end", v: void 0 });
+            nar(ob);
+            ob({ t: "end" });
             return;
           }
           ob = make(ro, vo, n, depth + 1);
           childPiths.splice(index, 0, ob);
-          nar && nar(ob);
-          ob({ t: "end", v: void 0 });
+          nar(ob);
+          ob({ t: "end" });
           return;
         }
       const child = elm.insertBefore(
@@ -67,13 +87,13 @@ export function make<S, V>(
       if (key) child.setAttribute("key", key);
       const ob = make(ro, vo, child, depth + 1);
       childPiths.splice(index, 0, ob);
-      nar && nar(ob);
-      ob({ t: "end", v: void 0 });
+      nar(ob);
+      ob({ t: "end" });
     } else if ("string" === x.t) {
       const index = childs_count++;
       const l = childNodes.length;
       for (let i = index; i < l; i++)
-        if (childNodes[i].nodeType === 3 && childNodes[i].textContent === x) {
+        if (childNodes[i].nodeType === 3 && childNodes[i].textContent === x.v) {
           if (index < i) {
             elm.insertBefore(childNodes[i], childNodes[index]);
             childPiths.splice(index, 0, ...childPiths.splice(i, 1));
@@ -81,7 +101,7 @@ export function make<S, V>(
           return;
         }
       elm.insertBefore(document.createTextNode(x.v), childNodes[index]);
-      childPiths.splice(index, 0, () => {});
+      childPiths.splice(index, 0, null);
     } else if ("reduce" === x.t) {
       ro(x);
     } else if ("value" === x.t) {
@@ -105,7 +125,7 @@ export function make<S, V>(
       l = childPiths.length - childs_count;
       rez = childPiths.splice(childs_count, l);
       childs_count = 0;
-      for (let x of rez) x && x({ t: "end", v: void 0 });
+      for (let x of rez) x && x({ t: "end" });
 
       l = actions.length - actions_count;
       rez = actions.splice(actions_count, l);
@@ -136,7 +156,7 @@ export function rmap<A: { ... }, B, V>(
           },
         });
       } else if ("element" === x.t) {
-        o({ ...x, v: { ...x.v, nar: mmap(rmap(key, b))(x.v.nar) } });
+        o({ ...x, v: { ...x.v, nar: rmap(key, b)(x.v.nar) } });
       } else {
         o(x);
       }
