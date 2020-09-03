@@ -61,6 +61,8 @@ export function make<S, V>(
           (n = childNodes[i]) &&
           n instanceof HTMLElement &&
           n.nodeName === tag &&
+          classList.every(n.classList.contains.bind(n.classList)) &&
+          (!id || n.id === id) &&
           (!key || n.getAttribute("key") === key)
         ) {
           if (index < i) {
@@ -80,11 +82,11 @@ export function make<S, V>(
           ob({ t: "end" });
           return;
         }
-      const child = elm.insertBefore(
-        document.createElement(tag),
-        childNodes[index]
-      );
+      const child = document.createElement(tag);
       if (key) child.setAttribute("key", key);
+      if (id) child.id = id;
+      for (let str of classList) child.classList.add(str);
+      elm.insertBefore(child, childNodes[index]);
       const ob = make(ro, vo, child, depth + 1);
       childPiths.splice(index, 0, ob);
       nar(ob);
