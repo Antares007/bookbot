@@ -9,8 +9,7 @@
     "@babel/preset-env": "^7.11.5",
     "@babel/preset-flow": "^7.10.4",
     "@babel/register": "^7.11.5",
-    "electron": "^9.2.0",
-    "flow-bin": "^0.132.0"
+    "flow-bin": "^0.133.0"
   },
   "scripts": {},
   "dependencies": {}
