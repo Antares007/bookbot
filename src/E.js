@@ -1,14 +1,13 @@
 // @flow strict
 import type { P, N } from "./NP.js";
 
-export type o_t = action_t | end_t | string_t | element_t;
+export type o_t = action_t | end_t | text_t | element_t;
 
-export type string_t = {| t: "text", v: string |};
+export type text_t = {| t: "text", v: string |};
 export type end_t = {| t: "end", v?: void |};
 export type action_t = {| t: "action", v: (Element) => ?() => void |};
-export type element_t = {| t: "element", v: t0_t |};
-
-type t0_t = {| sel: string, nar: N<o_t>, key?: ?string |};
+export type element_t = {| t: "element", v: element_v_t |};
+type element_v_t = {| sel: string, nar: N<o_t>, key?: ?string |};
 
 export const end: end_t = { t: "end" };
 export function element<T>(
@@ -18,7 +17,7 @@ export function element<T>(
     return { t: "element", v: { sel, nar: pmap(t), key } };
   };
 }
-export function text(v: string): string_t {
+export function text(v: string): text_t {
   return { t: "text", v };
 }
 export function action(v: (Element) => ?() => void): action_t {
