@@ -2,34 +2,42 @@
 import type { P, N } from "./NP";
 import * as E from "./E.js";
 
-var state = { n: 0 };
+const C = (r, d: number = 2) =>
+  E.element(reduce<{ n: number }>(r))("div", (o) => {
+    var op;
+    o("button", (o) => {
+      o(on("click")((e) => (o((s) => ({ ...s, n: s.n + 1 })), redraw())));
+      o("+");
+      d > 0 && o(C(rmap(r)("+", { n: 0 }), d - 1));
+    });
+    o("button", (o) => {
+      o(on("click")((e) => (o((s) => ({ ...s, n: s.n - 1 })), redraw())));
+      o("-");
+      d > 0 && o(C(rmap(r)("-", { n: 0 }), d - 1));
+    });
+    const redraw = () => {
+      o((s) => (op(s.n + ""), s));
+      op(E.end);
+    };
+    o("div", (o) => {
+      op = o;
+      o((s) => (o(s.n + ""), s));
+    });
+  });
 
 const o = E.make((document.body = document.createElement("body")));
 
-type str_api_nar_t = (str_api_pith_t) => void;
-const C = (r, d: number = 2) =>
-  E.element(reduce<{ n: number }>(r))("div", (o) => {
-    o("button", (o) => {
-      o((s) => ({ ...s, n: s.n + 1 }));
-      o("+");
-      d > 0 && o(C(rmap(r)("+", { n: 0 + d }), d - 1));
-    });
-    o("button", (o) => {
-      o((s) => ({ ...s, n: s.n - 1 }));
-      o("-");
-      d > 0 && o(C(rmap(r)("-", { n: 0 - d }), d - 1));
-    });
-    o((s) => (o(s.n + ""), s));
-  });
-var state = { n: 9 };
+var state = { n: 0 };
 o(
   C((r) => {
+    const oldstate = state;
     state = r(state);
-    console.log(state);
+    if (oldstate !== state) console.log(state);
   })
 );
 o({ t: "end" });
-//Object.assign(window, { o, C, E, str_api });
+
+Object.assign(window, { o, C, E, str_api });
 
 type reduce_api_pith_t<S> = (
   ((S) => S) | string | E.o_t,
@@ -69,4 +77,11 @@ function str_api(nar: (str_api_pith_t) => void): N<E.o_t> {
           : o(E.text(r))
         : o(r)
     );
+}
+function on(type) {
+  return (l: EventHandler) =>
+    E.action((elm) => {
+      elm.addEventListener(type, l);
+      return () => elm.removeEventListener(type, l);
+    });
 }
