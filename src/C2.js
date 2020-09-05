@@ -12,12 +12,12 @@ const C = (r, d: number = 2) =>
     o("button", (o) => {
       o((s) => ({ ...s, n: s.n + 1 }));
       o("+");
-      d > 0 && o(C(rmap("+", { n: 0 + d })(r), d - 1));
+      d > 0 && o(C(rmap(r)("+", { n: 0 + d }), d - 1));
     });
     o("button", (o) => {
       o((s) => ({ ...s, n: s.n - 1 }));
       o("-");
-      d > 0 && o(C(rmap("-", { n: 0 - d })(r), d - 1));
+      d > 0 && o(C(rmap(r)("-", { n: 0 - d }), d - 1));
     });
     o((s) => (o(s.n + ""), s));
   });
@@ -46,11 +46,8 @@ function reduce<S>(
       )
     );
 }
-function rmap<A: { ... }, B>(
-  key: string,
-  init: B
-): (P<(A) => A>) => P<(B) => B> {
-  return (o) => (rb) =>
+function rmap<A: { ... }, B>(o: P<(A) => A>): (string, B) => P<(B) => B> {
+  return (key, init) => (rb) =>
     o((a) => {
       const ob = a[key] || init;
       const nb = rb(ob);
