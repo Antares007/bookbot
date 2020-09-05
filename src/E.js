@@ -115,11 +115,6 @@ export function make(elm: Element, depth: number = 0): P<o_t> {
     }
   };
 }
-function hashString(s: string): number {
-  for (var i = 0, h = 0; i < s.length; i++)
-    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  return h;
-}
 function parseSelector(
   sel: string
 ): {| tag: string, classList: Array<string>, id: ?string |} {
@@ -134,10 +129,7 @@ function parseSelector(
   while (i < l) {
     tmp = "";
     if (sel[i] === ".") {
-      while (++i < l && sel[i] !== "." && sel[i] !== "#") {
-        let see: string = sel[i];
-        tmp += see;
-      }
+      while (++i < l && sel[i] !== "." && sel[i] !== "#") tmp += sel[i];
       if (tmp.length) classList.push(tmp);
     } else if (sel[i] === "#") {
       while (++i < l && sel[i] !== "." && sel[i] !== "#") tmp += sel[i];
@@ -146,3 +138,8 @@ function parseSelector(
   }
   return { tag, classList, id };
 }
+//function hashString(s: string): number {
+//  for (var i = 0, h = 0; i < s.length; i++)
+//    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+//  return h;
+//}
