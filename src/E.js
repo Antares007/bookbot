@@ -26,18 +26,16 @@ export function action(v: (Element) => ?() => void): action_t {
 export function make(elm: Element, depth: number = 0): P<o_t> {
   var childs_count = 0;
   const { childNodes } = elm;
-  const childPiths: Array<?P<o_t>> = [];
+  const childPiths = [];
   var actions_count = 0;
-  const actions: Array<[action_t, ?() => void]> = [];
-  return function pith(x) {
-    if ("element" === x.t) {
+  const actions = [];
+  return function pith(r) {
+    if ("element" === r.t) {
+      var n, ob;
       const index = childs_count++;
-      const l = childNodes.length;
-      const { tag, classList, id } = parseSelector(x.v.sel);
-      const nar = x.v.nar;
-      const key = x.v.key;
-      var n;
-      for (let i = index; i < l; i++)
+      const { sel, nar, key } = r.v;
+      const { tag, classList, id } = parseSelector(sel);
+      for (let i = index, l = childNodes.length; i < l; i++)
         if (
           (n = childNodes[i]) &&
           n instanceof HTMLElement &&
@@ -46,73 +44,63 @@ export function make(elm: Element, depth: number = 0): P<o_t> {
           (!id || n.id === id) &&
           (!key || n.getAttribute("key") === key)
         ) {
-          if (index < i) {
-            elm.insertBefore(n, childNodes[index]);
-            childPiths.splice(index, 0, ...childPiths.splice(i, 1));
-          }
-          let ob = childPiths[index];
-          if (ob) {
+          if (index < i)
+            elm.insertBefore(n, childNodes[index]),
+              childPiths.splice(index, 0, ...childPiths.splice(i, 1));
+
+          if ((ob = childPiths[index]))
             if (key) return;
-            nar(ob);
-            ob({ t: "end" });
-            return;
-          }
-          ob = make(n, depth + 1);
-          childPiths.splice(index, 0, ob);
-          nar(ob);
-          ob({ t: "end" });
-          return;
+            else return nar(ob), ob({ t: "end" });
+          childPiths.splice(index, 0, (ob = make(n, depth + 1)));
+          return nar(ob), ob({ t: "end" });
         }
-      const child = document.createElement(tag);
-      if (key) child.setAttribute("key", key);
-      if (id) child.id = id;
-      for (let str of classList) child.classList.add(str);
-      elm.insertBefore(child, childNodes[index]);
-      const ob = make(child, depth + 1);
-      childPiths.splice(index, 0, ob);
-      nar(ob);
-      ob({ t: "end" });
-    } else if ("text" === x.t) {
+      n = document.createElement(tag);
+      if (key) n.setAttribute("key", key);
+      if (id) n.id = id;
+      for (let str of classList) n.classList.add(str);
+      elm.insertBefore(n, childNodes[index]),
+        childPiths.splice(index, 0, (ob = make(n, depth + 1)));
+      nar(ob), ob({ t: "end" });
+    } else if ("text" === r.t) {
       const index = childs_count++;
-      const l = childNodes.length;
-      for (let i = index; i < l; i++)
-        if (childNodes[i].nodeType === 3 && childNodes[i].textContent === x.v) {
-          if (index < i) {
-            elm.insertBefore(childNodes[i], childNodes[index]);
-            childPiths.splice(index, 0, ...childPiths.splice(i, 1));
-          }
+      const text = r.v;
+      for (let i = index, l = childNodes.length; i < l; i++)
+        if (
+          childNodes[i].nodeType === 3 &&
+          childNodes[i].textContent === text
+        ) {
+          if (index < i)
+            elm.insertBefore(childNodes[i], childNodes[index]),
+              childPiths.splice(index, 0, ...childPiths.splice(i, 1));
           return;
         }
-      elm.insertBefore(document.createTextNode(x.v), childNodes[index]);
-      childPiths.splice(index, 0, null);
-    } else if ("action" === x.t) {
+      elm.insertBefore(document.createTextNode(text), childNodes[index]),
+        childPiths.splice(index, 0, null);
+    } else if ("action" === r.t) {
       const index = actions_count++;
-      const l = actions.length;
-      for (let i = index; i < l; i++)
-        if (actions[i][0] === x) {
-          if (index < i) {
-            actions.splice(index, 0, ...actions.splice(i, 1));
-          }
+      const a = r.v;
+      for (let i = index, l = actions.length; i < l; i++)
+        if (actions[i][0] === a) {
+          if (index < i) actions.splice(index, 0, ...actions.splice(i, 1));
           return;
         }
-      actions.splice(index, 0, [x, x.v(elm)]);
-    } else if ("end" === x.t) {
-      let rez, l;
-      for (l = childNodes.length; l > childs_count; l--)
+      actions.splice(index, 0, [a, a(elm)]);
+    } else if ("end" === r.t) {
+      for (let l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
-
-      l = childPiths.length - childs_count;
-      rez = childPiths.splice(childs_count, l);
+      const piths = childPiths.splice(
+        childs_count,
+        childPiths.length - childs_count
+      );
       childs_count = 0;
-      for (let x of rez) x && x({ t: "end" });
-
-      l = actions.length - actions_count;
-      rez = actions.splice(actions_count, l);
+      const disposables = actions.splice(
+        actions_count,
+        actions.length - actions_count
+      );
       actions_count = 0;
-      for (let [x, d] of rez) d && d();
-    } else {
-      throw new Error("undefined o");
-    }
+      for (let mp of piths) mp && mp({ t: "end" });
+      for (let [_, md] of disposables) md && md();
+    } else throw new Error("invalid rvalue: " + JSON.stringify(r));
   };
 }
 function parseSelector(
