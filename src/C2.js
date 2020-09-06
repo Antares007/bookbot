@@ -16,11 +16,12 @@ const C = (r, d: number = 2) =>
       d > 0 && o(C(R.rmap(r)("-", { n: 0 }), d - 1));
     });
     var op;
-    o("div", (o) => {
+    const draw = (o) => {
       op = o;
-    });
-    const redraw = () => (o((s) => (op(s.n + ""), s)), op(E.end));
-    redraw();
+      o((s) => (op(s.n + ""), s));
+    };
+    o("div", draw);
+    const redraw = () => (draw(op), op(E.end));
   });
 
 const o = E.make((document.body = document.createElement("body")));

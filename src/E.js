@@ -140,3 +140,31 @@ function parseSelector(
 //    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
 //  return h;
 //}
+export function makestr(o: P<string>): P<o_t> {
+  var str = "";
+  var closed = false;
+  return function pith(r) {
+    if ("element" === r.t) {
+      const { sel, nar, key } = r.v;
+      const { tag, classList, id } = parseSelector(sel);
+      str += "<" + tag;
+      if (id) str += ' id="' + id + '"';
+      if (classList.length) str += ' class="' + classList.join(" ") + '"';
+      str += ">";
+      const ob = makestr((content) => {
+        str += content;
+        str += "</" + tag + ">";
+      });
+      nar(ob), ob({ t: "end" });
+    } else if ("text" === r.t) {
+      str += r.v;
+    } else if ("action" === r.t) {
+    } else if ("end" === r.t) {
+      if (!closed) {
+        closed = true;
+        o(str);
+      }
+      str = "";
+    } else throw new Error("invalid rvalue: " + JSON.stringify(r));
+  };
+}
