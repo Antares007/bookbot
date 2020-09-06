@@ -45,8 +45,8 @@ export function str_api(nar: (str_api_pith_t) => void): N<E.o_t> {
 }
 export function on(type: string): (EventHandler) => E.action_t {
   return (l: EventHandler) =>
-    E.action((elm) => {
+    E.action((elm) => (o) => {
       elm.addEventListener(type, l);
-      return () => elm.removeEventListener(type, l);
+      o(E.disposable(() => elm.removeEventListener(type, l)));
     });
 }

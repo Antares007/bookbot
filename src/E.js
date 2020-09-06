@@ -5,8 +5,9 @@ export type o_t = action_t | end_t | text_t | element_t;
 
 export type text_t = {| t: "text", v: string |};
 export type end_t = {| t: "end", v?: void |};
-export type action_t = {| t: "action", v: (Element) => ?() => void |};
+export type action_t = {| t: "action", v: (Element) => N<o_t | disposable_t> |};
 export type element_t = {| t: "element", v: element_v_t |};
+export type disposable_t = {| t: "disposable", v: () => void |};
 type element_v_t = {| sel: string, nar: N<o_t>, key?: ?string |};
 
 export const end: end_t = { t: "end" };
@@ -20,8 +21,11 @@ export function element<T>(
 export function text(v: string): text_t {
   return { t: "text", v };
 }
-export function action(v: (Element) => ?() => void): action_t {
+export function action(v: (Element) => N<o_t | disposable_t>): action_t {
   return { t: "action", v };
+}
+export function disposable(v: () => void): disposable_t {
+  return { t: "disposable", v };
 }
 export function make(elm: Element, depth: number = 0): P<o_t> {
   var childs_count = 0;
@@ -84,7 +88,12 @@ export function make(elm: Element, depth: number = 0): P<o_t> {
           if (index < i) actions.splice(index, 0, ...actions.splice(i, 1));
           return;
         }
-      actions.splice(index, 0, [a, a(elm)]);
+      const disposables = [];
+      actions.splice(index, 0, [a, disposables]);
+      a(elm)((r) => {
+        if ("disposable" === r.t) disposables.push(r);
+        else pith(r);
+      });
     } else if ("end" === r.t) {
       for (let l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
@@ -93,13 +102,13 @@ export function make(elm: Element, depth: number = 0): P<o_t> {
         childPiths.length - childs_count
       );
       childs_count = 0;
-      const disposables = actions.splice(
+      const acts = actions.splice(
         actions_count,
         actions.length - actions_count
       );
       actions_count = 0;
       for (let mp of piths) mp && mp({ t: "end" });
-      for (let [_, md] of disposables) md && md();
+      for (let [_, disposables] of acts) for (let d of disposables) d.v();
     } else throw new Error("invalid rvalue: " + JSON.stringify(r));
   };
 }
