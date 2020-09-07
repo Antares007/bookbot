@@ -35,7 +35,7 @@ export function make(elm: Element, depth: number = 0): P<o_t> {
   const actions = [];
   return function pith(r) {
     if ("element" === r.t) {
-      var n, ob;
+      let n, ob;
       const index = childs_count++;
       const { sel, nar, key } = r.v;
       const { tag, classList, id } = parseSelector(sel);
@@ -84,12 +84,12 @@ export function make(elm: Element, depth: number = 0): P<o_t> {
       const index = actions_count++;
       const a = r.v;
       for (let i = index, l = actions.length; i < l; i++)
-        if (actions[i][0] === a) {
+        if (actions[i].a === a) {
           if (index < i) actions.splice(index, 0, ...actions.splice(i, 1));
           return;
         }
       const disposables = [];
-      actions.splice(index, 0, [a, disposables]);
+      actions.splice(index, 0, { a, disposables });
       a(elm)((r) => {
         if ("disposable" === r.t) disposables.push(r);
         else pith(r);
@@ -102,13 +102,10 @@ export function make(elm: Element, depth: number = 0): P<o_t> {
         childPiths.length - childs_count
       );
       childs_count = 0;
-      const acts = actions.splice(
-        actions_count,
-        actions.length - actions_count
-      );
+      const ads = actions.splice(actions_count, actions.length - actions_count);
       actions_count = 0;
       for (let mp of piths) mp && mp({ t: "end" });
-      for (let [_, disposables] of acts) for (let d of disposables) d.v();
+      for (let ad of ads) for (let d of ad.disposables) d.v();
     } else throw new Error("invalid rvalue: " + JSON.stringify(r));
   };
 }
