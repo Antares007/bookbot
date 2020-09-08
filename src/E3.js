@@ -5,6 +5,7 @@ export type o_pith_t = {
   attr: (string, ?string) => void,
   style: (string, ?string) => void,
   on: (string, (Event) => void) => void,
+  get: ((HTMLElement) => void) => void,
   end: () => void,
 };
 
@@ -88,6 +89,9 @@ export function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
         }
       listeners.splice(index, 0, { type, listener });
       elm.addEventListener(type, listener);
+    },
+    get(a) {
+      a(elm);
     },
     end() {
       for (let l = childNodes.length; l > childs_count; l--)
