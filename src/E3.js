@@ -8,7 +8,10 @@ export type o_pith_t = {
   end: () => void,
 };
 
-export function make(elm: HTMLElement, depth: number = 0): o_pith_t {
+export function bark<P: { end: () => void }>(o: P): ((P) => void) => void {
+  return (nar) => (nar(o), o.end());
+}
+export function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
@@ -35,7 +38,7 @@ export function make(elm: HTMLElement, depth: number = 0): o_pith_t {
           if ((ob = childPiths[index]))
             if (key) return;
             else return nar(ob), ob.end();
-          childPiths.splice(index, 0, (ob = make(n, depth + 1)));
+          childPiths.splice(index, 0, (ob = pith(n, depth + 1)));
           return nar(ob), ob.end();
         }
       n = document.createElement(tag);
@@ -43,7 +46,7 @@ export function make(elm: HTMLElement, depth: number = 0): o_pith_t {
       if (id) n.id = id;
       for (let str of classList) n.classList.add(str);
       elm.insertBefore(n, childNodes[index]),
-        childPiths.splice(index, 0, (ob = make(n, depth + 1)));
+        childPiths.splice(index, 0, (ob = pith(n, depth + 1)));
       nar(ob), ob.end();
     },
     text(text) {
@@ -120,6 +123,33 @@ export function rring<S>(
       },
       reduce,
     });
+  };
+}
+export function rmap<A: { ... }, B>(
+  o: ((A) => A) => void
+): (string, B) => ((B) => B) => void {
+  return (key, init) => (rb) =>
+    o((a) => {
+      const ob = a[key] || init;
+      const nb = rb(ob);
+      if (ob === nb) return a;
+      return { ...a, [key]: nb };
+    });
+}
+export function mmap<A: { ... }, B>(
+  key: string,
+  init: B
+): ((r_pith_t<B>) => void) => (r_pith_t<A>) => void {
+  return function map(nar) {
+    return (o) => {
+      nar({
+        ...o,
+        element(sel, nar, k) {
+          o.element(sel, map(nar), k);
+        },
+        reduce: rmap(o.reduce)(key, init),
+      });
+    };
   };
 }
 function parseSelector(
