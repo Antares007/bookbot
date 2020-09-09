@@ -4,7 +4,7 @@ export type o_pith_t = {
   element: (string, (o_pith_t) => void, ?string) => void,
   attr: (string, ?string) => void,
   style: (string, ?string) => void,
-  on: (string, (Event) => void) => void,
+  on: (string, (Event) => void, ?string) => void,
   get: ((HTMLElement) => void) => void,
   end: () => void,
 };
@@ -80,14 +80,15 @@ export function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
         if (elm.style.getPropertyValue(name)) elm.style.removeProperty(name);
       }
     },
-    on(type, listener) {
+    on(type, listener, mkey) {
       const index = listeners_count++;
+      const key = mkey || hashString(listener.toString()) + "";
       for (let i = index, l = listeners.length; i < l; i++)
-        if (listeners[i].type === type && listeners[i].listener === listener) {
+        if (listeners[i].type === type && listeners[i].key === key) {
           if (index < i) listeners.splice(index, 0, ...listeners.splice(i, 1));
           return;
         }
-      listeners.splice(index, 0, { type, listener });
+      listeners.splice(index, 0, { type, listener, key });
       elm.addEventListener(type, listener), console.log("add");
     },
     get(a) {
@@ -179,4 +180,9 @@ function parseSelector(
     }
   }
   return { tag, classList, id };
+}
+function hashString(s: string): number {
+  for (var i = 0, h = 0; i < s.length; i++)
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return h;
 }

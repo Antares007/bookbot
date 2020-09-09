@@ -3,45 +3,49 @@ import * as E from "./E3";
 import { static_cast } from "./static_cast";
 
 const T = () => (o) =>
-  o.element("div", (o) => {
-    var redrawList, redrawInput, redrawButton;
-    o.on("input", (e) => {
-      const t = static_cast<HTMLInputElement>(e.target);
-      o.reduce((s) => ({ ...s, text: t.value }));
-      redrawButton();
+  o.element("div", function nar(o) {
+    const b = E.bark(o);
+    o.element("input", (o) => {
+      o.on("input", (e) => {
+        const t = static_cast<HTMLInputElement>(e.target);
+        o.reduce((s) => ({ ...s, text: t.value }));
+        b(nar);
+      });
+      o.reduce((s) => (o.prop("value", s.text), s));
     });
-    o.element(
-      "input",
-      (redrawInput = bark((o) => o.reduce((s) => (o.prop("value", s.text), s))))
-    );
-    o.element("span", (o) => {
+    o.element("button", (o) => {
       o.on("click", () => {
         o.reduce((s) => ({ ...s, text: "", list: [...s.list, s.text] }));
-        redrawList();
-        redrawInput();
-        redrawButton();
+        b(nar);
       });
-      o.element(
-        "button",
-        (redrawButton = bark((o) => {
-          o.text("add");
-          o.reduce((s) => (o.attr("disabled", s.text ? null : ""), s));
-        }))
-      );
+      o.text("add");
+      o.reduce((s) => (o.attr("disabled", s.text ? null : ""), s));
     });
-    o.element(
-      "div",
-      (redrawList = bark((o) => {
-        o.reduce((s) => {
-          o.element("ul", (o) => {
-            for (let str of s.list) {
-              o.element("li", (o) => o.text(str));
-            }
+    o.element("div", (o) => {
+      o.reduce((s) => {
+        o.element("ul", (o) => {
+          s.list.forEach((str, i) => {
+            o.element("li", (o) => {
+              o.element("button", (o) => {
+                o.on("click", (e) => {
+                  o.reduce((s) => {
+                    return {
+                      ...s,
+                      text: s.list[i],
+                      list: s.list.filter((s, si) => si !== i),
+                    };
+                  });
+                  b(nar);
+                });
+                o.text("x");
+              });
+              o.text(str);
+            });
           });
-          return s;
         });
-      }))
-    );
+        return s;
+      });
+    });
   });
 
 const o = E.pith((document.body = document.createElement("body")));
