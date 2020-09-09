@@ -66,10 +66,10 @@ export function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
         childPiths.splice(index, 0, null);
     },
     attr(name, value) {
-      if (value) {
+      if (value != null) {
         if (elm.getAttribute(name) !== value) elm.setAttribute(name, value);
       } else {
-        if (elm.getAttribute(name)) elm.removeAttribute(name);
+        if (elm.hasAttribute(name)) elm.removeAttribute(name);
       }
     },
     style(name, value) {
@@ -88,7 +88,7 @@ export function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
           return;
         }
       listeners.splice(index, 0, { type, listener });
-      elm.addEventListener(type, listener);
+      elm.addEventListener(type, listener), console.log("add");
     },
     get(a) {
       a(elm);
@@ -107,7 +107,8 @@ export function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
       );
       listeners_count = 0;
       for (let mp of piths) mp && mp.end();
-      for (let l of lstnrs) elm.removeEventListener(l.type, l.listener);
+      for (let l of lstnrs)
+        elm.removeEventListener(l.type, l.listener), console.log("remove");
     },
   };
 }
