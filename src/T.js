@@ -4,48 +4,34 @@ import { static_cast } from "./static_cast";
 
 const T = () => (o) =>
   o.element("div", (o) => {
-    var b, b2, b3;
+    var redrawList, redrawInput, redrawButton;
     o.on("input", (e) => {
       const t = static_cast<HTMLInputElement>(e.target);
-      o.reduce((s) => {
-        return { ...s, text: t.value };
-      });
-      b3();
+      o.reduce((s) => ({ ...s, text: t.value }));
+      redrawButton();
     });
     o.element(
       "input",
-      (b2 = bark((o) => {
-        o.reduce((s) => {
-          o.prop("value", s.text);
-          return s;
-        });
-      }))
+      (redrawInput = bark((o) => o.reduce((s) => (o.prop("value", s.text), s))))
     );
-
     o.element("span", (o) => {
       o.on("click", () => {
-        o.reduce((s) => {
-          return { ...s, text: "", list: [...s.list, s.text] };
-        });
-        b();
-        b2();
+        o.reduce((s) => ({ ...s, text: "", list: [...s.list, s.text] }));
+        redrawList();
+        redrawInput();
+        redrawButton();
       });
       o.element(
         "button",
-        (b3 = bark((o) => {
+        (redrawButton = bark((o) => {
           o.text("add");
-          o.reduce((s) => {
-            console.log(s.text);
-            o.attr("disabled", s.text ? null : "");
-            return s;
-          });
+          o.reduce((s) => (o.attr("disabled", s.text ? null : ""), s));
         }))
       );
     });
-
     o.element(
       "div",
-      (b = bark((o) => {
+      (redrawList = bark((o) => {
         o.reduce((s) => {
           o.element("ul", (o) => {
             for (let str of s.list) {
@@ -56,8 +42,6 @@ const T = () => (o) =>
         });
       }))
     );
-
-    o.text("ok");
   });
 
 const o = E.pith((document.body = document.createElement("body")));
