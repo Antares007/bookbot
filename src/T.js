@@ -15,7 +15,7 @@ const T = () => (o) =>
     });
     o.element("button", (o) => {
       o.on("click", () => {
-        o.reduce((s) => ({ ...s, text: "", list: [...s.list, s.text] }));
+        o.reduce((s) => ({ ...s, text: "", list: [...s.list, s.text.trim()] }));
         b(nar);
       });
       o.text("add");
