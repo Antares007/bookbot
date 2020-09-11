@@ -136,13 +136,15 @@ export function rring<S>(
 export function rmap<A: { ... }, B>(
   o: ((A) => A) => void
 ): (string, B) => ((B) => B) => void {
-  return (key, init) => (rb) =>
-    o((a) => {
-      const ob = a[key] || init;
-      const nb = rb(ob);
-      if (ob === nb) return a;
-      return { ...a, [key]: nb };
-    });
+  return (key, init) =>
+    function Ermap(rb) {
+      o((a) => {
+        const ob = a[key] || init;
+        const nb = rb(ob);
+        if (ob === nb) return a;
+        return { ...a, [key]: nb };
+      });
+    };
 }
 export function mmap<A: { ... }, B>(
   key: string,
