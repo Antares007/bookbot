@@ -10,7 +10,9 @@ export type o_pith_t = {
 };
 
 export function bark<P: { end: () => void }>(o: P): ((P) => void) => void {
-  return (nar) => (nar(o), o.end());
+  return function Ebark(nar) {
+    nar(o), o.end();
+  };
 }
 export function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
   var childs_count = 0;
@@ -89,7 +91,7 @@ export function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
           return;
         }
       listeners.splice(index, 0, { type, listener, key });
-      elm.addEventListener(type, listener), console.log("add");
+      elm.addEventListener(type, listener);
     },
     get(a) {
       a(elm);
@@ -108,8 +110,7 @@ export function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
       );
       listeners_count = 0;
       for (let mp of piths) mp && mp.end();
-      for (let l of lstnrs)
-        elm.removeEventListener(l.type, l.listener), console.log("remove");
+      for (let l of lstnrs) elm.removeEventListener(l.type, l.listener);
     },
   };
 }
@@ -121,15 +122,16 @@ export type r_pith_t<S> = {
 export function rring<S>(
   reduce: ((S) => S) => void
 ): ((r_pith_t<S>) => void) => (o_pith_t) => void {
-  return (nar) => (o) => {
-    nar({
-      ...o,
-      element(sel, nar, key) {
-        o.element(sel, rring(reduce)(nar), key);
-      },
-      reduce,
-    });
-  };
+  return (nar) =>
+    function Erring(o) {
+      nar({
+        ...o,
+        element(sel, nar, key) {
+          o.element(sel, rring(reduce)(nar), key);
+        },
+        reduce,
+      });
+    };
 }
 export function rmap<A: { ... }, B>(
   o: ((A) => A) => void
@@ -147,7 +149,7 @@ export function mmap<A: { ... }, B>(
   init: B
 ): ((r_pith_t<B>) => void) => (r_pith_t<A>) => void {
   return function map(nar) {
-    return (o) => {
+    return function Emmap(o) {
       nar({
         ...o,
         element(sel, nar, k) {
