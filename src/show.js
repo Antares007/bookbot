@@ -72,30 +72,42 @@ function opring<S: { ... }>(
       const b = E.bark(o);
       o.reduce((s) => {
         if (s[key])
-          o.element("table", (o) => {
-            o.element("tr", (o) => {
-              o.element("td", (o) =>
-                o.element("button", (o) => {
-                  o.text("- " + key);
-                  o.on("click", (e) => {
-                    o.reduce((s) => ({ ...s, [key]: false }));
-                    b(mainnar);
-                  });
-                })
-              );
-              o.element("td", (o) => {
-                E.rring(op.reduce)(nar)(o);
+          o.element(
+            "table",
+            (o) => {
+              o.element("tr", (o) => {
+                o.element(
+                  "td",
+                  (o) => (
+                    o.style("vertical-align", "top"),
+                    o.element("button", (o) => {
+                      o.text("- " + key);
+                      o.on("click", (e) => {
+                        o.reduce((s) => ({ ...s, [key]: false }));
+                        b(mainnar);
+                      });
+                    })
+                  )
+                );
+                o.element("td", (o) => {
+                  E.rring(op.reduce)(nar)(o);
+                });
               });
-            });
-          });
+            },
+            key
+          );
         else
-          o.element("button", (o) => {
-            o.text("+ " + key);
-            o.on("click", (e) => {
-              o.reduce((s) => ({ ...s, [key]: true }));
-              b(mainnar);
-            });
-          });
+          o.element(
+            "button",
+            (o) => {
+              o.text("+ " + key);
+              o.on("click", (e) => {
+                o.reduce((s) => ({ ...s, [key]: true }));
+                b(mainnar);
+              });
+            },
+            key
+          );
 
         return s;
       });
@@ -104,12 +116,13 @@ function opring<S: { ... }>(
 const { C } = require("./C3");
 const fs = require("fs");
 const { join } = require("path");
-b((o) => {
+const D = (o) => {
   o.element("div", opring("c0")(E.mmap("C(0)", { n: 0 })(C(0))));
-  o.element("div", opring("c1")(E.mmap("C(1)", { n: 3 })(C(1))));
-  o.element("div", opring("c2")(E.mmap("C(2)", { n: 6 })(C(2))));
-  o.element("div", opring("c3")(E.mmap("C(3)", { n: 9 })(C(3))));
-});
+  o.element("div", opring("c1")(E.mmap("C(1)", { n: 0 })(C(1))));
+  o.element("div", opring("c2")(E.mmap("C(2)", { n: 0 })(C(2))));
+  o.element("div", opring("c3")(E.mmap("C(3)", { n: 0 })(C(3))));
+};
+b(D);
 const B = (pth) => (o) => {
   o.text("Loading...");
   p.purry(p.liftcb1(fs.readdir)(pth), (ns) => {
@@ -140,7 +153,7 @@ const B = (pth) => (o) => {
 };
 b(B("/"));
 
-Object.assign(window, { o, b, E });
+Object.assign(window, { o, b, B, C, D, E });
 function reduce(r) {
   const newstate = r(state);
   localStorage.setItem("B", JSON.stringify(newstate));
