@@ -112,22 +112,30 @@ b((o) => {
 });
 const B = (pth) => (o) => {
   o.text("Loading...");
-  p.purry(p.liftcb1(fs.readdir)(pth), (names) =>
-    p.purry(
-      p.all(names.map((n) => p.liftcb1(fs.stat)(join(pth, n)))),
-      (stats) => (o) => {
+  p.purry(p.liftcb1(fs.readdir)(pth), (ns) => {
+    const names = ns.filter((n) => !n.startsWith("."));
+    return p.purry(
+      p.all(names.map((n) => join(pth, n)).map(p.liftcb1(fs.stat))),
+      (stats) => () => {
         var i = 0;
-        o.value((o) => {
-          for (let n of names)
-            if (stats[i++][0].isDirectory())
-              o.element("div", opring(n)(E.mmap(n, {})(B(join(pth, n)))));
-            else o.text(n);
-        });
+        for (let n of names)
+          if (stats[i++][0].isDirectory())
+            o.element("div", opring(n)(E.mmap(n, {})(B(join(pth, n)))));
+          else
+            o.element(
+              "span",
+              (o) => (
+                o.text(n),
+                o.style("border", "1px solid gray"),
+                o.style("margin-right", "5px")
+              )
+            );
+        o.end();
       }
-    )
-  )({
-    error: (e) => b((o) => o.text(e.message)),
-    value: E.bark(o),
+    );
+  })({
+    error: (e) => (o.text(e.message), o.end()),
+    value: () => {},
   });
 };
 b(B("/"));
