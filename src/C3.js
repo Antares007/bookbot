@@ -1,7 +1,7 @@
 // @flow strict
 import * as E from "./E3";
 
-export const C = (d: number = 2) =>
+const C = (d: number = 2) =>
   function Cnar(o: E.r_pith_t<{| n: number |}>) {
     return o.element("div", function mainNar(o) {
       const b = E.bark(o);

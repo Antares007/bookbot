@@ -1,15 +1,22 @@
 // @flow strict
+export type N<A = void, B = void, C = void, D = void, E = void> = (
+  A,
+  B,
+  C,
+  D,
+  E
+) => void;
 export type o_pith_t = {
-  text: (string) => void,
-  element: (string, (o_pith_t) => void, ?string) => void,
-  attr: (string, ?string) => void,
-  style: (string, ?string) => void,
-  on: (string, (Event) => void, ?string) => void,
-  get: ((HTMLElement) => void) => void,
-  end: () => void,
+  text: N<string>,
+  element: N<string, (o_pith_t) => void, ?string>,
+  attr: N<string, ?string>,
+  style: N<string, ?string>,
+  on: N<string, N<Event>, ?string>,
+  get: N<N<HTMLElement>>,
+  end: N<>,
 };
 
-export function bark<P: { end: () => void }>(o: P): ((P) => void) => void {
+export function bark<P: { end: () => void }>(o: P): N<N<P>> {
   return function Ebark(nar) {
     nar(o), o.end();
   };
@@ -116,12 +123,12 @@ export function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
 }
 export type r_pith_t<S> = {
   ...o_pith_t,
-  reduce: ((S) => S) => void,
-  element: (string, (r_pith_t<S>) => void, ?string) => void,
+  reduce: N<(S) => S>,
+  element: N<string, N<r_pith_t<S>>, ?string>,
 };
 export function rring<S>(
   reduce: ((S) => S) => void
-): ((r_pith_t<S>) => void) => (o_pith_t) => void {
+): (N<r_pith_t<S>>) => N<o_pith_t> {
   return (nar) =>
     function Erring(o) {
       nar({
@@ -134,8 +141,8 @@ export function rring<S>(
     };
 }
 export function rmap<A: { ... }, B>(
-  o: ((A) => A) => void
-): (string, B) => ((B) => B) => void {
+  o: N<(A) => A>
+): (string, B) => N<(B) => B> {
   return (key, init) =>
     function Ermap(rb) {
       o((a) => {
@@ -149,7 +156,7 @@ export function rmap<A: { ... }, B>(
 export function mmap<A: { ... }, B>(
   key: string,
   init: B
-): ((r_pith_t<B>) => void) => (r_pith_t<A>) => void {
+): (N<r_pith_t<B>>) => N<r_pith_t<A>> {
   return function map(nar) {
     return function Emmap(o) {
       nar({
