@@ -12,5 +12,7 @@
     "flow-bin": "^0.133.0"
   },
   "scripts": {},
-  "dependencies": {}
+  "dependencies": {
+    "pako": "^1.0.11"
+  }
 }
