@@ -135,14 +135,7 @@ const B = (pth) => (o) => {
           if (stats[i++][0].isDirectory())
             o.element("div", opring(n)(E.mmap(n, {})(B(join(pth, n)))));
           else
-            o.element(
-              "span",
-              (o) => (
-                o.text(n),
-                o.style("border", "1px solid gray"),
-                o.style("margin-right", "5px")
-              )
-            );
+            o.element("span", (o) => (o.text(n), o.element("br", (o) => {})));
         o.end();
       }
     );
