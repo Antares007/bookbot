@@ -1,7 +1,8 @@
 // @flow strict
+import type { N } from "./p";
 import * as E from "./E3";
 
-export const C = (d: number = 2): E.N<E.r_pith_t<{| n: number |}>> =>
+export const C = (d: number = 2): N<E.r_pith_t<{| n: number |}>> =>
   function Cnar(o: E.r_pith_t<{| n: number |}>) {
     return o.element("div", function mainNar(o) {
       const b = E.bark(o);

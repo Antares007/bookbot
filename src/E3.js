@@ -1,11 +1,5 @@
 // @flow strict
-export type N<A = void, B = void, C = void, D = void, E = void> = (
-  A,
-  B,
-  C,
-  D,
-  E
-) => void;
+import type { N } from "./p";
 export type o_pith_t = {
   text: N<string>,
   element: N<string, (o_pith_t) => void, ?string>,

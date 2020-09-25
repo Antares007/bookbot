@@ -1,4 +1,15 @@
 // @flow strict
+export type N<
+  -A = void,
+  -B = void,
+  -C = void,
+  -D = void,
+  -E = void,
+  -F = void,
+  -G = void,
+  -H = void,
+  -I = void
+> = (A, B, C, D, E, F, G, H, I) => void;
 export type pith_t<
   L = void,
   R = void,
@@ -10,13 +21,13 @@ export type pith_t<
   Y = void,
   Z = void
 > = {
-  error: (L) => void,
-  value: (R, S, T, U, V, X, Y, Z) => void,
+  error: N<L>,
+  value: N<R, S, T, U, V, X, Y, Z>,
 };
 export function purry<A, B, C, D, E, F, G, H, L, M, R, S, T, U, V, X, Y, Z>(
-  narf: (pith_t<L, A, B, C, D, E, F, G, H>) => void,
-  narg: (A, B, C, D, E, F, G, H) => (pith_t<M, R, S, T, U, V, X, Y, Z>) => void
-): (pith_t<L | M, R, S, T, U, V, X, Y, Z>) => void {
+  narf: N<pith_t<L, A, B, C, D, E, F, G, H>>,
+  narg: (A, B, C, D, E, F, G, H) => N<pith_t<M, R, S, T, U, V, X, Y, Z>>
+): N<pith_t<L | M, R, S, T, U, V, X, Y, Z>> {
   return (o) =>
     narf({
       ...o,
@@ -43,9 +54,9 @@ export function pcatch<
   Yb,
   Zb
 >(
-  narf: (pith_t<La, Ra, Sa, Ta, Ua, Va, Xa, Ya, Za>) => void,
-  narg: (La) => (pith_t<Lb, Rb, Sb, Tb, Ub, Vb, Xb, Yb, Zb>) => void
-): (
+  narf: N<pith_t<La, Ra, Sa, Ta, Ua, Va, Xa, Ya, Za>>,
+  narg: (La) => N<pith_t<Lb, Rb, Sb, Tb, Ub, Vb, Xb, Yb, Zb>>
+): N<
   pith_t<
     Lb,
     Ra | Rb,
@@ -57,7 +68,7 @@ export function pcatch<
     Ya | Yb,
     Za | Zb
   >
-) => void {
+> {
   return (o) =>
     narf({
       ...o,
@@ -67,8 +78,8 @@ export function pcatch<
     });
 }
 export function all<L, R, S, T, U, V, X, Y, Z>(
-  nars: Array<(pith_t<L, R, S, T, U, V, X, Y, Z>) => void>
-): (pith_t<L, Array<[R, S, T, U, V, X, Y, Z]>>) => void {
+  nars: Array<N<pith_t<L, R, S, T, U, V, X, Y, Z>>>
+): N<pith_t<L, Array<[R, S, T, U, V, X, Y, Z]>>> {
   return (o) => {
     var done = false;
     var l = nars.length;
@@ -93,8 +104,8 @@ export function all<L, R, S, T, U, V, X, Y, Z>(
 }
 export class RaceError extends Error {}
 export function race<L, R, S, T, U, V, X, Y, Z>(
-  nars: Array<(pith_t<L, R, S, T, U, V, X, Y, Z>) => void>
-): (pith_t<L | RaceError, R, S, T, U, V, X, Y, Z>) => void {
+  nars: Array<N<pith_t<L, R, S, T, U, V, X, Y, Z>>>
+): N<pith_t<L | RaceError, R, S, T, U, V, X, Y, Z>> {
   return nars.length === 0
     ? (o) => o.error(new RaceError("p.race(nars)\tnars.length === 0"))
     : (o) => {
@@ -117,8 +128,8 @@ export function race<L, R, S, T, U, V, X, Y, Z>(
       };
 }
 export function trycatch<L, R, S, T, U, V, X, Y, Z>(
-  nar: (pith_t<L, R, S, T, U, V, X, Y, Z>) => void
-): (pith_t<L | Error, R, S, T, U, V, X, Y, Z>) => void {
+  nar: N<pith_t<L, R, S, T, U, V, X, Y, Z>>
+): N<pith_t<L | Error, R, S, T, U, V, X, Y, Z>> {
   return (o) => {
     try {
       nar({ ...o });
@@ -130,8 +141,8 @@ export function trycatch<L, R, S, T, U, V, X, Y, Z>(
 }
 
 export function onceguard<L, R, S, T, U, V, X, Y, Z>(
-  nar: (pith_t<L, R, S, T, U, V, X, Y, Z>) => void
-): (pith_t<L, R, S, T, U, V, X, Y, Z>) => void {
+  nar: N<pith_t<L, R, S, T, U, V, X, Y, Z>>
+): N<pith_t<L, R, S, T, U, V, X, Y, Z>> {
   return (o) => {
     var count = 0;
     nar({
@@ -155,9 +166,7 @@ export function liftcb0<
   X = void,
   Y = void,
   Z = void
->(
-  cbf: ((e: ?L, R, S, T, U, V, X, Y, Z) => void) => void
-): (pith_t<L, R, S, T, U, V, X, Y, Z>) => void {
+>(cbf: N<N<?L, R, S, T, U, V, X, Y, Z>>): N<pith_t<L, R, S, T, U, V, X, Y, Z>> {
   return (o) =>
     cbf((lm, r, s, t, u, v, x, y, z) =>
       lm ? o.error(lm) : o.value(r, s, t, u, v, x, y, z)
@@ -175,8 +184,8 @@ export function liftcb1<
   Y = void,
   Z = void
 >(
-  cbf: (A, (e: ?L, R, S, T, U, V, X, Y, Z) => void) => void
-): (A) => (pith_t<L, R, S, T, U, V, X, Y, Z>) => void {
+  cbf: N<A, N<?L, R, S, T, U, V, X, Y, Z>>
+): (A) => N<pith_t<L, R, S, T, U, V, X, Y, Z>> {
   return (a) => (o) =>
     cbf(a, (lm, r, s, t, u, v, x, y, z) =>
       lm ? o.error(lm) : o.value(r, s, t, u, v, x, y, z)
@@ -195,8 +204,8 @@ export function liftcb2<
   Y = void,
   Z = void
 >(
-  cbf: (A, B, (e: ?L, R, S, T, U, V, X, Y, Z) => void) => void
-): (A, B) => (pith_t<L, R, S, T, U, V, X, Y, Z>) => void {
+  cbf: N<A, B, N<?L, R, S, T, U, V, X, Y, Z>>
+): (A, B) => N<pith_t<L, R, S, T, U, V, X, Y, Z>> {
   return (a, b) => (o) =>
     cbf(a, b, (lm, r, s, t, u, v, x, y, z) =>
       lm ? o.error(lm) : o.value(r, s, t, u, v, x, y, z)
@@ -216,8 +225,8 @@ export function liftcb3<
   Y = void,
   Z = void
 >(
-  cbf: (A, B, C, (e: ?L, R, S, T, U, V, X, Y, Z) => void) => void
-): (A, B, C) => (pith_t<L, R, S, T, U, V, X, Y, Z>) => void {
+  cbf: N<A, B, C, N<?L, R, S, T, U, V, X, Y, Z>>
+): (A, B, C) => N<pith_t<L, R, S, T, U, V, X, Y, Z>> {
   return (a, b, c) => (o) =>
     cbf(a, b, c, (lm, r, s, t, u, v, x, y, z) =>
       lm ? o.error(lm) : o.value(r, s, t, u, v, x, y, z)
@@ -238,8 +247,8 @@ export function liftcb4<
   Y = void,
   Z = void
 >(
-  cbf: (A, B, C, D, (e: ?L, R, S, T, U, V, X, Y, Z) => void) => void
-): (A, B, C, D) => (pith_t<L, R, S, T, U, V, X, Y, Z>) => void {
+  cbf: N<A, B, C, D, N<?L, R, S, T, U, V, X, Y, Z>>
+): (A, B, C, D) => N<pith_t<L, R, S, T, U, V, X, Y, Z>> {
   return (a, b, c, d) => (o) =>
     cbf(a, b, c, d, (lm, r, s, t, u, v, x, y, z) =>
       lm ? o.error(lm) : o.value(r, s, t, u, v, x, y, z)
@@ -261,8 +270,8 @@ export function liftcb5<
   Y = void,
   Z = void
 >(
-  cbf: (A, B, C, D, E, (e: ?L, R, S, T, U, V, X, Y, Z) => void) => void
-): (A, B, C, D, E) => (pith_t<L, R, S, T, U, V, X, Y, Z>) => void {
+  cbf: N<A, B, C, D, E, N<?L, R, S, T, U, V, X, Y, Z>>
+): (A, B, C, D, E) => N<pith_t<L, R, S, T, U, V, X, Y, Z>> {
   return (a, b, c, d, e) => (o) =>
     cbf(a, b, c, d, e, (lm, r, s, t, u, v, x, y, z) =>
       lm ? o.error(lm) : o.value(r, s, t, u, v, x, y, z)

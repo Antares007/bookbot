@@ -51,7 +51,7 @@ function nar(o, i) {
 
 const E = require("./E3");
 
-import type { N } from "./E3";
+import type { N } from "./p";
 const o = E.pith((document.body = document.createElement("body")));
 var state;
 try {
