@@ -1,5 +1,6 @@
 // @flow strict
-const pako = require("pako");
+const pako = require("./pako");
+const { static_cast } = require("./static_cast");
 const { inflate } = pako;
 const p = require("./p");
 const { join, dirname } = require("path");
@@ -149,7 +150,7 @@ function decodepackoffset(
   return p.trycatch((o) => {
     var offset = 0;
     var byte = buffer[offset++];
-    const type: 1 | 2 | 3 | 4 | 6 | 7 = ((byte >> 4) & 0x7: any);
+    const type = static_cast<1 | 2 | 3 | 4 | 6 | 7>((byte >> 4) & 0x7);
     var size = byte & 0xf;
     var left = 4;
     while (byte & 0x80) {
