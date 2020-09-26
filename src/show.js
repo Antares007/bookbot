@@ -52,14 +52,17 @@ function nar(o, i) {
 const E = require("./E3");
 
 import type { N } from "./p";
-const o = E.pith((document.body = document.createElement("body")));
+const headpith = E.pith(
+  document.head || (document.head = document.createElement("head"))
+);
+const bodypith = E.pith((document.body = document.createElement("body")));
 var state;
 try {
   state = JSON.parse(localStorage.getItem("B") || "");
 } catch (e) {
   state = { n: 0 };
 }
-const b = (nar) => E.bark(o)(E.rring(reduce)(nar));
+const b = (nar) => E.bark(bodypith)(E.rring(reduce)(nar));
 
 function opring<S: { ... }>(
   key: string
@@ -76,18 +79,18 @@ function opring<S: { ... }>(
             "table",
             (o) => {
               o.element("tr", (o) => {
-                o.element(
-                  "td",
-                  (o) => (
-                    o.style("vertical-align", "top"),
-                    o.element("button", (o) => {
-                      o.text("- " + key);
-                      o.on("click", (e) => {
-                        o.reduce((s) => ({ ...s, [key]: false }));
-                        b(mainnar);
+                o.element("td", (o) =>
+                  o.element("button", (o) => {
+                    o.text("- " + key);
+                    o.on("click", (e) => {
+                      o.reduce((s) => {
+                        const ns = { ...s, [key]: void 0 };
+                        delete ns[key];
+                        return ns;
                       });
-                    })
-                  )
+                      b(mainnar);
+                    });
+                  })
                 );
                 o.element("td", (o) => {
                   E.rring(op.reduce)(nar)(o);
@@ -132,10 +135,12 @@ const B = (pth) => (o) => {
       (stats) => () => {
         var i = 0;
         for (let n of names)
-          if (stats[i++][0].isDirectory())
-            o.element("div", opring(n)(E.mmap(n, {})(B(join(pth, n)))));
-          else
-            o.element("span", (o) => (o.text(n), o.element("br", (o) => {})));
+          o.element(
+            "div",
+            stats[i++][0].isDirectory()
+              ? opring(n)(E.mmap(n, {})(B(join(pth, n))))
+              : (o) => o.text(n)
+          );
         o.end();
       }
     );
@@ -145,8 +150,18 @@ const B = (pth) => (o) => {
   });
 };
 b(B("/"));
-
-Object.assign(window, { o, b, B, C, D, E });
+const css = `
+td {
+  vertical-align: top;
+  padding: 0px;
+}
+table {
+    border-spacing: 0px;
+    border-color: grey;
+}
+`;
+headpith.element("style", (o) => o.text(css));
+Object.assign(window, { o: bodypith, b, B, C, D, E });
 function reduce(r) {
   const newstate = r(state);
   localStorage.setItem("B", JSON.stringify(newstate));
@@ -155,3 +170,4 @@ function reduce(r) {
     console.info(state);
   }
 }
+//
