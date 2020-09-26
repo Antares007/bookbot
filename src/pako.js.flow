@@ -1,0 +1,7 @@
+// @flow strict
+declare export function inflate(Buffer): Uint8Array;
+declare export class Inflate {
+  push(Buffer, number): void;
+  result: ?Uint8Array;
+  error: ?number;
+}
