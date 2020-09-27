@@ -111,7 +111,7 @@ const B = (path: string) => (o: document_pith_t<{}>) => {
   };
   B(path)(o);
 };
-b(B("/"));
+b(B(process.platform === "win32" ? "c:\\Users" : "/"));
 Object.assign(window, { b, B, C, D, E });
 function reduce(r) {
   const newstate = r(state);
