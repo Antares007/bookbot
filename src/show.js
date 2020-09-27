@@ -19,7 +19,7 @@ function opring<S: { ... }>(
       "op",
       {}
     )(function mainnar(o) {
-      const b = E.bark(o);
+      const b = (nar) => (nar(o), o.end());
       o.reduce((s) => {
         if (s[key])
           o.element(
@@ -114,7 +114,7 @@ const B = (path: string) => (o: document_pith_t<{}>) => {
   B(path)(o);
 };
 b(B("/"));
-Object.assign(window, { b, C, D, E });
+Object.assign(window, { b, B, C, D, E });
 function reduce(r) {
   const newstate = r(state);
   localStorage.setItem("B", JSON.stringify(newstate));

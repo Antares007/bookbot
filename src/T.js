@@ -4,7 +4,7 @@ import { static_cast } from "./static_cast";
 
 const T = () => (o) =>
   o.element("div", function nar(o) {
-    const b = E.bark(o);
+    const b = (nar) => (nar(o), o.end());
     o.element("input", (o) => {
       o.on("input", (e) => {
         const t = static_cast<HTMLInputElement>(e.target);
@@ -48,10 +48,10 @@ const T = () => (o) =>
     });
   });
 
-const o = E.pith((document.body = document.createElement("body")));
+const b = E.bark((document.body = document.createElement("body")));
 var state = { n: 0, text: "init value", list: [] };
 
-E.bark(o)(
+b(
   E.rring((r) => {
     const newstate = r(state);
     if (newstate !== state) {
@@ -60,7 +60,7 @@ E.bark(o)(
     }
   })(props(T()))
 );
-Object.assign(window, { o, T, E });
+Object.assign(window, { b, T, E });
 
 function bark(nar) {
   var op;

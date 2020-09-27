@@ -10,12 +10,13 @@ export type o_pith_t = {
   end: N<>,
 };
 
-export function bark<P: { end: () => void }>(o: P): N<N<P>> {
+export function bark(elm: HTMLElement): N<N<o_pith_t>> {
+  const o = pith(elm);
   return function Ebark(nar) {
     nar(o), o.end();
   };
 }
-export function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
+function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];

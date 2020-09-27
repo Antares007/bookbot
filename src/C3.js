@@ -5,7 +5,7 @@ import * as E from "./E3";
 export const C = (d: number = 2): N<E.r_pith_t<{| n: number |}>> =>
   function Cnar(o: E.r_pith_t<{| n: number |}>) {
     return o.element("div", function mainNar(o) {
-      const b = E.bark(o);
+      const b = (nar) => (nar(o), o.end());
       o.element(
         "button",
         function plusButtonNar(o) {

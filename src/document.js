@@ -23,15 +23,13 @@ export function ring<S: { ... }>(
   };
 }
 export function bark<S: { ... }>(r: N<(S) => S>): N<N<pith_t<S>>> {
-  const oh = E.pith(
+  const hb = E.bark(
     document.head || (document.head = document.createElement("head"))
   );
-  const ob = E.pith(
+  const ob = E.bark(
     document.body || (document.body = document.createElement("body"))
   );
   return (nar) => {
-    E.rring(r)(ring(oh)(nar))(ob);
-    ob.end();
-    oh.end();
+    hb((o) => ob(E.rring(r)(ring(o)(nar))));
   };
 }
