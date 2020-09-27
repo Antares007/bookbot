@@ -1,9 +1,10 @@
 // @flow strict
 import type { N } from "./p";
+import type { pith_t as document_pith_t } from "./document";
 const p = require("./p");
 const E = require("./E3");
 const document = require("./document");
-const o = document.pith(reduce);
+const b = document.bark(reduce);
 var state;
 try {
   state = JSON.parse(localStorage.getItem("B") || "");
@@ -71,42 +72,49 @@ const D = (o) => {
 };
 const fs = require("fs");
 const { join } = require("path");
-const B = (pth) => (o) => {
-  o.text("Loading...");
-  p.purry(p.liftcb1(fs.readdir)(pth), (ns) => {
-    const names = ns.filter((n) => !n.startsWith("."));
-    return p.purry(
-      p.all(names.map((n) => join(pth, n)).map(p.liftcb1(fs.stat))),
-      (stats) => () => {
-        var i = 0;
-        for (let n of names)
-          o.element(
-            "div",
-            stats[i++][0].isDirectory()
-              ? opring(n)(E.mmap(n, {})(B(join(pth, n))))
-              : (o) => o.text(n)
-          );
-        o.end();
-      }
-    );
-  })({
-    error: (e) => (o.text(e.message), o.end()),
-    value: () => {},
-  });
+const B = (path: string) => (o: document_pith_t<{}>) => {
+  o.head((o) =>
+    o.element("style", (o) =>
+      o.text(`
+        td {
+          vertical-align: top;
+          padding: 0px;
+        }
+        table {
+            border-spacing: 0px;
+            border-color: grey;
+        }`)
+    )
+  );
+  const B = (path) => {
+    return (o) => {
+      o.text("Loading...");
+      p.purry(p.liftcb1(fs.readdir)(path), (ns) => {
+        const names = ns.filter((n) => !n.startsWith("."));
+        return p.purry(
+          p.all(names.map((n) => join(path, n)).map(p.liftcb1(fs.stat))),
+          (stats) => () => {
+            var i = 0;
+            for (let n of names)
+              o.element(
+                "div",
+                stats[i++][0].isDirectory()
+                  ? opring(n)(E.mmap(n, {})(B(join(path, n))))
+                  : (o) => o.text(n)
+              );
+            o.end();
+          }
+        );
+      })({
+        error: (e) => (o.text(e.message), o.end()),
+        value: () => {},
+      });
+    };
+  };
+  B(path)(o);
 };
-o.body(B("/"));
-const css = `
-td {
-  vertical-align: top;
-  padding: 0px;
-}
-table {
-    border-spacing: 0px;
-    border-color: grey;
-}
-`;
-o.head((o) => o.text(css));
-Object.assign(window, { o, B, C, D, E });
+b(B("/"));
+Object.assign(window, { b, C, D, E });
 function reduce(r) {
   const newstate = r(state);
   localStorage.setItem("B", JSON.stringify(newstate));
