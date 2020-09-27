@@ -1,9 +1,9 @@
 // @flow strict
-import type { N } from "./p";
-import type { pith_t as document_pith_t } from "./document";
-const p = require("./p");
-const E = require("./E3");
-const document = require("./document");
+import type { N } from "../src/p";
+import type { pith_t as document_pith_t } from "../src/document";
+const p = require("../src/p");
+const E = require("../src/E");
+const document = require("../src/document");
 const b = document.bark(reduce);
 var state;
 try {
@@ -39,9 +39,7 @@ function opring<S: { ... }>(
                     });
                   })
                 );
-                o.element("td", (o) => {
-                  E.rring(op.reduce)(nar)(o);
-                });
+                o.element("td", (o) => E.rring(op.reduce)(nar)(o));
               });
             },
             key

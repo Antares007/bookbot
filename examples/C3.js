@@ -1,6 +1,6 @@
 // @flow strict
-import type { N } from "./p";
-import * as E from "./E3";
+import type { N } from "../src/p";
+import * as E from "../src/E";
 
 export const C = (d: number = 2): N<E.r_pith_t<{| n: number |}>> =>
   function Cnar(o: E.r_pith_t<{| n: number |}>) {

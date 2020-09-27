@@ -1,6 +1,6 @@
 // @flow strict
-import * as E from "./E3";
-import { static_cast } from "./static_cast";
+import * as E from "../src/E";
+import { static_cast } from "../src/utils/static_cast";
 
 const T = () => (o) =>
   o.element("div", function nar(o) {

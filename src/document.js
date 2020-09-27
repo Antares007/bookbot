@@ -1,6 +1,6 @@
 // @flow strict
 import type { N } from "./p";
-const E = require("./E3");
+const E = require("./E");
 
 export type pith_t<S> = {
   ...E.r_pith_t<S>,

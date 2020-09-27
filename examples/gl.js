@@ -1,5 +1,5 @@
 //@flow strict
-const document = require("./document");
+const document = require("../src/document");
 var state = {};
 const b = document.bark((r) => {
   state = r(state);

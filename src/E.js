@@ -1,43 +1,31 @@
 // @flow strict
-import type { P, N } from "./NP.js";
+import type { N } from "./p";
+export type o_pith_t = {
+  text: N<string>,
+  element: N<string, (o_pith_t) => void, ?string>,
+  attr: N<string, ?string>,
+  style: N<string, ?string>,
+  on: N<string, N<Event>, ?string>,
+  get: N<N<HTMLElement>>,
+  end: N<>,
+};
 
-export type o_t = action_t | end_t | text_t | element_t;
-
-export type text_t = {| t: "text", v: string |};
-export type end_t = {| t: "end", v?: void |};
-export type action_t = {| t: "action", v: (Element) => N<o_t | disposable_t> |};
-export type element_t = {| t: "element", v: element_v_t |};
-export type disposable_t = {| t: "disposable", v: () => void |};
-type element_v_t = {| sel: string, nar: N<o_t>, key?: ?string |};
-
-export const end: end_t = { t: "end" };
-export function element<T>(
-  pmap: (T) => N<o_t>
-): (string, T, ?string) => element_t {
-  return (sel, t, key) => {
-    return { t: "element", v: { sel, nar: pmap(t), key } };
+export function bark(elm: HTMLElement): N<N<o_pith_t>> {
+  const o = pith(elm);
+  return function Ebark(nar) {
+    nar(o), o.end();
   };
 }
-export function text(v: string): text_t {
-  return { t: "text", v };
-}
-export function action(v: (Element) => N<o_t | disposable_t>): action_t {
-  return { t: "action", v };
-}
-export function disposable(v: () => void): disposable_t {
-  return { t: "disposable", v };
-}
-export function make(elm: Element, depth: number = 0): P<o_t> {
+function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
-  var actions_count = 0;
-  const actions = [];
-  return function pith(r) {
-    if ("element" === r.t) {
+  var listeners_count = 0;
+  const listeners = [];
+  return {
+    element(sel, nar, key) {
       let n, ob;
       const index = childs_count++;
-      const { sel, nar, key } = r.v;
       const { tag, classList, id } = parseSelector(sel);
       for (let i = index, l = childNodes.length; i < l; i++)
         if (
@@ -54,20 +42,20 @@ export function make(elm: Element, depth: number = 0): P<o_t> {
 
           if ((ob = childPiths[index]))
             if (key) return;
-            else return nar(ob), ob({ t: "end" });
-          childPiths.splice(index, 0, (ob = make(n, depth + 1)));
-          return nar(ob), ob({ t: "end" });
+            else return nar(ob), ob.end();
+          childPiths.splice(index, 0, (ob = pith(n, depth + 1)));
+          return nar(ob), ob.end();
         }
       n = document.createElement(tag);
       if (key) n.setAttribute("key", key);
       if (id) n.id = id;
       for (let str of classList) n.classList.add(str);
       elm.insertBefore(n, childNodes[index]),
-        childPiths.splice(index, 0, (ob = make(n, depth + 1)));
-      nar(ob), ob({ t: "end" });
-    } else if ("text" === r.t) {
+        childPiths.splice(index, 0, (ob = pith(n, depth + 1)));
+      nar(ob), ob.end();
+    },
+    text(text) {
       const index = childs_count++;
-      const text = r.v;
       for (let i = index, l = childNodes.length; i < l; i++)
         if (
           childNodes[i].nodeType === 3 &&
@@ -80,21 +68,37 @@ export function make(elm: Element, depth: number = 0): P<o_t> {
         }
       elm.insertBefore(document.createTextNode(text), childNodes[index]),
         childPiths.splice(index, 0, null);
-    } else if ("action" === r.t) {
-      const index = actions_count++;
-      const a = r.v;
-      for (let i = index, l = actions.length; i < l; i++)
-        if (actions[i].a === a) {
-          if (index < i) actions.splice(index, 0, ...actions.splice(i, 1));
+    },
+    attr(name, value) {
+      if (value != null) {
+        if (elm.getAttribute(name) !== value) elm.setAttribute(name, value);
+      } else {
+        if (elm.hasAttribute(name)) elm.removeAttribute(name);
+      }
+    },
+    style(name, value) {
+      if (value) {
+        if (elm.style.getPropertyValue(name) !== value)
+          elm.style.setProperty(name, value);
+      } else {
+        if (elm.style.getPropertyValue(name)) elm.style.removeProperty(name);
+      }
+    },
+    on(type, listener, mkey) {
+      const index = listeners_count++;
+      const key = mkey || hashString(listener.toString()) + "";
+      for (let i = index, l = listeners.length; i < l; i++)
+        if (listeners[i].type === type && listeners[i].key === key) {
+          if (index < i) listeners.splice(index, 0, ...listeners.splice(i, 1));
           return;
         }
-      const disposables = [];
-      actions.splice(index, 0, { a, disposables });
-      a(elm)((r) => {
-        if ("disposable" === r.t) disposables.push(r);
-        else pith(r);
-      });
-    } else if ("end" === r.t) {
+      listeners.splice(index, 0, { type, listener, key });
+      elm.addEventListener(type, listener);
+    },
+    get(a) {
+      a(elm);
+    },
+    end() {
       for (let l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
       const piths = childPiths.splice(
@@ -102,11 +106,102 @@ export function make(elm: Element, depth: number = 0): P<o_t> {
         childPiths.length - childs_count
       );
       childs_count = 0;
-      const ads = actions.splice(actions_count, actions.length - actions_count);
-      actions_count = 0;
-      for (let mp of piths) mp && mp({ t: "end" });
-      for (let ad of ads) for (let d of ad.disposables) d.v();
-    } else throw new Error("invalid rvalue: " + JSON.stringify(r));
+      const lstnrs = listeners.splice(
+        listeners_count,
+        listeners.length - listeners_count
+      );
+      listeners_count = 0;
+      for (let mp of piths) mp && mp.end();
+      for (let l of lstnrs) elm.removeEventListener(l.type, l.listener);
+    },
+  };
+}
+type value_t =
+  | void
+  | null
+  | number
+  | string
+  | boolean
+  | Array<value_t>
+  | { ... };
+const a: N<r_pith_t<{| n: number |}>> = mmap(
+  "a",
+  new Date()
+)((o) => {
+  o.reduce((s) => s);
+});
+
+export type r_pith_t<S: value_t> = {
+  ...o_pith_t,
+  reduce: N<(S) => S>,
+  element: N<string, N<r_pith_t<S>>, ?string>,
+};
+export function rring<S: value_t>(
+  reduce: ((S) => S) => void
+): (N<r_pith_t<S>>) => N<o_pith_t> {
+  return (nar) =>
+    function Erring(o) {
+      nar({
+        ...o,
+        element(sel, nar, key) {
+          o.element(sel, rring(reduce)(nar), key);
+        },
+        reduce,
+      });
+    };
+}
+export function rmap<A: { ... }, B: value_t>(
+  o: N<(A) => A>
+): (string, B) => N<(B) => B> {
+  return (key, init) =>
+    function Ermap(rb) {
+      o((a) => {
+        const ob = a[key] || init;
+        const nb = rb(ob);
+        if (ob === nb) return a;
+        const ns = { ...a, [key]: nb };
+        if (eq(init, nb)) delete ns[key];
+        return ns;
+      });
+    };
+}
+function eq(a: value_t, b: value_t): boolean {
+  if (a == null || b == null) {
+    return a === b;
+  } else if (Array.isArray(a)) {
+    if (Array.isArray(b)) {
+      return a.length === b.length && a.every((v, i) => eq(v, b[i]));
+    } else {
+      return false;
+    }
+  } else if (typeof a === "object") {
+    if (typeof b === "object" && !Array.isArray(b)) {
+      const akeys = Object.keys(a);
+      const bkeys = Object.keys(b);
+      return (
+        akeys.length === bkeys.length && akeys.every((k) => eq(a[k], b[k]))
+      );
+    } else {
+      return false;
+    }
+  } else {
+    return a === b;
+  }
+}
+export function mmap<A: { ... }, B: value_t>(
+  key: string,
+  init: B
+): (N<r_pith_t<B>>) => N<r_pith_t<A>> {
+  return function map(nar) {
+    return function Emmap(o) {
+      nar({
+        ...o,
+        element(sel, nar, k) {
+          o.element(sel, map(nar), k);
+        },
+        reduce: rmap(o.reduce)(key, init),
+      });
+    };
   };
 }
 function parseSelector(
@@ -132,36 +227,8 @@ function parseSelector(
   }
   return { tag, classList, id };
 }
-//function hashString(s: string): number {
-//  for (var i = 0, h = 0; i < s.length; i++)
-//    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-//  return h;
-//}
-export function makestr(o: P<string>): P<o_t> {
-  var str = "";
-  var closed = false;
-  return function pith(r) {
-    if ("element" === r.t) {
-      const { sel, nar, key } = r.v;
-      const { tag, classList, id } = parseSelector(sel);
-      str += "<" + tag;
-      if (id) str += ' id="' + id + '"';
-      if (classList.length) str += ' class="' + classList.join(" ") + '"';
-      str += ">";
-      const ob = makestr((content) => {
-        str += content;
-        str += "</" + tag + ">";
-      });
-      nar(ob), ob({ t: "end" });
-    } else if ("text" === r.t) {
-      str += r.v;
-    } else if ("action" === r.t) {
-    } else if ("end" === r.t) {
-      if (!closed) {
-        closed = true;
-        o(str);
-      }
-      str = "";
-    } else throw new Error("invalid rvalue: " + JSON.stringify(r));
-  };
+function hashString(s: string): number {
+  for (var i = 0, h = 0; i < s.length; i++)
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return h;
 }
