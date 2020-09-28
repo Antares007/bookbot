@@ -116,27 +116,12 @@ function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
     },
   };
 }
-type value_t =
-  | void
-  | null
-  | number
-  | string
-  | boolean
-  | Array<value_t>
-  | { ... };
-const a: N<r_pith_t<{| n: number |}>> = mmap(
-  "a",
-  new Date()
-)((o) => {
-  o.reduce((s) => s);
-});
-
-export type r_pith_t<S: value_t> = {
+export type r_pith_t<S> = {
   ...o_pith_t,
   reduce: N<(S) => S>,
   element: N<string, N<r_pith_t<S>>, ?string>,
 };
-export function rring<S: value_t>(
+export function rring<S>(
   reduce: ((S) => S) => void
 ): (N<r_pith_t<S>>) => N<o_pith_t> {
   return (nar) =>
@@ -150,7 +135,7 @@ export function rring<S: value_t>(
       });
     };
 }
-export function rmap<A: { ... }, B: value_t>(
+export function rmap<A: { ... }, B>(
   o: N<(A) => A>
 ): (string, B) => N<(B) => B> {
   return (key, init) =>
@@ -165,30 +150,25 @@ export function rmap<A: { ... }, B: value_t>(
       });
     };
 }
-function eq(a: value_t, b: value_t): boolean {
-  if (a == null || b == null) {
-    return a === b;
-  } else if (Array.isArray(a)) {
-    if (Array.isArray(b)) {
-      return a.length === b.length && a.every((v, i) => eq(v, b[i]));
-    } else {
-      return false;
-    }
-  } else if (typeof a === "object") {
-    if (typeof b === "object" && !Array.isArray(b)) {
-      const akeys = Object.keys(a);
-      const bkeys = Object.keys(b);
-      return (
-        akeys.length === bkeys.length && akeys.every((k) => eq(a[k], b[k]))
-      );
-    } else {
-      return false;
-    }
-  } else {
-    return a === b;
-  }
+function eq(a: mixed, b: mixed): boolean {
+  return a === b
+    ? true
+    : a == null || b == null
+    ? false
+    : Array.isArray(a)
+    ? Array.isArray(b) &&
+      a.length === b.length &&
+      a.every((v, i) => eq(v, b[i]))
+    : a instanceof Date
+    ? b instanceof Date && a.getTime() === b.getTime()
+    : typeof a === "object"
+    ? typeof b === "object" &&
+      a.constructor === b.constructor &&
+      Object.keys(a).length === Object.keys(b).length &&
+      Object.keys(a).every((k) => eq(a[k], b[k]))
+    : false;
 }
-export function mmap<A: { ... }, B: value_t>(
+export function mmap<A: { ... }, B>(
   key: string,
   init: B
 ): (N<r_pith_t<B>>) => N<r_pith_t<A>> {
