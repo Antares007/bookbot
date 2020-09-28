@@ -1,8 +1,8 @@
 // @flow strict
-import type { N } from "../src/p";
+import type { N } from "../src/purry";
 import type { pith_t as document_pith_t } from "../src/document";
-const p = require("../src/p");
-const E = require("../src/E");
+const p = require("../src/purry");
+const E = require("../src/element");
 const document = require("../src/document");
 const b = document.bark(reduce);
 var state;
@@ -11,62 +11,13 @@ try {
 } catch (e) {
   state = { n: 0 };
 }
-function opring<S: { ... }>(
-  key: string
-): (N<E.r_pith_t<S>>) => N<E.r_pith_t<S>> {
-  return (nar) => (op) =>
-    E.mmap(
-      "@opring",
-      {}
-    )(function mainnar(o) {
-      const b = (nar) => (nar(o), o.end());
-      o.reduce((s) => {
-        if (s[key])
-          o.element(
-            "table",
-            (o) => {
-              o.element("tr", (o) => {
-                o.element("td", (o) =>
-                  o.element("button", (o) => {
-                    o.text("- " + key);
-                    o.on("click", (e) => {
-                      o.reduce((s) => {
-                        const ns = { ...s, [key]: void 0 };
-                        delete ns[key];
-                        return ns;
-                      });
-                      b(mainnar);
-                    });
-                  })
-                );
-                o.element("td", (o) => E.rring(op.reduce)(nar)(o));
-              });
-            },
-            key
-          );
-        else
-          o.element(
-            "button",
-            (o) => {
-              o.text("+ " + key);
-              o.on("click", (e) => {
-                o.reduce((s) => ({ ...s, [key]: true }));
-                b(mainnar);
-              });
-            },
-            key
-          );
-
-        return s;
-      });
-    })(op);
-}
-const { C } = require("./C3");
+const opring = require("./opring");
+const counter = require("./counter");
 const D = (o) => {
-  o.element("div", opring("c0")(E.mmap("C(0)", { n: 0 })(C(0))));
-  o.element("div", opring("c1")(E.mmap("C(1)", { n: 0 })(C(1))));
-  o.element("div", opring("c2")(E.mmap("C(2)", { n: 0 })(C(2))));
-  o.element("div", opring("c3")(E.mmap("C(3)", { n: 0 })(C(3))));
+  o.element("div", opring("c0")(E.mmap("C(0)", { n: 0 })(counter(0))));
+  o.element("div", opring("c1")(E.mmap("C(1)", { n: 0 })(counter(1))));
+  o.element("div", opring("c2")(E.mmap("C(2)", { n: 0 })(counter(2))));
+  o.element("div", opring("c3")(E.mmap("C(3)", { n: 0 })(counter(3))));
 };
 const fs = require("fs");
 const { join } = require("path");
@@ -118,7 +69,7 @@ const B = (path: string) => (o: document_pith_t<{}>) => {
   );
 };
 b(B(process.platform === "win32" ? "c:\\Users" : "/"));
-Object.assign(window, { b, B, C, D, E });
+Object.assign(window, { b, B, C: counter, D, E });
 function reduce(r) {
   const newstate = r(state);
   localStorage.setItem("B", JSON.stringify(newstate));

@@ -1,5 +1,5 @@
 // @flow strict
-const p = require("../p");
+const p = require("../purry");
 const fs = require("fs");
 const read = require("./read");
 

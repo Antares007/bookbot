@@ -2,7 +2,7 @@
 const pako = require("../../lib/pako");
 const { static_cast } = require("../utils/static_cast");
 const { inflate } = pako;
-const p = require("../p");
+const p = require("../purry");
 const { join, dirname } = require("path");
 const chartotype: Array<1 | 2 | 3 | 4> = Array(115);
 chartotype[111] = 1;
