@@ -11,19 +11,19 @@ export type N<
   -I = void
 > = (A, B, C, D, E, F, G, H, I) => void;
 export type pith_t<
-  L = void,
-  R = void,
-  S = void,
-  T = void,
-  U = void,
-  V = void,
-  X = void,
-  Y = void,
-  Z = void
-> = {
-  error: N<L>,
-  value: N<R, S, T, U, V, X, Y, Z>,
-};
+  -L = void,
+  -R = void,
+  -S = void,
+  -T = void,
+  -U = void,
+  -V = void,
+  -X = void,
+  -Y = void,
+  -Z = void
+> = {|
+  +error: N<L>,
+  +value: N<R, S, T, U, V, X, Y, Z>,
+|};
 export function purry<A, B, C, D, E, F, G, H, L, M, R, S, T, U, V, X, Y, Z>(
   narf: N<pith_t<L, A, B, C, D, E, F, G, H>>,
   narg: (A, B, C, D, E, F, G, H) => N<pith_t<M, R, S, T, U, V, X, Y, Z>>
@@ -31,7 +31,7 @@ export function purry<A, B, C, D, E, F, G, H, L, M, R, S, T, U, V, X, Y, Z>(
   return (o) =>
     narf({
       ...o,
-      value: (r, s, t, u, v, x, y, z) => narg(r, s, t, u, v, x, y, z)({ ...o }),
+      value: (r, s, t, u, v, x, y, z) => narg(r, s, t, u, v, x, y, z)(o),
     });
 }
 export function pcatch<
@@ -73,7 +73,7 @@ export function pcatch<
     narf({
       ...o,
       error(e) {
-        narg(e)({ ...o });
+        narg(e)(o);
       },
     });
 }
@@ -88,6 +88,7 @@ export function all<L, R, S, T, U, V, X, Y, Z>(
     nars.forEach((nar, i) => {
       if (done) return;
       nar({
+        ...o,
         error(e) {
           if (done) return;
           done = true;
@@ -114,6 +115,7 @@ export function race<L, R, S, T, U, V, X, Y, Z>(
         nars.forEach((nar, i) => {
           if (done) return;
           nar({
+            ...o,
             error(e) {
               if (done) return;
               if (--l === 0) o.error(e);
@@ -132,7 +134,7 @@ export function trycatch<L, R, S, T, U, V, X, Y, Z>(
 ): N<pith_t<L | Error, R, S, T, U, V, X, Y, Z>> {
   return (o) => {
     try {
-      nar({ ...o });
+      nar(o);
     } catch (e) {
       if (e instanceof Error) o.error((e: Error));
       else o.error(new Error(e && e.message));
