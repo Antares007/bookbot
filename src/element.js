@@ -5,6 +5,7 @@ export type o_pith_t = {
   element: N<string, (o_pith_t) => void, ?string>,
   attr: N<string, ?string>,
   style: N<string, ?string>,
+  prop: N<string, mixed>,
   on: N<string, N<Event>, ?string>,
   get: N<N<HTMLElement>>,
   end: N<>,
@@ -77,12 +78,16 @@ function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
       }
     },
     style(name, value) {
-      if (value) {
+      if (value != null) {
         if (elm.style.getPropertyValue(name) !== value)
           elm.style.setProperty(name, value);
       } else {
         if (elm.style.getPropertyValue(name)) elm.style.removeProperty(name);
       }
+    },
+    prop(name, value) {
+      const m = (elm: { [string]: mixed });
+      if (m[name] !== value) m[name] = value;
     },
     on(type, listener, mkey) {
       const index = listeners_count++;
