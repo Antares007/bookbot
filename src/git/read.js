@@ -4,12 +4,31 @@ const { static_cast } = require("../utils/static_cast");
 const { inflate } = pako;
 const p = require("../purry");
 const { join, dirname } = require("path");
+
 const chartotype: Array<1 | 2 | 3 | 4> = Array(115);
 chartotype[111] = 1;
 chartotype[114] = 2;
 chartotype[108] = 3;
 chartotype[97] = 4;
+const emptyTreeHash = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
+export type mode_t = "40000" | "100644" | "100755" | "120000" | "160000";
+export type object_t = 1 | 2 | 3 | 4;
+export type commit_t = {|
+  tree: string,
+  parents: Array<string>,
+  author: string,
+  committer: string,
+  message: string,
+|};
+export type tree_t = {| [string]: {| mode: mode_t, hash: hash_t |} |};
+export type tag_t = {
+  object: string,
+  type: object_t,
+  tag: string,
+  tagger: string,
+  message: string,
+};
 export opaque type hash_t: Buffer = Buffer;
 export function hashFrom(sha1: string): hash_t {
   if (/^[A-Fa-f0-9]{40}$/.test(sha1)) return Buffer.from(sha1, "hex");
@@ -73,18 +92,12 @@ function deframe(
     o.value(buffer.slice(buffer.indexOf(0x00) + 1), chartotype[buffer[1]]);
 }
 function readPackedRaw(fs: fs_t, packdir: string, hash: hash_t) {
-  const readdir = fs.readdir;
-  return p.pcatch(
-    p.purry(readdir(packdir), (names) =>
-      p.race(
-        names
-          .filter((n) => n.endsWith(".idx"))
-          .map(map.bind(null, fs, packdir, hash))
-      )
-    ),
-    (e) => (o) => {
-      o.error(e);
-    }
+  return p.purry(fs.readdir(packdir), (names) =>
+    p.race(
+      names
+        .filter((n) => n.endsWith(".idx"))
+        .map(map.bind(null, fs, packdir, hash))
+    )
   );
 }
 function map(
@@ -217,27 +230,25 @@ function readInx(
     L = 0;
     do offset -= 4;
     while ((L = offset < fanOutTable ? 0 : buffer.readUInt32BE(offset)) === R);
-    lastCmp = -1;
-    while (L < R) {
+    while (L <= R) {
       const m = ((L + R) / 2) | 0;
-      offset = hashTable + m * 20;
-      if ((lastCmp = buffer.slice(offset, offset + 20).compare(hash)) > 0)
-        R = m;
-      else L = m + 1;
+      const rez = buffer
+        .slice((offset = hashTable + m * 20), offset + 20)
+        .compare(hash);
+      if (rez < 0) L = m + 1;
+      else if (rez > 0) R = m - 1;
+      else {
+        offset = buffer.readUInt32BE(offsetTable + m * 4);
+        if (offset & 0x80000000)
+          offset = buffer.readUIntBE(
+            largeTable + (offset & 0x7fffffff) * 8 + 2,
+            6
+          );
+        const crc = buffer.readUInt32BE(crcTable + m * 4);
+        return o.value(offset, crc);
+      }
     }
-    R -= 1;
-    if (lastCmp === 0) {
-      offset = buffer.readUInt32BE(offsetTable + R * 4);
-      if (offset & 0x80000000)
-        offset = buffer.readUIntBE(
-          largeTable + (offset & 0x7fffffff) * 8 + 2,
-          6
-        );
-      const crc = buffer.readUInt32BE(crcTable + R * 4);
-      return o.value(offset, crc);
-    } else {
-      return o.error(new HashNotFoundError("hash not in package"));
-    }
+    return o.error(new HashNotFoundError("hash not in package"));
   });
 }
 function applyDelta(delta: Buffer, base: Buffer): Buffer {
@@ -296,6 +307,52 @@ function applyDelta(delta: Buffer, base: Buffer): Buffer {
     }
     return length;
   }
+}
+export function decodeCommit<E>(body: Buffer): (p.pith_t<E, commit_t>) => void {
+  var i = 0;
+  var key;
+  var tree = emptyTreeHash;
+  const parents = [];
+  var author = "";
+  var committer = "";
+  while ((key = body[i]) !== 0x0a) {
+    if (key === 112 /*parent*/) {
+      parents.push(body.toString("binary", (i += 7), (i += 40)));
+    } else if (key === 97 /*author*/) {
+      author = body.toString("utf8", (i += 7), (i = body.indexOf(0x0a, i)));
+    } else if (key === 99 /*committer*/) {
+      committer = body.toString("utf8", (i += 10), (i = body.indexOf(0x0a, i)));
+    } /*tree*/ else {
+      tree = body.toString("binary", (i += 5), (i += 40));
+    }
+    i++;
+  }
+  const message = body.toString("utf8", ++i);
+  return (o) => o.value({ tree, parents, author, committer, message });
+}
+export function decodeTree(buffer: Buffer): (p.pith_t<empty, tree_t>) => void {
+  const length = buffer.length;
+  const entries = {};
+  var i = 0;
+  while (i < length) {
+    const mode = buffer.toString("binary", i, (i = buffer.indexOf(0x20, i)));
+    const name = buffer.toString("utf8", ++i, (i = buffer.indexOf(0x00, i)));
+    const hash = buffer.slice(++i, (i += 20));
+    entries[name] = { mode, hash };
+  }
+  return (o) => o.value(entries);
+}
+export function decodeTag(buffer: Buffer): (p.pith_t<empty, tag_t>) => void {
+  const tag = {};
+  var i = 0;
+  while (buffer[i] !== 0x0a)
+    (tag[
+      buffer.toString("binary", i, (i = buffer.indexOf(0x20, i)))
+    ] = buffer.toString("utf8", ++i, (i = buffer.indexOf(0x0a, i)))),
+      i++;
+  i++;
+  tag.message = buffer.toString("utf8", i, buffer.length);
+  return (o) => o.value(tag);
 }
 function logIndexFile(
   buffer,

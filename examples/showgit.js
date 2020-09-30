@@ -1,7 +1,6 @@
 // @flow strict
 const p = require("../src/purry");
 const read = require("../src/git/read");
-const codec = require("../src/git/codec");
 const { yfs } = require("../src/git/yfs");
 const { resolve } = require("path");
 const element = require("../src/element");
@@ -38,7 +37,7 @@ const B = (hash) => (o) => {
           read.readRaw(yfs, resolve(__dirname, "../.git"), hash),
           (b, t) => (o) => {
             if (t !== 2) return o.error(new Error("not a tree"));
-            codec.decodeTree(b)(o);
+            read.decodeTree(b)(o);
           }
         );
         p.purry(see, (ns) => () => {
@@ -47,7 +46,7 @@ const B = (hash) => (o) => {
             o.element(
               "div",
               ns[n].mode === "40000"
-                ? opring(n)(element.mmap(n, {})(rec(ns[n].hash)))
+                ? (o) => opring(n)(element.mmap(n, {})(rec(ns[n].hash)))(o)
                 : (o) => o.text(n)
             );
           o.end();
