@@ -5,9 +5,14 @@ const { yfs } = require("../src/yfs");
 const { resolve } = require("path");
 const element = require("../src/element");
 
-var state = {};
-const b = require("../src/document").bark((r) => {
-  state = r(state);
+var state = JSON.parse(localStorage.getItem("B") || "{}");
+const b = require("../src/document").bark(function reduce(r) {
+  const newstate = r(state);
+  localStorage.setItem("B", JSON.stringify(newstate));
+  if (newstate !== state) {
+    state = newstate;
+    console.info(state);
+  }
 });
 const opring = require("./opring");
 const B = (hash) => (o) => {
@@ -33,21 +38,41 @@ const B = (hash) => (o) => {
       return (o) => {
         o.text("Loading...");
         p.purry(
-          p.purry(
-            git.read(yfs, resolve(__dirname, "../.git"), hash),
-            (b, t) => (o) => {
-              if (b.type === "tree") o.value(b.value);
-            }
-          ),
-          (ns) => () => {
-            const names = Object.keys(ns);
-            for (let n of names)
+          git.read(yfs, resolve(__dirname, "../.git"), hash),
+          (obj) => () => {
+            if (obj.type === "commit") {
               o.element(
                 "div",
-                ns[n].mode === "40000"
-                  ? (o) => opring(n)(element.mmap(n, {})(rec(ns[n].hash)))(o)
-                  : (o) => o.text(n)
+                opring("tree(" + obj.value.tree.slice(0, 4) + ")")((o) => {
+                  element.mmap(
+                    obj.value.tree,
+                    {}
+                  )(rec(git.hashFrom(obj.value.tree)))(o);
+                })
               );
+              for (var hash of obj.value.parents)
+                o.element(
+                  "div",
+                  opring("parent(" + hash.slice(0, 4) + ")")((o) => {
+                    element.mmap(hash, {})(rec(git.hashFrom(hash)))(o);
+                  })
+                );
+            } else if (obj.type === "tree") {
+              const names = Object.keys(obj.value);
+              for (let n of names)
+                o.element(
+                  "div",
+                  opring(obj.value[n].mode.slice(-3) + " " + n)(
+                    element.mmap(n, {})(rec(obj.value[n].hash))
+                  )
+                );
+            } else if (obj.type === "blob") {
+              o.element("pre", (o) => {
+                o.element("code", (o) => {
+                  o.text(obj.value.toString("utf8"));
+                });
+              });
+            }
             o.end();
           }
         )({
@@ -60,4 +85,4 @@ const B = (hash) => (o) => {
   );
 };
 
-b(B(git.hashFrom("3cdd739c0afcde3ccac7b6879fe78b69c875b1e2")));
+b(B(git.hashFrom("48ff71803e1ffb3f19fa1dee57a3cf9ab4dc95c1")));
