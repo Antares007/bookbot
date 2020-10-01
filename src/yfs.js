@@ -1,9 +1,9 @@
 // @flow strict
-const p = require("../purry");
+const p = require("./purry");
 const fs = require("fs");
-const read = require("./read");
+const git = require("./git");
 
-export const yfs: read.fs_t = {
+export const yfs: git.fs_t = {
   readdir: p.liftcb1(fs.readdir),
   open: p.liftcb2(fs.open),
   read: p.liftcb5(fs.read),

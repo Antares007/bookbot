@@ -1,34 +1,52 @@
 // @flow strict
-const pako = require("../../lib/pako");
-const { static_cast } = require("../utils/static_cast");
+import type { N } from "./purry";
+const pako = require("../lib/pako");
+const { static_cast } = require("./utils/static_cast");
 const { inflate } = pako;
-const p = require("../purry");
+const p = require("./purry");
 const { join, dirname } = require("path");
-
-const chartotype: Array<1 | 2 | 3 | 4> = Array(115);
-chartotype[111] = 1;
-chartotype[114] = 2;
-chartotype[108] = 3;
-chartotype[97] = 4;
 const emptyTreeHash = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
-
-export type mode_t = "40000" | "100644" | "100755" | "120000" | "160000";
-export type object_t = 1 | 2 | 3 | 4;
-export type commit_t = {|
-  tree: string,
-  parents: Array<string>,
-  author: string,
-  committer: string,
-  message: string,
-|};
-export type tree_t = {| [string]: {| mode: mode_t, hash: hash_t |} |};
-export type tag_t = {
-  object: string,
-  type: object_t,
-  tag: string,
-  tagger: string,
-  message: string,
+const numtype2strtype = ["", "commit", "tree", "blob", "tag"];
+const strtype2numtype = { commit: 1, tree: 2, blob: 3, tag: 4 };
+const decoders = {
+  commit: decodeCommit,
+  tree: decodeTree,
+  blob: decodeBlob,
+  tag: decodeTag,
 };
+export type commit_t = {|
+  type: "commit",
+  value: {|
+    tree: string,
+    parents: Array<string>,
+    author: string,
+    committer: string,
+    message: string,
+  |},
+|};
+export type tree_t = {|
+  type: "tree",
+  value: {|
+    [string]: {|
+      mode: "40000" | "100644" | "100755" | "120000" | "160000",
+      hash: hash_t,
+    |},
+  |},
+|};
+export type blob_t = {|
+  type: "blob",
+  value: Buffer,
+|};
+export type tag_t = {|
+  type: "tag",
+  value: {|
+    object: string,
+    type: "commit" | "tree" | "blob" | "tag",
+    tag: string,
+    tagger: string,
+    message: string,
+  |},
+|};
 export opaque type hash_t: Buffer = Buffer;
 export function hashFrom(sha1: string): hash_t {
   if (/^[A-Fa-f0-9]{40}$/.test(sha1)) return Buffer.from(sha1, "hex");
@@ -47,17 +65,25 @@ export type fs_t = {
   close: (number) => (p.pith_t<ErrnoError>) => void,
   readFile: (string) => (p.pith_t<ErrnoError, Buffer>) => void,
 };
-export function readRaw(
+export function read(
   fs: fs_t,
   gitdir: string,
   hash: hash_t
-): (
+): N<
   p.pith_t<
     DecompressError | ErrnoError | Error | p.RaceError,
-    Buffer,
-    1 | 2 | 3 | 4
+    commit_t | tree_t | blob_t | tag_t
   >
-) => void {
+> {
+  return p.purry(readRaw(fs, gitdir, hash), (b, t) => decoders[t](b));
+}
+function readRaw(
+  fs: fs_t,
+  gitdir: string,
+  hash: hash_t
+): N<
+  p.pith_t<DecompressError | ErrnoError | Error | p.RaceError, Buffer, string>
+> {
   const filename = join(
     gitdir,
     "objects",
@@ -67,29 +93,31 @@ export function readRaw(
   return p.purry(
     p.pcatch(
       p.trycatch(
-        p.purry(
-          p.purry(fs.readFile(filename), (b) => (o) =>
-            o.value(Buffer.from(pako.inflate(b)))
-          ),
-          deframe
-        )
+        p.purry(fs.readFile(filename), (b) => (o) => {
+          var offset;
+          const buffer = Buffer.from(pako.inflate(b));
+          const type = buffer.toString(
+            "binary",
+            0,
+            (offset = buffer.indexOf(0x20))
+          );
+          const value = buffer.slice(buffer.indexOf(0x00, offset) + 1);
+          o.value(value, type);
+        })
       ),
       (e) => (o) => {
         if (e.code === "ENOENT") o.value();
         else o.error(e);
       }
     ),
-    (b, t) => (o) => {
-      if (b && t) o.value(b, t);
-      else readPackedRaw(fs, join(gitdir, "objects", "pack"), hash)(o);
-    }
+    (b, t) => (o) =>
+      b && t
+        ? o.value(b, t)
+        : p.purry(
+            readPackedRaw(fs, join(gitdir, "objects", "pack"), hash),
+            (b, t) => (o) => o.value(b, numtype2strtype[t])
+          )(o)
   );
-}
-function deframe(
-  buffer: Buffer
-): (p.pith_t<empty, Buffer, 1 | 2 | 3 | 4>) => void {
-  return (o) =>
-    o.value(buffer.slice(buffer.indexOf(0x00) + 1), chartotype[buffer[1]]);
 }
 function readPackedRaw(fs: fs_t, packdir: string, hash: hash_t) {
   return p.purry(fs.readdir(packdir), (names) =>
@@ -105,9 +133,7 @@ function map(
   packdir: string,
   hash: hash_t,
   indexfilename: string
-): (
-  p.pith_t<DecompressError | Error | ErrnoError, Buffer, 1 | 2 | 3 | 4>
-) => void {
+): (p.pith_t<DecompressError | Error | ErrnoError, Buffer, number>) => void {
   const length = 2 << 13;
   const read = (fd, off) =>
     p.purry(
@@ -135,7 +161,10 @@ function map(
                         )
                       )(o)
                     : type === 7
-                    ? readRaw(fs, dirname(dirname(packdir)), hash)(o)
+                    ? p.purry(
+                        readRaw(fs, dirname(dirname(packdir)), hash),
+                        (b, t) => (o) => o.value(b, strtype2numtype[t])
+                      )(o)
                     : o.value(buffer, type)
               )
             );
@@ -152,18 +181,12 @@ function decodepackoffset(
   off: number,
   buffer: Buffer
 ): (
-  p.pith_t<
-    DecompressError | ErrnoError | Error,
-    Buffer,
-    1 | 2 | 3 | 4 | 6 | 7,
-    hash_t,
-    number
-  >
+  p.pith_t<DecompressError | ErrnoError | Error, Buffer, number, hash_t, number>
 ) => void {
   return p.trycatch((o) => {
     var offset = 0;
     var byte = buffer[offset++];
-    const type = static_cast<1 | 2 | 3 | 4 | 6 | 7>((byte >> 4) & 0x7);
+    const type = (byte >> 4) & 0x7;
     var size = byte & 0xf;
     var left = 4;
     while (byte & 0x80) {
@@ -308,7 +331,7 @@ function applyDelta(delta: Buffer, base: Buffer): Buffer {
     return length;
   }
 }
-export function decodeCommit<E>(body: Buffer): (p.pith_t<E, commit_t>) => void {
+function decodeCommit(body: Buffer): (p.pith_t<empty, commit_t>) => void {
   var i = 0;
   var key;
   var tree = emptyTreeHash;
@@ -328,9 +351,13 @@ export function decodeCommit<E>(body: Buffer): (p.pith_t<E, commit_t>) => void {
     i++;
   }
   const message = body.toString("utf8", ++i);
-  return (o) => o.value({ tree, parents, author, committer, message });
+  return (o) =>
+    o.value({
+      type: "commit",
+      value: { tree, parents, author, committer, message },
+    });
 }
-export function decodeTree(buffer: Buffer): (p.pith_t<empty, tree_t>) => void {
+function decodeTree(buffer: Buffer): N<p.pith_t<empty, tree_t>> {
   const length = buffer.length;
   const entries = {};
   var i = 0;
@@ -340,9 +367,12 @@ export function decodeTree(buffer: Buffer): (p.pith_t<empty, tree_t>) => void {
     const hash = buffer.slice(++i, (i += 20));
     entries[name] = { mode, hash };
   }
-  return (o) => o.value(entries);
+  return (o) => o.value({ type: "tree", value: entries });
 }
-export function decodeTag(buffer: Buffer): (p.pith_t<empty, tag_t>) => void {
+function decodeBlob(buffer: Buffer): (p.pith_t<empty, blob_t>) => void {
+  return (o) => o.value({ type: "blob", value: buffer });
+}
+function decodeTag(buffer: Buffer): (p.pith_t<empty, tag_t>) => void {
   const tag = {};
   var i = 0;
   while (buffer[i] !== 0x0a)
@@ -352,7 +382,10 @@ export function decodeTag(buffer: Buffer): (p.pith_t<empty, tag_t>) => void {
       i++;
   i++;
   tag.message = buffer.toString("utf8", i, buffer.length);
-  return (o) => o.value(tag);
+  return (o) =>
+    o.value(
+      static_cast<tag_t>({ type: "tag", value: tag })
+    );
 }
 function logIndexFile(
   buffer,
