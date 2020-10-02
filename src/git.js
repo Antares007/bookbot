@@ -65,6 +65,27 @@ export type fs_t = {
   close: (number) => (p.pith_t<ErrnoError>) => void,
   readFile: (string) => (p.pith_t<ErrnoError, Buffer>) => void,
 };
+export function readRef(
+  fs: fs_t,
+  gitdir: string,
+  ref: string
+): N<p.pith_t<ErrnoError, string>> {
+  return p.pcatch(
+    p.purry(fs.readFile(join(gitdir, ref)), (b) => (o) =>
+      o.value(b.toString("binary", 0, 40))
+    ),
+    (e) => (o) => {
+      if (e.code === "ENOENT")
+        p.purry(fs.readFile(join(gitdir, "packed-refs")), (b) => (o) => {
+          const i = b.indexOf(ref);
+          if (i > 0) o.value(b.toString("binary", i - 41, i - 1));
+          else o.error(new RefNotFoundError(ref));
+        })(o);
+      else o.error(e);
+    }
+  );
+}
+export class RefNotFoundError extends Error {}
 export function read(
   fs: fs_t,
   gitdir: string,
