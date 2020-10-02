@@ -1,4 +1,5 @@
 // @flow strict
+import type { N } from "../src/purry";
 const p = require("../src/purry");
 const git = require("../src/git");
 const { yfs } = require("../src/yfs");
@@ -6,7 +7,8 @@ const { resolve, join } = require("path");
 const element = require("../src/element");
 
 var state = JSON.parse(localStorage.getItem("B") || "{}");
-const b = require("../src/document").bark(function reduce(r) {
+const document = require("../src/document");
+const b = document.bark(function reduce(r) {
   const newstate = r(state);
   localStorage.setItem("B", JSON.stringify(newstate));
   if (newstate !== state) {
@@ -17,7 +19,8 @@ const b = require("../src/document").bark(function reduce(r) {
 const opring = require("./opring");
 const gitdir = resolve(__dirname, "../.git");
 const opr = (n, nar) => opring(n)(element.mmap(n, {})(nar));
-const B = (hash) => (o) => {
+
+const B = (hash: git.hash_t): N<document.pith_t<{}>> => (o) => {
   o.head((o) =>
     o.element(
       "style",
@@ -90,6 +93,9 @@ git.readRef(
   },
   value(hash) {
     console.log("aaa");
-    b(B(git.hashFrom(hash)));
+    b((o) => {
+      B(git.hashFrom(hash))(o);
+      B(git.hashFrom(hash))(o);
+    });
   },
 });

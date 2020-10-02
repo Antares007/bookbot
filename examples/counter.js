@@ -7,13 +7,16 @@ module.exports = (depth: number = 2): N<element.r_pith_t<{}>> => {
     return o.element(
       "div",
       (function rec(depth) {
-        return function mainNar(o) {
-          const b = (nar) => (nar(o), o.end());
+        const dt = (dt) => (e, b) =>
+          b((o) => {
+            o.reduce((s) => ({ ...s, n: s.n + dt }));
+            mainNar(o);
+          });
+        return mainNar;
+        function mainNar(o) {
           o.element("button", (o) => {
             o.text("+");
-            o.on("click", () => {
-              o.reduce((s) => ({ ...s, n: s.n + 1 })), b(mainNar);
-            });
+            o.on("click", dt(+1));
             depth &&
               o.element(
                 "div",
@@ -23,9 +26,7 @@ module.exports = (depth: number = 2): N<element.r_pith_t<{}>> => {
           });
           o.element("button", (o) => {
             o.text("-");
-            o.on("click", () => {
-              o.reduce((s) => ({ ...s, n: s.n - 1 })), b(mainNar);
-            });
+            o.on("click", dt(-1));
             depth &&
               o.element(
                 "div",
@@ -34,7 +35,7 @@ module.exports = (depth: number = 2): N<element.r_pith_t<{}>> => {
               );
           });
           o.reduce((s) => (o.text(s.n + ""), s));
-        };
+        }
       })(depth)
     );
   });

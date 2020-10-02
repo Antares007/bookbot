@@ -6,23 +6,30 @@ export type o_pith_t = {
   attr: N<string, ?string>,
   style: N<string, ?string>,
   prop: N<string, mixed>,
-  on: N<string, N<Event>, ?string>,
-  get: N<N<HTMLElement>>,
-  end: N<>,
+  on: N<string, N<Event, N<N<o_pith_t>>>>,
 };
-
+export type r_pith_t<S> = {
+  ...o_pith_t,
+  reduce: N<(S) => S>,
+  element: N<string, N<r_pith_t<S>>, ?string>,
+  on: N<string, N<Event, N<N<r_pith_t<S>>>>>,
+};
 export function bark(elm: HTMLElement): N<N<o_pith_t>> {
   const o = pith(elm);
   return function Ebark(nar) {
     nar(o), o.end();
   };
 }
-function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
+function pith(elm: HTMLElement, depth: number = 0): o_pith_t & { end: N<> } {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
-  var listeners_count = 0;
-  const listeners = [];
+  var __listenersmap: {
+    [string]: [EventHandler, Array<N<Event, N<N<o_pith_t>>>>],
+  } = {};
+  const listenersmap: {
+    [string]: ?Array<N<Event, N<N<o_pith_t>>>>,
+  } = {};
   return {
     element(sel, nar, key) {
       let n, ob;
@@ -89,20 +96,24 @@ function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
       const m = (elm: { [string]: mixed });
       if (m[name] !== value) m[name] = value;
     },
-    on(type, listener, mkey) {
-      const index = listeners_count++;
-      const key = mkey || hashString(listener.toString()) + "";
-      for (let i = index, l = listeners.length; i < l; i++)
-        if (listeners[i].type === type && listeners[i].key === key) {
-          if (index < i) listeners.splice(index, 0, ...listeners.splice(i, 1));
-          return;
-        }
-      listeners.splice(index, 0, { type, listener, key });
-      elm.addEventListener(type, listener);
+    on(type, listener) {
+      const { static_cast } = require("./utils/static_cast");
+      const listeners: Array<number> = static_cast<Array<number>>(
+        (listenersmap[type] = listenersmap[type] || [])
+      );
+      const pointer = static_cast<number>(listener);
+      var L = 0;
+      var R = listeners.length;
+      while (L < R) {
+        const m = ((L + R) / 2) | 0;
+        if (listeners[m] > pointer) R = m;
+        else L = m + 1;
+      }
+      R--;
+      if (listeners[R] === pointer) return;
+      listeners.splice(R + 1, 0, pointer);
     },
-    get(a) {
-      a(elm);
-    },
+
     end() {
       for (let l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
@@ -110,22 +121,21 @@ function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
         childs_count,
         childPiths.length - childs_count
       );
-      childs_count = 0;
-      const lstnrs = listeners.splice(
-        listeners_count,
-        listeners.length - listeners_count
-      );
-      listeners_count = 0;
+      for (let type of Object.keys(__listenersmap)) {
+        if (listenersmap[type] == null)
+          elm.removeEventListener(type, __listenersmap[type][0]),
+            delete __listenersmap[type];
+        else if (!eq(listenersmap[type], __listenersmap[type][1])) {
+          __listenersmap[type][1] = listenersmap[type];
+        } else {
+        }
+      }
+
       for (let mp of piths) mp && mp.end();
-      for (let l of lstnrs) elm.removeEventListener(l.type, l.listener);
     },
   };
 }
-export type r_pith_t<S> = {
-  ...o_pith_t,
-  reduce: N<(S) => S>,
-  element: N<string, N<r_pith_t<S>>, ?string>,
-};
+
 export function rring<S>(reduce: N<(S) => S>): (N<r_pith_t<S>>) => N<o_pith_t> {
   return (nar) =>
     function Erring(o) {
