@@ -2,7 +2,7 @@
 import type { N } from "./purry";
 export type o_pith_t = {
   text: N<string>,
-  element: N<string, (o_pith_t) => void, ?string>,
+  element: N<string, N<o_pith_t>, ?string>,
   attr: N<string, ?string>,
   style: N<string, ?string>,
   prop: N<string, mixed>,
@@ -126,9 +126,7 @@ export type r_pith_t<S> = {
   reduce: N<(S) => S>,
   element: N<string, N<r_pith_t<S>>, ?string>,
 };
-export function rring<S>(
-  reduce: ((S) => S) => void
-): (N<r_pith_t<S>>) => N<o_pith_t> {
+export function rring<S>(reduce: N<(S) => S>): (N<r_pith_t<S>>) => N<o_pith_t> {
   return (nar) =>
     function Erring(o) {
       nar({

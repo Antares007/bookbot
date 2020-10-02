@@ -53,17 +53,17 @@ export function hashFrom(sha1: string): hash_t {
   throw new Error("invalid sha1 string");
 }
 export type fs_t = {
-  readdir: (string) => (p.pith_t<ErrnoError, Array<string>>) => void,
-  open: (string, string) => (p.pith_t<ErrnoError, number>) => void,
+  readdir: (string) => N<p.pith_t<ErrnoError, Array<string>>>,
+  open: (string, string) => N<p.pith_t<ErrnoError, number>>,
   read: (
     number,
     Buffer,
     number,
     number,
     ?number
-  ) => (p.pith_t<ErrnoError, number, Buffer>) => void,
-  close: (number) => (p.pith_t<ErrnoError>) => void,
-  readFile: (string) => (p.pith_t<ErrnoError, Buffer>) => void,
+  ) => N<p.pith_t<ErrnoError, number, Buffer>>,
+  close: (number) => N<p.pith_t<ErrnoError>>,
+  readFile: (string) => N<p.pith_t<ErrnoError, Buffer>>,
 };
 export function readRef(
   fs: fs_t,
@@ -154,7 +154,7 @@ function map(
   packdir: string,
   hash: hash_t,
   indexfilename: string
-): (p.pith_t<DecompressError | Error | ErrnoError, Buffer, number>) => void {
+): N<p.pith_t<DecompressError | Error | ErrnoError, Buffer, number>> {
   const length = 2 << 13;
   const read = (fd, off) =>
     p.purry(
@@ -198,12 +198,12 @@ function map(
 }
 export class DecompressError extends Error {}
 function decodepackoffset(
-  read: (number) => (p.pith_t<ErrnoError, Buffer>) => void,
+  read: (number) => N<p.pith_t<ErrnoError, Buffer>>,
   off: number,
   buffer: Buffer
-): (
+): N<
   p.pith_t<DecompressError | ErrnoError | Error, Buffer, number, hash_t, number>
-) => void {
+> {
   return p.trycatch((o) => {
     var offset = 0;
     var byte = buffer[offset++];
@@ -242,7 +242,7 @@ function decompress(
   read,
   off,
   i = new pako.Inflate()
-): (p.pith_t<DecompressError | ErrnoError, Uint8Array>) => void {
+): N<p.pith_t<DecompressError | ErrnoError, Uint8Array>> {
   return p.purry(read(off), (b) => (o) => {
     i.push(b, 2);
     if (i.result) return o.value((i.result: Uint8Array));
@@ -257,7 +257,7 @@ export class HashNotFoundError extends Error {}
 function readInx(
   hash: hash_t,
   buffer: Buffer
-): (p.pith_t<HashNotFoundError | Error, number, number>) => void {
+): N<p.pith_t<HashNotFoundError | Error, number, number>> {
   return p.trycatch((o) => {
     var offset, lastCmp, L, R;
     const fanOutTable = 8;
@@ -352,7 +352,7 @@ function applyDelta(delta: Buffer, base: Buffer): Buffer {
     return length;
   }
 }
-function decodeCommit(body: Buffer): (p.pith_t<empty, commit_t>) => void {
+function decodeCommit(body: Buffer): N<p.pith_t<empty, commit_t>> {
   var i = 0;
   var key;
   var tree = emptyTreeHash;
@@ -390,10 +390,10 @@ function decodeTree(buffer: Buffer): N<p.pith_t<empty, tree_t>> {
   }
   return (o) => o.value({ type: "tree", value: entries });
 }
-function decodeBlob(buffer: Buffer): (p.pith_t<empty, blob_t>) => void {
+function decodeBlob(buffer: Buffer): N<p.pith_t<empty, blob_t>> {
   return (o) => o.value({ type: "blob", value: buffer });
 }
-function decodeTag(buffer: Buffer): (p.pith_t<empty, tag_t>) => void {
+function decodeTag(buffer: Buffer): N<p.pith_t<empty, tag_t>> {
   const tag = {};
   var i = 0;
   while (buffer[i] !== 0x0a)
