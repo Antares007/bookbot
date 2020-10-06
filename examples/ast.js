@@ -34,6 +34,11 @@ const keywords: { [string]: N<element.o_pith_t> } = Object.keys(
 );
 
 const map = {
+  SpreadElement: ast => o => 
+    o.element("div.SpreadElement.flex", (o) => {
+      o.text('...')
+      node(ast.argument)(o);
+    }),
   ConditionalExpression: (ast) => (o) =>
     o.element("div.ConditionalExpression.flex", (o) => {
       node(ast.consequent)(o);
@@ -54,22 +59,22 @@ const map = {
     }),
   ExpressionStatement: (ast) => (o) =>
     o.element("div.ExpressionStatement", (o) => node(ast.expression)(o)),
-  ObjectProperty: (ast) => (o) => {
-    o.element("td", (o) => {
-      if (ast.computed) {
-        keywords.openbracket(o);
-        node(ast.key)(o);
-        keywords.closebracket(o);
-      } else {
-        node(ast.key)(o);
-      }
-    });
-    o.element("td", keywords.dotdot);
-    o.element("td", node(ast.value));
-  },
+  ObjectProperty: (ast) => o => o.element('tr.ObjectProperty',(o) => {
+                if (ast.computed) {
+                  o.element("td.flex", (o) => {
+                    keywords.openbracket(o);
+                    node(ast.key)(o);
+                    keywords.closebracket(o);
+                  });
+                } else {
+                  o.element('td',node(ast.key));
+                }
+        o.element("td", keywords.dotdot);
+        o.element("td", node(ast.value));
+      }),
   ObjectExpression: (ast) => (o) =>
     o.element("table.ObjectExpression", (o) => {
-      for (let p of ast.properties) o.element("tr", node(p));
+      for (let p of ast.properties) node(p)(o);
     }),
   MemberExpression: (ast) => (o) =>
     o.element("div.MemberExpression.flex", (o) => {
@@ -85,13 +90,17 @@ const map = {
     }),
   StringLiteral: (ast) => (o) =>
     o.element("div.StringLiteral", (o) => o.text(ast.extra.raw)),
+
   CallExpression: (ast) => (o) =>
     o.element("div.CallExpression.flex", (o) => {
       node(ast.callee)(o);
-      o.element("div.keyword", (o) => o.text("("));
-      ast.arguments.forEach((n) => node(n)(o));
-      o.element("div.keyword", (o) => o.text(")"));
+      o.element('div.arguments', o => {
+        o.element("div.keyword", (o) => o.text("("));
+        ast.arguments.forEach((n) => node(n)(o));
+        o.element("div.keyword", (o) => o.text(")"));
+      })
     }),
+
   ReturnStatement: (ast) => (o) =>
     o.element("div.ReturnStatement.flex", (o) => {
       o.element("div.keyword", (o) => o.text("return"));
@@ -99,12 +108,10 @@ const map = {
     }),
   BlockStatement: (ast) => (o) =>
     o.element("div.BlockStatement", (o) => {
-      keywords.openbrace(o);
       o.element("div.body.flex", (o) => {
         o.element("div.ident", (o) => {});
         o.element("div.body", (o) => ast.body.forEach((n) => node(n)(o)));
       });
-      keywords.closebrace(o);
     }),
   ArrowFunctionExpression: (ast) => (o) =>
     o.element("div.ArrowFunctionExpression", (o) => {
@@ -182,16 +189,39 @@ b((o) => {
   o.head((o) => {
     o.element("style", (o) => {
       o.text(`
-      .flex {
-        display: flex
-      }
-      .ident {
-        width: 1em;
-      }
-      div {
-        margin-right: 0.3em;
-      }
-      `);
+table {
+  border-spacing: 0px;
+}
+td {
+  vertical-align: top;
+  padding: 0px
+}
+.flex {
+  display: flex
+}
+.ident {
+  width: 1em;
+}
+div {
+  margin-right: 0.3em;
+}
+.BlockStatement {
+  background-color: #dddddd;
+  padding: 8px;
+}
+//.BlockStatement::before {
+//  content: "{";
+//  height: 0px;
+//}
+//.BlockStatement::after {
+//  content: "}";
+//  height: 0px;
+//}
+.ObjectExpression {
+  background-color: #ddffdd;
+  border-radius: 10px;
+  padding: 8px;
+}`);
     });
   });
   node(ast)(o);

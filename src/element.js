@@ -46,7 +46,7 @@ export function bark(elm: HTMLElement): N<N<o_pith_t>> {
     nar(o), o.end();
   };
 }
-function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
+function pith(elm: HTMLElement, classList: Array<string>=[], depth: number = 0): o_pith_t {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
@@ -75,7 +75,7 @@ function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
           if ((ob = childPiths[index]))
             if (key) return;
             else return nar(ob), ob.end();
-          childPiths.splice(index, 0, (ob = pith(n, depth + 1)));
+          childPiths.splice(index, 0, (ob = pith(n, classList, depth + 1)));
           return nar(ob), ob.end();
         }
       n = document.createElement(tag);
@@ -83,7 +83,7 @@ function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
       if (id) n.id = id;
       for (let str of classList) n.classList.add(str);
       elm.insertBefore(n, childNodes[index]),
-        childPiths.splice(index, 0, (ob = pith(n, depth + 1)));
+        childPiths.splice(index, 0, (ob = pith(n, classList, depth + 1)));
       nar(ob), ob.end();
     },
     text(text) {
@@ -101,7 +101,21 @@ function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
       elm.insertBefore(document.createTextNode(text), childNodes[index]),
         childPiths.splice(index, 0, null);
     },
-    attr(name, value) {
+    attr(name, value_) {
+      const value =
+        name === "class"
+          ? value_ == null
+            ? classList.join(" ")
+            : Object.keys(
+                classList
+                  .concat(value_
+                  .split(" "))
+                  .reduce((s, n) => {
+                    s[n] = null;
+                    return s;
+                  }, {})
+              ).join(" ")
+          : value_;
       if (value != null) {
         if (elm.getAttribute(name) !== value) elm.setAttribute(name, value);
       } else {
