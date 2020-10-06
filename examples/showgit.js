@@ -92,9 +92,7 @@ git.readRef(
     console.error(e);
   },
   value(hash) {
-    console.log("aaa");
     b((o) => {
-      B(git.hashFrom(hash))(o);
       B(git.hashFrom(hash))(o);
     });
   },

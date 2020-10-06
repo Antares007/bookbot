@@ -1,4 +1,4 @@
-//@flow strict
+// @flow strict
 const document = require("../src/document");
 var state = {};
 const b = document.bark((r) => {
@@ -28,7 +28,7 @@ function nar(o: document.pith_t<{}>) {
     )
   );
   o.element("div.background", (o) => {
-    o.get((elm) => {
+    o.on("create", (elm) => {
       const w = (elm.clientWidth / pw) | 0;
       const h = (elm.clientHeight / ph) | 0;
       o.head((o) => {

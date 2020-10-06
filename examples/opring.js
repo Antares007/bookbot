@@ -9,7 +9,7 @@ module.exports = function opring<S: { ... }>(
       "@opring",
       {}
     )(function mainnar(o) {
-      const b = (nar) => (nar(o), o.end());
+      const b = () => (mainnar(o), o.end());
       o.reduce((s) => {
         if (s[key])
           o.element(
@@ -25,7 +25,7 @@ module.exports = function opring<S: { ... }>(
                         delete ns[key];
                         return ns;
                       });
-                      b(mainnar);
+                      b();
                     });
                   })
                 );
@@ -41,7 +41,7 @@ module.exports = function opring<S: { ... }>(
               o.text("+ " + key);
               o.on("click", (e) => {
                 o.reduce((s) => ({ ...s, [key]: true }));
-                b(mainnar);
+                b();
               });
             },
             key

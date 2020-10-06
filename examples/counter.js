@@ -7,13 +7,16 @@ module.exports = (depth: number = 2): N<element.r_pith_t<{}>> => {
     return o.element(
       "div",
       (function rec(depth) {
-        const dt = (dt) => (e, b) =>
-          b((o) => {
+        return function mainNar(o) {
+          var op;
+          const drawnar = (o) => {
+            op = o;
+            o.reduce((s) => (o.text(s.n + ""), s));
+          };
+          const dt = (dt) => (e) => {
             o.reduce((s) => ({ ...s, n: s.n + dt }));
-            mainNar(o);
-          });
-        return mainNar;
-        function mainNar(o) {
+            drawnar(op), op.end();
+          };
           o.element("button", (o) => {
             o.text("+");
             o.on("click", dt(+1));
@@ -34,8 +37,8 @@ module.exports = (depth: number = 2): N<element.r_pith_t<{}>> => {
                 "minus" + depth
               );
           });
-          o.reduce((s) => (o.text(s.n + ""), s));
-        }
+          o.element("span", drawnar);
+        };
       })(depth)
     );
   });

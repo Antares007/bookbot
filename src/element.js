@@ -6,30 +6,54 @@ export type o_pith_t = {
   attr: N<string, ?string>,
   style: N<string, ?string>,
   prop: N<string, mixed>,
-  on: N<string, N<Event, N<N<o_pith_t>>>>,
+  on: handlers_t,
+  end: N<>,
 };
 export type r_pith_t<S> = {
   ...o_pith_t,
   reduce: N<(S) => S>,
   element: N<string, N<r_pith_t<S>>, ?string>,
-  on: N<string, N<Event, N<N<r_pith_t<S>>>>>,
+  on: handlers_t,
 };
+const { static_cast } = require("./utils/static_cast");
+type handlers_t = N<"create", N<Element>> &
+  N<MouseEventTypes, N<MouseEvent>, ?EventListenerOptionsOrUseCapture> &
+  N<FocusEventTypes, N<FocusEvent>, ?EventListenerOptionsOrUseCapture> &
+  N<KeyboardEventTypes, N<KeyboardEvent>, ?EventListenerOptionsOrUseCapture> &
+  N<InputEventTypes, N<InputEvent>, ?EventListenerOptionsOrUseCapture> &
+  N<TouchEventTypes, N<TouchEvent>, ?EventListenerOptionsOrUseCapture> &
+  N<WheelEventTypes, N<WheelEvent>, ?EventListenerOptionsOrUseCapture> &
+  N<ProgressEventTypes, N<ProgressEvent>, ?EventListenerOptionsOrUseCapture> &
+  N<DragEventTypes, N<DragEvent>, ?EventListenerOptionsOrUseCapture> &
+  N<PointerEventTypes, N<PointerEvent>, ?EventListenerOptionsOrUseCapture> &
+  N<AnimationEventTypes, N<AnimationEvent>, ?EventListenerOptionsOrUseCapture> &
+  N<ClipboardEventTypes, N<ClipboardEvent>, ?EventListenerOptionsOrUseCapture> &
+  N<
+    TransitionEventTypes,
+    N<TransitionEvent>,
+    ?EventListenerOptionsOrUseCapture
+  > &
+  N<
+    BeforeUnloadEventTypes,
+    N<BeforeUnloadEvent>,
+    ?EventListenerOptionsOrUseCapture
+  > &
+  N<StorageEventTypes, N<StorageEvent>, ?EventListenerOptionsOrUseCapture>;
+
 export function bark(elm: HTMLElement): N<N<o_pith_t>> {
   const o = pith(elm);
   return function Ebark(nar) {
     nar(o), o.end();
   };
 }
-function pith(elm: HTMLElement, depth: number = 0): o_pith_t & { end: N<> } {
+function pith(elm: HTMLElement, depth: number = 0): o_pith_t {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
-  var __listenersmap: {
-    [string]: [EventHandler, Array<N<Event, N<N<o_pith_t>>>>],
+  var attachedmap: {
+    [string]: [N<Event>, Array<N<Event>>],
   } = {};
-  const listenersmap: {
-    [string]: ?Array<N<Event, N<N<o_pith_t>>>>,
-  } = {};
+  const listenersmap: { [string]: ?Array<N<Event>> } = {};
   return {
     element(sel, nar, key) {
       let n, ob;
@@ -97,40 +121,44 @@ function pith(elm: HTMLElement, depth: number = 0): o_pith_t & { end: N<> } {
       if (m[name] !== value) m[name] = value;
     },
     on(type, listener) {
-      const { static_cast } = require("./utils/static_cast");
       const listeners: Array<number> = static_cast<Array<number>>(
         (listenersmap[type] = listenersmap[type] || [])
       );
       const pointer = static_cast<number>(listener);
       var L = 0;
       var R = listeners.length;
-      while (L < R) {
-        const m = ((L + R) / 2) | 0;
-        if (listeners[m] > pointer) R = m;
+      var m;
+      while (L < R)
+        if (listeners[(m = ((L + R) / 2) | 0)] > pointer) R = m;
         else L = m + 1;
-      }
-      R--;
-      if (listeners[R] === pointer) return;
-      listeners.splice(R + 1, 0, pointer);
+      if (listeners[R - 1] === pointer) return;
+      listeners.splice(R, 0, pointer);
     },
-
     end() {
+      for (let type of Object.keys(attachedmap))
+        if (listenersmap[type] == null)
+          elm.removeEventListener(type, attachedmap[type][0]),
+            delete attachedmap[type];
+        else
+          (attachedmap[type][1] = listenersmap[type]),
+            delete listenersmap[type];
+      for (let type of Object.keys(listenersmap))
+        elm.addEventListener(
+          type,
+          (attachedmap[type] = [
+            (e: Event) => attachedmap[type][1].forEach((h) => h(e)),
+            listenersmap[type] || [],
+          ])[0]
+        ),
+          delete listenersmap[type];
+
       for (let l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
       const piths = childPiths.splice(
         childs_count,
         childPiths.length - childs_count
       );
-      for (let type of Object.keys(__listenersmap)) {
-        if (listenersmap[type] == null)
-          elm.removeEventListener(type, __listenersmap[type][0]),
-            delete __listenersmap[type];
-        else if (!eq(listenersmap[type], __listenersmap[type][1])) {
-          __listenersmap[type][1] = listenersmap[type];
-        } else {
-        }
-      }
-
+      childs_count = 0;
       for (let mp of piths) mp && mp.end();
     },
   };
