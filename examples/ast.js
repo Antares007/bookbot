@@ -8,7 +8,9 @@ const ast = require("../lib/babel")(code);
 const document = require("../src/document");
 const element = require("../src/element");
 function af(aa, ba, ca) {
-  const za = (aa + ba) * ca,
+  const te = `${1 + 2}
+a`;
+  const za = (aa + ba + 1) * ca,
     dec2 = 42,
     dec3 = 43;
   const f = (a) => void 0;
@@ -20,6 +22,9 @@ function af(aa, ba, ca) {
   const obj = { a: 2, b: { c: 3 } };
   const a = {};
   a["1" + "2"](3);
+  for (const a of []) {
+    console.log(a);
+  }
   hof(
     function (v) {
       console.log(v);
@@ -75,6 +80,40 @@ const keywords: { [string]: N<element.o_pith_t> } = Object.keys(
 );
 
 const map = {
+  ImportSpecifier: (ast, d) => (o) => {
+    o.element("span.imported", node(ast.imported, d));
+    o.element("span.local", node(ast.local, d));
+  },
+  ImportDeclaration: (ast, d) => (o) => {
+    o.element("span.specifiers", (o) =>
+      ast.specifiers.forEach((n, i) => o.element("span", node(n, d)))
+    );
+    o.element("span.source", node(ast.source, d));
+  },
+  TemplateElement: (ast, d) => (o) => {
+    o.element("pre", (o) => o.text(ast.value.raw));
+  },
+  TemplateLiteral: (ast, d) => (o) => {
+    const exs = [...ast.expressions];
+    for (let q of ast.quasis) {
+      o.element("span.quasis", node(q, d));
+      const e = exs.shift();
+      if (e) o.element("span.expression", node(e, d));
+    }
+  },
+  ArrayExpression: (ast, d) => (o) => {
+    o.element("span.elements", (o) =>
+      ast.elements.forEach((n) => o.element("span.element", node(n, d)))
+    );
+  },
+
+  ForInStatement: (ast, d) => map.ForOfStatement(ast, d),
+  ForOfStatement: (ast, d) => (o) => {
+    o.element("span.left", node(ast.left, d));
+    o.element("span.right", node(ast.right, d));
+    o.element("div.body.S" + (d + 1), node(ast.body, d + 1));
+  },
+
   SequenceExpression: (ast, d) => (o) => {
     o.element("span.expressions", (o) =>
       ast.expressions.forEach((n, i) =>
@@ -112,17 +151,21 @@ const map = {
   },
 
   ObjectExpression: (ast, d) => (o) => {
-    for (let p of ast.properties) o.element("span.property", node(p, d));
+    o.element("span.properties", (o) =>
+      ast.properties.forEach((n) => o.element("span.property", node(n, d)))
+    );
   },
 
-  MemberExpression: (ast, d) => (o) => {
+  OptionalMemberExpression: (ast, d) => (o) => {
     o.element("span.object", node(ast.object, d));
     o.element(
       "span.property" + (ast.computed ? ".computed" : ""),
       node(ast.property, d)
     );
   },
+  MemberExpression: (ast, d) => map.OptionalMemberExpression(ast, d),
 
+  NullLiteral: (ast) => (o) => o.text(null),
   StringLiteral: (ast) => (o) => o.text(ast.extra.raw),
   NumericLiteral: (ast) => (o) => o.text(ast.value + ""),
   BooleanLiteral: (ast) => map.NumericLiteral(ast),
@@ -186,9 +229,31 @@ const map = {
   File: (ast, d) => (o) => o.element("div.program", node(ast.program, d)),
 };
 
+const ast2html = (ast: { ... }, d: number) => (o) => {
+  for (let key in ast) {
+    const value = ast[key];
+    if (Array.isArray(value))
+      o.element("span." + key, (o) =>
+        value.forEach((n) => o.element("span", ast2html(ast, d)))
+      );
+    else if (typeof value === "object" && value != null) {
+      if (value.constructor.name === "Node")
+        o.element("span." + key + "." + value.type, ast2html(value, d));
+      else
+        o.element("span." + key, (o) => {
+          //
+        });
+    }
+  }
+};
+
 const node = (ast, d: number) => (o) => {
   const type: string = ast.type + "";
   o.attr("class", type);
+  o.on("click", (e) => {
+    console.info(ast);
+  });
+  if (ast?.extra?.parenthesized) o.attr("class", type + " parenthesized");
   if (map[type]) map[type](ast, d)(o);
   else
     o.element("pre", (o) =>
@@ -202,7 +267,26 @@ b((o) => {
   o.head((o) => {
     o.element("style", (o) => {
       o.text(`
+
+.TemplateElement > pre {display: inline;}
+
+.TemplateLiteral > .quasis::before {content: "}"}
+.TemplateLiteral > .quasis::after {content: "$\{"}
+.TemplateLiteral > :first-child::before {content: "\`"}
+.TemplateLiteral > :last-child::after {content: "\`"}
+
 body { font-family: Input Mono Compressed; }
+.parenthesized::before {content: "(";}
+.parenthesized::after {content: ")";}
+
+.ForInStatement::before {content: "for(";}
+.ForInStatement > .right::before {content: " in ";}
+.ForInStatement > .right::after {content: ")";}
+
+.ForOfStatement::before {content: "for(";}
+.ForOfStatement > .right::before {content: " of ";}
+.ForOfStatement > .right::after {content: ")";}
+
 .AssignmentPattern > .right::before {content: " = ";}
 .RestElement > .argument::before {content: "...";}
 .SpreadElement > .argument::before {content: "...";}
@@ -218,13 +302,24 @@ body { font-family: Input Mono Compressed; }
 .ObjectProperty > .key.computed::after {content: "]"}
 .ObjectProperty > .value::before {content: ":"}
 
-.ObjectExpression > :first-child::before {content: "{ "}
-.ObjectExpression > .property::after {content: ", "}
-.ObjectExpression > :last-child::after {content: "}"}
+.ArrayExpression > .elements::before {content: "["}
+.ArrayExpression > .elements::after {content: "]"}
+.ArrayExpression > .elements > .element::after {content: ", "}
+.ArrayExpression > .elements > :last-child::after {content: ""}
+
+.ObjectExpression > .properties::before {content: "{"}
+.ObjectExpression > .properties::after {content: "}"}
+.ObjectExpression > .properties > .property::after {content: ", "}
+.ObjectExpression > .properties > :last-child::after {content: ""}
+
+.OptionalMemberExpression > .property::before {content: "?."}
+.OptionalMemberExpression > .property.computed::before {content: "["}
+.OptionalMemberExpression > .property.computed::after {content: "]"}
 
 .MemberExpression > .property::before {content: "."}
 .MemberExpression > .property.computed::before {content: "["}
 .MemberExpression > .property.computed::after {content: "]"}
+
 .ReturnStatement::before {content: "return ";}
 
 .VariableDeclaration > .kind::after {content: " ";}
