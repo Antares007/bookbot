@@ -22,7 +22,7 @@ a`;
   const obj = { a: 2, b: { c: 3 } };
   const a = {};
   a["1" + "2"](3);
-  for (const a of []) {
+  for (const a of ["a", "b" + "o"]) {
     console.log(a);
   }
   hof(
@@ -165,7 +165,7 @@ const map = {
   },
   MemberExpression: (ast, d) => map.OptionalMemberExpression(ast, d),
 
-  NullLiteral: (ast) => (o) => o.text(null),
+  NullLiteral: (ast) => (o) => o.text("null"),
   StringLiteral: (ast) => (o) => o.text(ast.extra.raw),
   NumericLiteral: (ast) => (o) => o.text(ast.value + ""),
   BooleanLiteral: (ast) => map.NumericLiteral(ast),
@@ -229,24 +229,6 @@ const map = {
   File: (ast, d) => (o) => o.element("div.program", node(ast.program, d)),
 };
 
-const ast2html = (ast: { ... }, d: number) => (o) => {
-  for (let key in ast) {
-    const value = ast[key];
-    if (Array.isArray(value))
-      o.element("span." + key, (o) =>
-        value.forEach((n) => o.element("span", ast2html(ast, d)))
-      );
-    else if (typeof value === "object" && value != null) {
-      if (value.constructor.name === "Node")
-        o.element("span." + key + "." + value.type, ast2html(value, d));
-      else
-        o.element("span." + key, (o) => {
-          //
-        });
-    }
-  }
-};
-
 const node = (ast, d: number) => (o) => {
   const type: string = ast.type + "";
   o.attr("class", type);
@@ -270,117 +252,127 @@ b((o) => {
 
 .TemplateElement > pre {display: inline;}
 
-.TemplateLiteral > .quasis::before {content: "}"}
-.TemplateLiteral > .quasis::after {content: "$\{"}
-.TemplateLiteral > :first-child::before {content: "\`"}
-.TemplateLiteral > :last-child::after {content: "\`"}
+.TemplateLiteral > .quasis::before {content: "}";color:blue;}
+.TemplateLiteral > .quasis::after {content: "$\{";color:blue;}
+.TemplateLiteral > :first-child::before {content: "\`";color:blue;}
+.TemplateLiteral > :last-child::after {content: "\`";color:blue;}
 
 body { font-family: Input Mono Compressed; }
-.parenthesized::before {content: "(";}
-.parenthesized::after {content: ")";}
+.parenthesized::before {content: "(";color:blue;}
+.parenthesized::after {content: ")";color:blue;}
 
-.ForInStatement::before {content: "for(";}
-.ForInStatement > .right::before {content: " in ";}
-.ForInStatement > .right::after {content: ")";}
+.ForInStatement::before {content: "for(";color:blue;}
+.ForInStatement > .right::before {content: " in ";color:blue;}
+.ForInStatement > .right::after {content: ")";color:blue;}
 
-.ForOfStatement::before {content: "for(";}
-.ForOfStatement > .right::before {content: " of ";}
-.ForOfStatement > .right::after {content: ")";}
+.ForOfStatement::before {content: "for(";color:blue;}
+.ForOfStatement > .right::before {content: " of ";color:blue;}
+.ForOfStatement > .right::after {content: ")";color:blue;}
 
-.AssignmentPattern > .right::before {content: " = ";}
-.RestElement > .argument::before {content: "...";}
-.SpreadElement > .argument::before {content: "...";}
+.AssignmentPattern > .right::before {content: " = ";color:blue;}
+.RestElement > .argument::before {content: "...";color:blue;}
+.SpreadElement > .argument::before {content: "...";color:blue;}
 
-.ConditionalExpression > .test::after {content: " ? ";}
-.ConditionalExpression > .consequent::after {content: " : ";}
+.ConditionalExpression > .test::after {content: " ? ";color:blue;}
+.ConditionalExpression > .consequent::after {content: " : ";color:blue;}
 
-.IfStatement::before {content: "if ";}
-.IfStatement > .test::before {content: "(";}
-.IfStatement > .test::after {content: ")";}
+.IfStatement::before {content: "if ";color:blue;}
+.IfStatement > .test::before {content: "(";color:blue;}
+.IfStatement > .test::after {content: ")";color:blue;}
 
-.ObjectProperty > .key.computed::before {content: "["}
-.ObjectProperty > .key.computed::after {content: "]"}
-.ObjectProperty > .value::before {content: ":"}
+.ObjectProperty > .key.computed::before {content: "[";color:blue;}
+.ObjectProperty > .key.computed::after {content: "]";color:blue;}
+.ObjectProperty > .value::before {content: ":";color:blue;}
 
-.ArrayExpression > .elements::before {content: "["}
-.ArrayExpression > .elements::after {content: "]"}
-.ArrayExpression > .elements > .element::after {content: ", "}
-.ArrayExpression > .elements > :last-child::after {content: ""}
+.ArrayExpression > .elements::before {content: "[";color:blue;}
+.ArrayExpression > .elements::after {content: "]";color:blue;}
+.ArrayExpression > .elements > *::after {content: ", ";color:blue;}
+.ArrayExpression > .elements > :last-child::after {display:none;}
 
-.ObjectExpression > .properties::before {content: "{"}
-.ObjectExpression > .properties::after {content: "}"}
-.ObjectExpression > .properties > .property::after {content: ", "}
-.ObjectExpression > .properties > :last-child::after {content: ""}
+.ObjectExpression > .properties::before {content: "{";color:blue;}
+.ObjectExpression > .properties::after {content: "}";color:blue;}
+.ObjectExpression > .properties > *::after {content: ", ";color:blue;}
+.ObjectExpression > .properties > :last-child::after {display:none;}
 
-.OptionalMemberExpression > .property::before {content: "?."}
-.OptionalMemberExpression > .property.computed::before {content: "["}
-.OptionalMemberExpression > .property.computed::after {content: "]"}
+.OptionalMemberExpression > .property::before {content: "?.";color:blue;}
+.OptionalMemberExpression > .property.computed::before {content: "[";color:blue;}
+.OptionalMemberExpression > .property.computed::after {content: "]";color:blue;}
 
-.MemberExpression > .property::before {content: "."}
-.MemberExpression > .property.computed::before {content: "["}
-.MemberExpression > .property.computed::after {content: "]"}
+.MemberExpression > .property::before {content: ".";color:blue;}
+.MemberExpression > .property.computed::before {content: "[";color:blue;}
+.MemberExpression > .property.computed::after {content: "]";color:blue;}
 
-.ReturnStatement::before {content: "return ";}
+.ReturnStatement::before {content: "return ";color:blue;}
 
-.VariableDeclaration > .kind::after {content: " ";}
-.VariableDeclaration > .declarations > .declaration::after {content: ", ";}
-.VariableDeclaration > .declarations > :last-child::after {content: "";}
-.VariableDeclarator > .init::before {content: " = ";}
-
-
-.SequenceExpression > .expressions::before {content:"(";}
-.SequenceExpression > .expressions::after {content:")";}
-.SequenceExpression > .expressions > .expression::after {content: ", ";}
-.SequenceExpression > .expressions > :last-child::after {content:"";}
-
-.CallExpression > .arguments::before {content:"(";}
-.CallExpression > .arguments::after {content:")";}
-.CallExpression > .arguments > .argument::after {content: ", ";}
-.CallExpression > .arguments > :last-child::after {content:"";}
+.VariableDeclaration > .kind::after {content: " ";color:blue;}
+.VariableDeclaration > .declarations > *::after {content: ", ";color:blue;}
+.VariableDeclaration > .declarations > :last-child::after {display:none;}
+.VariableDeclarator > .init::before {content: " = ";color:blue;}
 
 
-.FunctionExpression::before {content:"function ";}
-.FunctionDeclaration::before {content:"function ";}
-.params::before {content:"(";}
-.params::after {content:")";}
-.params > .param::after {content: ", ";}
-.params > :last-child::after {content: "";display:none;}
-.ArrowFunctionExpression > .params::after {content:") => ";}
+.SequenceExpression > .expressions::before {content:"(";color:blue;}
+.SequenceExpression > .expressions::after {content:")";color:blue;}
+.SequenceExpression > .expressions > *::after {content: ", ";color:blue;}
+.SequenceExpression > .expressions > :last-child::after {display:none;}
 
+.CallExpression > .arguments::before {content:"(";color:blue;}
+.CallExpression > .arguments::after {content:")";color:blue;}
+.CallExpression > .arguments > *::after {content: ", ";color:blue;}
+.CallExpression > .arguments > :last-child::after {display:none;}
+
+
+.FunctionExpression::before {content:"function ";color:blue;}
+.FunctionDeclaration::before {content:"function ";color:blue;}
+.params::before {content:"(";color:blue;}
+.params::after {content:")";color:blue;}
+.ArrowFunctionExpression > .params::after {content:") => ";color:blue;}
+.params > *::after {content: ", ";color:blue;}
+.params > :last-child::after {display:none;color:blue;}
+
+/*.body {
+  box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75);
+}*/
 span.body {
     border-radius: 13px;
     padding: 3px;
 }
 div.body {
-    padding: 8px 5px 13px 21px;
+    padding: 8px 5px 13px 13px;
     border-radius: 13px;
 }
+.StringLiteral {color:green;}
+.operator {color:red;}
+.NumericLiteral {color:orange;}
+.BooleanLiteral {color;orange;}
+.VariableDeclaration > .kind {color:blue;}
+
+
 .S0 {
   background-color: #ffffff;
 }
 .S1 {
-  background-color: #ffeeee;
+  background-color: #eeeeee;
 }
 .S2 {
-  background-color: #ffdddd;
+  background-color: #dddddd;
 }
 .S3 {
-  background-color: #ffcccc;
+  background-color: #cccccc;
 }
 .S4 {
-  background-color: #ffbbbb;
+  background-color: #bbbbbb;
 }
 .S5 {
-  background-color: #ffaaaa;
+  background-color: #aaaaaa;
 }
 .S6 {
-  background-color: #ff9999;
+  background-color: #999999;
 }
 .S7 {
-  background-color: #ff8888;
+  background-color: #888888;
 }
 .S8 {
-  background-color: #ff7777;
+  background-color: #777777;
 }
 `);
     });
