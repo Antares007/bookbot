@@ -5,6 +5,7 @@ const git = require("../src/git");
 const { yfs } = require("../src/yfs");
 const { resolve, join } = require("path");
 const element = require("../src/element");
+const ast = require("./ast");
 
 var state = JSON.parse(localStorage.getItem("B") || "{}");
 const document = require("../src/document");
@@ -69,7 +70,8 @@ const B = (hash: git.hash_t): N<document.pith_t<{}>> => (o) => {
           } else if (obj.type === "blob") {
             o.element("pre", (o) => {
               o.element("code", (o) => {
-                o.text(obj.value.toString("utf8"));
+                ast(obj.value.toString("utf8"))(o);
+                //o.text(obj.value.toString("utf8"));
               });
             });
           }
