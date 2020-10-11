@@ -2,8 +2,21 @@
 import type { N } from "../src/purry";
 const remove = ["start", "end", "loc"];
 const babel = require("../lib/babel");
-const document = require("../src/document");
+const element = require("../src/element");
 const map = {
+  UpdateExpression: (ast, d) => (o) => {
+    if (ast.prefix) o.element(".operator.prefix", (o) => o.text(ast.operator));
+    o.element(".argument", node(ast.argument, d));
+    if (!ast.prefix) o.element(".operator", (o) => o.text(ast.operator));
+  },
+  ForStatement: (ast, d) => (o) => {
+    o.element(".head", (o) => {
+      o.element(".init", node(ast.init, d));
+      o.element(".test", node(ast.test, d));
+      o.element(".update", node(ast.update, d));
+    });
+    o.element(".body", node(ast.body, d));
+  },
   ExportNamedDeclaration: (ast, d) => (o) => {
     o.element(".specifiers", (o) =>
       ast.specifiers.forEach((n, i) => o.element(".specifier", node(n, d)))
@@ -116,11 +129,14 @@ const map = {
     ast.body.forEach((n, i) => o.element(".line", node(n, d))),
 
   FunctionDeclaration: (ast, d) => (o) => {
-    const key = ast.id || ast.key;
-    if (key) o.element((ast.id && ".id") || (ast.key && ".key"), node(key, d));
-    o.element(".params", (o) =>
-      ast.params.forEach((n, i) => o.element(".param", node(n, d)))
-    );
+    o.element(".head", (o) => {
+      const key = ast.id || ast.key;
+      if (key)
+        o.element((ast.id && ".id") || (ast.key && ".key"), node(key, d));
+      o.element(".params", (o) =>
+        ast.params.forEach((n, i) => o.element(".param", node(n, d)))
+      );
+    });
     o.element(".body.S" + (d + 1), node(ast.body, d + 1));
   },
   ArrowFunctionExpression: (ast, d) => map.FunctionDeclaration(ast, d),
@@ -177,197 +193,14 @@ function clean(ast) {
   else if (Array.isArray(ast)) return ast.map(clean);
   else return ast;
 }
-module.exports = (code: string): N<document.pith_t<{ ... }>> => (o) => {
-  o.head((o) => {
-    o.element(
-      "style",
-      (o) => {
-        o.text(`
-.arguments
-,.FunctionDeclaration
-,.params
-,.TemplateLiteral
-,.BinaryExpression
-,.UnaryExpression
-,.ObjectExpression
-,.properties
-,.ArrayExpression
-,.FunctionExpression
-,.FunctionDeclaration
-,.ArrowFunctionExpression
-,.ForInStatement
-,.ForOfStatement
-,.elements
-,.SpreadElement
-,.ConditionalExpression
-{
-  display: flex;
-  flex-flow: row wrap;
-  align-items: flex-start;
-}
-.ObjectProperty
-,.ObjectMethod
-,.ReturnStatement
-,.MemberExpression
-,.CallExpression
-,.VariableDeclaration
-,.VariableDeclarator
-,.AssignmentPattern
-{
-  display: flex;
-  align-items: flex-start;
-}
-
-
-.TemplateElement > pre {display: inline;}
-
-.TemplateLiteral > .quasis::before {content: "}";color:blue;}
-.TemplateLiteral > .quasis::after {content: "$\{";color:blue;}
-.TemplateLiteral > :first-child::before {content: "\`";color:blue;}
-.TemplateLiteral > :last-child::after {content: "\`";color:blue;}
-
-body { font-family: Input Mono Compressed; }
-.line {padding:3px;}
-
-/*
-.parenthesized::before {content: "(";color:blue;}
-.parenthesized::after {content: ")";color:blue;}
-*/
-
-.ForInStatement::before {content: "for(";color:blue;}
-.ForInStatement > .right::before {content: " in ";color:blue;}
-.ForInStatement > .right::after {content: ")";color:blue;}
-
-.ForOfStatement::before {content: "for(";color:blue;}
-.ForOfStatement > .right::before {content: " of ";color:blue;}
-.ForOfStatement > .right::after {content: ")";color:blue;}
-
-.AssignmentPattern > .right::before {content: " = ";color:blue;}
-.RestElement > .argument::before {content: "...";color:blue;}
-.SpreadElement > .argument::before {content: "...";color:blue;}
-
-.ConditionalExpression > .test::after {content: " ? ";color:blue;}
-.ConditionalExpression > .consequent::after {content: " : ";color:blue;}
-
-.IfStatement::before {content: "if ";color:blue;}
-.IfStatement > .test::before {content: "(";color:blue;}
-.IfStatement > .test::after {content: ")";color:blue;}
-
-.ObjectProperty > .key.computed::before {content: "[";color:blue;}
-.ObjectProperty > .key.computed::after {content: "]";color:blue;}
-.ObjectProperty > .value::before {content: ":";color:blue;}
-
-.ArrayExpression > .elements::before {content: "[";color:blue;}
-.ArrayExpression > .elements::after {content: "]";color:blue;}
-.ArrayExpression > .elements > *::after {content: ", ";color:blue;}
-.ArrayExpression > .elements > :last-child::after {display:none;}
-
-.ObjectExpression > .properties::before {content: "{";color:blue;}
-.ObjectExpression > .properties::after {content: "}";color:blue;}
-.ObjectExpression > .properties > *::after {content: ", ";color:blue;}
-.ObjectExpression > .properties > :last-child::after {display:none;}
-
-.OptionalMemberExpression > .property::before {content: "?.";color:blue;}
-.OptionalMemberExpression > .property.computed::before {content: "[";color:blue;}
-.OptionalMemberExpression > .property.computed::after {content: "]";color:blue;}
-
-.MemberExpression > .property::before {content: ".";color:blue;}
-.MemberExpression > .property.computed::before {content: "[";color:blue;}
-.MemberExpression > .property.computed::after {content: "]";color:blue;}
-
-.ReturnStatement::before {content: "return ";color:blue;}
-
-.VariableDeclaration > .kind::after {content: " ";color:blue;}
-.VariableDeclaration > .declarations > *::after {content: ", ";color:blue;}
-.VariableDeclaration > .declarations > :last-child::after {display:none;}
-.VariableDeclarator > .init::before {content: " = ";color:blue;}
-
-
-.SequenceExpression > .expressions::before {content:"(";color:blue;}
-.SequenceExpression > .expressions::after {content:")";color:blue;}
-.SequenceExpression > .expressions > *::after {content: ", ";color:blue;}
-.SequenceExpression > .expressions > :last-child::after {display:none;}
-
-/*
-.CallExpression > .arguments::before {content:"(";color:blue;}
-.CallExpression > .arguments::after {content:")";color:blue;}
-*/
-.CallExpression > .arguments {
-  border-radius: 8px;
-  border-left: 2px solid black;
-  border-right: 2px solid black;
-  padding: 0 5px 0 5px
-}
-.CallExpression > .arguments > *::after {content: ", ";color:blue;}
-.CallExpression > .arguments > :last-child::after {display:none;}
-
-
-
-.FunctionExpression::before {content:"function ";color:blue;}
-.FunctionDeclaration::before {content:"function ";color:blue;}
-/*
-.params::before {content:"(";color:blue;}
-.params::after {content:")";color:blue;}
-.ArrowFunctionExpression > .params::after {content:") => ";color:blue;}
-*/
-.params, .parenthesized {
-  border-radius: 8px;
-  border-left: 2px solid blue;
-  border-right: 2px solid blue;
-  padding: 0 5px 0 5px
-}
-.params > *::after {content: ", ";color:blue;}
-.params > :last-child::after {display:none;color:blue;}
-
-/*.body {
-  box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75);
-}*/
-span.body {
-    border-radius: 8px;
-/*    padding: 3px;*/
-}
-div.body {
-    border-radius: 8px;
-/*    padding: 8px 5px 13px 13px;*/
-}
-.StringLiteral {color:green;}
-.operator {color:red;}
-.NumericLiteral {color:orange;}
-.BooleanLiteral {color;orange;}
-.VariableDeclaration > .kind {color:blue;}
-
-
-.S0 {
-  background-color: #ffffff;
-}
-.S1 {
-  background-color: #eeeeee;
-}
-.S2 {
-  background-color: #dddddd;
-}
-.S3 {
-  background-color: #cccccc;
-}
-.S4 {
-  background-color: #bbbbbb;
-}
-.S5 {
-  background-color: #aaaaaa;
-}
-.S6 {
-  background-color: #999999;
-}
-.S7 {
-  background-color: #888888;
-}
-.S8 {
-  background-color: #777777;
-}
-`);
-      },
-      "ast"
-    );
-  });
+module.exports = (code: string): N<element.o_pith_t> => (o) => {
+  o.element(
+    "style",
+    (o) => {
+      o.attr("scoped", "");
+      o.text(require("fs").readFileSync(__dirname + "/ast.css", "utf8"));
+    },
+    "ast"
+  );
   node(babel(code), 0)(o);
 };

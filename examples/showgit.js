@@ -27,14 +27,14 @@ const B = (hash: git.hash_t): N<document.pith_t<{}>> => (o) => {
       "style",
       (o) =>
         o.text(`
-        td {
-          vertical-align: top;
-          padding: 0px;
-        }
-        table {
-            border-spacing: 0px;
-            border-color: grey;
-        }`),
+td {
+  vertical-align: top;
+  padding: 0px;
+}
+table {
+  border-spacing: 0px;
+  border-color: grey;
+}`),
       "browser"
     )
   );
@@ -71,7 +71,6 @@ const B = (hash: git.hash_t): N<document.pith_t<{}>> => (o) => {
             o.element("pre", (o) => {
               o.element("code", (o) => {
                 ast(obj.value.toString("utf8"))(o);
-                //o.text(obj.value.toString("utf8"));
               });
             });
           }
