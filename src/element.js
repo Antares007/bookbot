@@ -3,7 +3,7 @@ import type { N } from "./purry";
 export type pith_t = {
   text: N<string>,
   element: N<string, N<o_pith_t>, ?string>,
-  get: N<N<HTMLElement>>,
+  get: N<(HTMLElement) => ?N<>>,
   end: N<>,
 };
 
@@ -14,6 +14,7 @@ export type o_pith_t = {
   prop: N<string, mixed>,
   on: handlers_t,
 };
+
 export type r_pith_t<S> = {
   ...o_pith_t,
   reduce: N<(S) => S>,
@@ -49,6 +50,53 @@ export function bark(elm: HTMLElement): N<N<o_pith_t>> {
   const o = pith(elm);
   return function Ebark(nar) {
     nar(o), o.end();
+  };
+}
+export function oring<S>(nar: N<o_pith_t>): N<pith_t> {
+  return function Erring(o) {
+    o.get((elm) => {
+      const { classList } = elm;
+      nar({
+        ...o,
+        element(sel, nar, key) {
+          o.element(sel, oring(nar), key);
+        },
+        attr(name, value_) {
+          const value =
+            name === "class"
+              ? value_ == null
+                ? classList.join(" ")
+                : Object.keys(
+                    classList.concat(value_.split(" ")).reduce((s, n) => {
+                      s[n] = null;
+                      return s;
+                    }, {})
+                  ).join(" ")
+              : value_;
+          if (value != null) {
+            if (elm.getAttribute(name) !== value) elm.setAttribute(name, value);
+          } else {
+            if (elm.hasAttribute(name)) elm.removeAttribute(name);
+          }
+        },
+        style(name, value) {
+          if (value != null) {
+            if (elm.style.getPropertyValue(name) !== value)
+              elm.style.setProperty(name, value);
+          } else {
+            if (elm.style.getPropertyValue(name))
+              elm.style.removeProperty(name);
+          }
+        },
+        prop(name, value) {
+          const m = (elm: { [string]: mixed });
+          if (m[name] !== value) m[name] = value;
+        },
+        on(type, listener, options) {
+          elm.addEventListener(type, listener, options);
+        },
+      });
+    });
   };
 }
 function pith(
@@ -140,6 +188,7 @@ function pith(
     on(type, listener, options) {
       elm.addEventListener(type, listener, options);
     },
+    get(a) {},
     end() {
       for (let l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
