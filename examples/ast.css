@@ -1,42 +1,55 @@
-.ObjectMethod
-,.arguments
+.FunctionDeclaration
+,.VariableDeclaration
+,.VariableDeclarator
 ,.params
-,.TemplateLiteral
-,.BinaryExpression
-,.UnaryExpression
-,.ObjectExpression
-,.properties
-,.ArrayExpression
-,.FunctionExpression
-,.FunctionDeclaration
-,.ArrowFunctionExpression
-,.elements
-,.SpreadElement
-,.ConditionalExpression
-,.MemberExpression
-,.ForStatement
 {
   display: flex;
   flex-flow: row wrap;
   align-items: flex-start;
 }
-.ObjectProperty
-,.ForInStatement
-,.ForOfStatement
-,.head
-,.CallExpression
-,.ReturnStatement
-,.VariableDeclaration
-,.VariableDeclarator
-,.AssignmentPattern
-,.AssignmentExpression
-,.UpdateExpression
+,.params
 {
   display: flex;
+  flex-flow: row wrap;
   align-items: flex-start;
 }
 
+.value
+{
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: flex-start;
+}
 
+.FunctionDeclaration>.id::before {content:"ƒ";color:blue;}
+.FunctionExpression>.id::before {content:"ƒ";color:blue;}
+.ArrowFunctionExpression>.id::before {content:"λ";color:blue;}
+
+*:focus {
+  box-shadow: 3px 3px 5px 0px rgba(0,0,0,0.75);
+  margin:1rem;
+}
+
+.params {
+  min-width:1rem;
+  min-height:1rem;
+}
+.params {
+  border: 0.1rem solid;
+  border-radius: 1rem;
+}
+.params>*{
+  border: 0.05rem dashed;
+  border-radius: 1rem;
+  padding: 0.3rem;
+}
+
+.BlockStatement {
+  border: 0.05rem solid;
+  padding: 0.3rem;
+}
+
+/*
 .TemplateElement > pre {display: inline;}
 
 .TemplateLiteral > .quasis::before {content: "}";color:blue;}
@@ -47,10 +60,6 @@
 body { font-family: Input Mono Compressed; }
 .line {padding:3px;}
 
-/*
-.parenthesized::before {content: "(";color:blue;}
-.parenthesized::after {content: ")";color:blue;}
-*/
 
 .ForStatement::before {content: "for";color:blue;}
 .ForStatement > .head > .init::after {content: "; ";color:blue;}
@@ -110,10 +119,6 @@ body { font-family: Input Mono Compressed; }
 .SequenceExpression > .expressions > *::after {content: ", ";color:blue;}
 .SequenceExpression > .expressions > :last-child::after {display:none;}
 
-/*
-.CallExpression > .arguments::before {content:"(";color:blue;}
-.CallExpression > .arguments::after {content:")";color:blue;}
-*/
 .CallExpression > .arguments {
   border-radius: 8px;
   border-left: 2px solid black;
@@ -128,12 +133,6 @@ body { font-family: Input Mono Compressed; }
 .FunctionExpression > .head::before {content:"ƒ";color:blue;}
 .FunctionDeclaration > .head::before {content:"ƒ";color:blue;}
 .ArrowFunctionExpression > .head::before {content:"λ";color:blue;}
-/*
-.params::before {content:"(";color:blue;}
-.params::after {content:")";color:blue;}
-.ArrowFunctionExpression > .params::after {content:") => ";color:blue;}
-
-*/
 .params, .parenthesized, .head {
   border-radius: 8px;
   border-left: 2px solid blue;
@@ -142,18 +141,8 @@ body { font-family: Input Mono Compressed; }
 }
 .params > *::after {content: ", ";color:blue;}
 .params > :last-child::after {display:none;color:blue;}
+*/
 
-/*.body {
-  box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75);
-}*/
-span.body {
-    border-radius: 8px;
-/*    padding: 3px;*/
-}
-div.body {
-    border-radius: 8px;
-/*    padding: 8px 5px 13px 13px;*/
-}
 .StringLiteral {color:green;}
 .operator {color:red;}
 .NumericLiteral {color:orange;}

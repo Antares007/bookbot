@@ -16,7 +16,7 @@ export type r_pith_t<S> = {
   on: handlers_t,
 };
 const { static_cast } = require("./utils/static_cast");
-type handlers_t = N<"create", N<Element>> &
+type handlers_t = N<"create", N<HTMLElement>> &
   N<MouseEventTypes, N<MouseEvent>, ?EventListenerOptionsOrUseCapture> &
   N<FocusEventTypes, N<FocusEvent>, ?EventListenerOptionsOrUseCapture> &
   N<KeyboardEventTypes, N<KeyboardEvent>, ?EventListenerOptionsOrUseCapture> &
@@ -46,14 +46,15 @@ export function bark(elm: HTMLElement): N<N<o_pith_t>> {
     nar(o), o.end();
   };
 }
-function pith(elm: HTMLElement, classList: Array<string>=[], depth: number = 0): o_pith_t {
+function pith(
+  elm: HTMLElement,
+  classList: Array<string> = [],
+  depth: number = 0
+): o_pith_t {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
-  var attachedmap: {
-    [string]: [N<Event>, Array<N<Event>>],
-  } = {};
-  const listenersmap: { [string]: ?Array<N<Event>> } = {};
+  const disposables = [];
   return {
     element(sel, nar, key) {
       let n, ob;
@@ -107,13 +108,10 @@ function pith(elm: HTMLElement, classList: Array<string>=[], depth: number = 0):
           ? value_ == null
             ? classList.join(" ")
             : Object.keys(
-                classList
-                  .concat(value_
-                  .split(" "))
-                  .reduce((s, n) => {
-                    s[n] = null;
-                    return s;
-                  }, {})
+                classList.concat(value_.split(" ")).reduce((s, n) => {
+                  s[n] = null;
+                  return s;
+                }, {})
               ).join(" ")
           : value_;
       if (value != null) {
@@ -134,38 +132,10 @@ function pith(elm: HTMLElement, classList: Array<string>=[], depth: number = 0):
       const m = (elm: { [string]: mixed });
       if (m[name] !== value) m[name] = value;
     },
-    on(type, listener) {
-      const listeners: Array<number> = static_cast<Array<number>>(
-        (listenersmap[type] = listenersmap[type] || [])
-      );
-      const pointer = static_cast<number>(listener);
-      var L = 0;
-      var R = listeners.length;
-      var m;
-      while (L < R)
-        if (listeners[(m = ((L + R) / 2) | 0)] > pointer) R = m;
-        else L = m + 1;
-      if (listeners[R - 1] === pointer) return;
-      listeners.splice(R, 0, pointer);
+    on(type, listener, options) {
+      elm.addEventListener(type, listener, options);
     },
     end() {
-      for (let type of Object.keys(attachedmap))
-        if (listenersmap[type] == null)
-          elm.removeEventListener(type, attachedmap[type][0]),
-            delete attachedmap[type];
-        else
-          (attachedmap[type][1] = listenersmap[type]),
-            delete listenersmap[type];
-      for (let type of Object.keys(listenersmap))
-        elm.addEventListener(
-          type,
-          (attachedmap[type] = [
-            (e: Event) => attachedmap[type][1].forEach((h) => h(e)),
-            listenersmap[type] || [],
-          ])[0]
-        ),
-          delete listenersmap[type];
-
       for (let l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
       const piths = childPiths.splice(

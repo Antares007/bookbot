@@ -86,15 +86,18 @@ const map = {
   ExpressionStatement: (ast, d) => (o) =>
     o.element(".expression", node(ast.expression, d)),
 
-  ObjectMethod: (ast, d) => map.FunctionDeclaration(ast, d),
+  ObjectMethod: (ast, d) => (o) => {
+    o.element("td.key" + (ast.computed ? ".computed" : ""), node(ast.key, d));
+    o.element("td.value", map.FunctionDeclaration(ast, d));
+  },
   ObjectProperty: (ast, d) => (o) => {
-    o.element(".key" + (ast.computed ? ".computed" : ""), node(ast.key, d));
-    o.element(".value", node(ast.value, d));
+    o.element("td.key" + (ast.computed ? ".computed" : ""), node(ast.key, d));
+    o.element("td.value", node(ast.value, d));
   },
 
   ObjectExpression: (ast, d) => (o) => {
-    o.element(".properties", (o) =>
-      ast.properties.forEach((n) => o.element(".property", node(n, d)))
+    o.element("table.properties", (o) =>
+      ast.properties.forEach((n) => o.element("tr.property", node(n, d)))
     );
   },
 
@@ -129,14 +132,10 @@ const map = {
     ast.body.forEach((n, i) => o.element(".line", node(n, d))),
 
   FunctionDeclaration: (ast, d) => (o) => {
-    o.element(".head", (o) => {
-      const key = ast.id || ast.key;
-      if (key)
-        o.element((ast.id && ".id") || (ast.key && ".key"), node(key, d));
-      o.element(".params", (o) =>
-        ast.params.forEach((n, i) => o.element(".param", node(n, d)))
-      );
-    });
+    o.element(".id", node(ast.id, d));
+    o.element(".params", (o) =>
+      ast.params.forEach((n, i) => o.element(".param", node(n, d)))
+    );
     o.element(".body.S" + (d + 1), node(ast.body, d + 1));
   },
   ArrowFunctionExpression: (ast, d) => map.FunctionDeclaration(ast, d),
@@ -165,11 +164,15 @@ const map = {
     );
   },
   Program: (ast, d) => map.BlockStatement(ast, d),
-  File: (ast, d) => (o) => o.element(".program", node(ast.program, d)),
+  File: (ast, d) => (o) => {
+    o.element(".program", node(ast.program, d));
+  },
 };
 const node = (ast, d: number) => (o) => {
+  if (ast == null) return;
   const type: string = ast.type + "";
   o.attr("class", type);
+  o.attr("tabindex", "0");
   o.on("click", (e) => {
     console.info(ast);
   });
@@ -203,4 +206,22 @@ module.exports = (code: string): N<element.o_pith_t> => (o) => {
     "ast"
   );
   node(babel(code), 0)(o);
+  var focused: HTMLElement;
+  o.on("create", (elm) => {
+    focused = elm;
+    focused.focus();
+  });
+  o.on(
+    "focus",
+    (e) => {
+      if (!(e.target instanceof HTMLElement))
+        return console.log("nonhtmltaetfocus");
+      focused = e.target;
+      console.log("focused", focused);
+    },
+    true
+  );
+  o.on("keypress", (e) => {
+    console.log("kp", focused);
+  });
 };
