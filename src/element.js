@@ -1,13 +1,18 @@
 // @flow strict
 import type { N } from "./purry";
-export type o_pith_t = {
+export type pith_t = {
   text: N<string>,
   element: N<string, N<o_pith_t>, ?string>,
+  get: N<N<HTMLElement>>,
+  end: N<>,
+};
+
+export type o_pith_t = {
+  ...pith_t,
   attr: N<string, ?string>,
   style: N<string, ?string>,
   prop: N<string, mixed>,
   on: handlers_t,
-  end: N<>,
 };
 export type r_pith_t<S> = {
   ...o_pith_t,
