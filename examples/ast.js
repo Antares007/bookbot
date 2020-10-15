@@ -170,13 +170,13 @@ const map = {
 };
 const node = (ast, d: number) => (o) => {
   if (ast == null) return;
-  const type: string = ast.type + "";
-  o.attr("class", type);
-  o.attr("tabindex", "0");
-  o.on("click", (e) => {
-    console.info(ast);
-  });
-  if (ast?.extra?.parenthesized) o.attr("class", type + " parenthesized");
+  const type: string = typeof ast.type === "string" ? ast.type : "";
+  //  o.attr("class", type);
+  //  o.attr("tabindex", "0");
+  //  o.on("click", (e) => {
+  //    console.info(ast);
+  //  });
+  //  if (ast?.extra?.parenthesized) o.attr("class", type + " parenthesized");
   if (map[type]) map[type](ast, d)(o);
   else
     o.element("pre", (o) =>
@@ -188,40 +188,41 @@ const node = (ast, d: number) => (o) => {
 };
 
 function clean(ast) {
-  if (typeof ast?.type === "string")
+  if (ast == null) return ast;
+  else if (Array.isArray(ast)) return ast.map(clean);
+  else if (typeof ast === "object")
     return Object.keys(ast).reduce((s, key) => {
       if (remove.every((k) => k !== key)) s[key] = clean(ast[key]);
       return s;
     }, {});
-  else if (Array.isArray(ast)) return ast.map(clean);
   else return ast;
 }
-module.exports = (code: string): N<element.o_pith_t> => (o) => {
+module.exports = (code: string): N<element.element_pith_t> => (o) => {
   o.element(
     "style",
     (o) => {
-      o.attr("scoped", "");
+      //      o.attr("scoped", "");
       o.text(require("fs").readFileSync(__dirname + "/ast.css", "utf8"));
     },
     "ast"
   );
   node(babel(code), 0)(o);
   var focused: HTMLElement;
-  o.on("create", (elm) => {
-    focused = elm;
-    focused.focus();
-  });
-  o.on(
-    "focus",
-    (e) => {
-      if (!(e.target instanceof HTMLElement))
-        return console.log("nonhtmltaetfocus");
-      focused = e.target;
-      console.log("focused", focused);
-    },
-    true
-  );
-  o.on("keypress", (e) => {
-    console.log("kp", focused);
-  });
+  //  o.on("create", (elm) => {
+  //    focused = elm;
+  //    focused.focus();
+  //  });
+  //  o.on(
+  //    "focus",
+  //    (e) => {
+  //      if (!(e.target instanceof HTMLElement))
+  //        return console.log("nonhtmltaetfocus");
+  //      focused = e.target;
+  //      console.log("focused", focused);
+  //    },
+  //    true
+  //  );
+  //  o.on("keypress", (e) => {
+  //    console.log("kp", focused);
+  //  });
 };

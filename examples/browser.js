@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import type { N } from "../src/purry";
 import type { pith_t as document_pith_t } from "../src/document";
 const p = require("../src/purry");

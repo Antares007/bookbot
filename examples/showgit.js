@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import type { N } from "../src/purry";
 const p = require("../src/purry");
 const git = require("../src/git");

@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import type { N } from "../src/purry";
 import * as element from "../src/element";
 

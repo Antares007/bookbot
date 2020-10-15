@@ -1,113 +1,25 @@
 // @flow strict
 import type { N } from "./purry";
-export type pith_t = {
+export type element_pith_t = {|
   text: N<string>,
-  element: N<string, N<o_pith_t>, ?string>,
-  get: N<(HTMLElement) => ?N<>>,
+  element: N<string, N<element_pith_t>, ?string>,
+  get: N<N<HTMLElement>>,
   end: N<>,
-};
-
-export type o_pith_t = {
-  ...pith_t,
-  attr: N<string, ?string>,
-  style: N<string, ?string>,
-  prop: N<string, mixed>,
-  on: handlers_t,
-};
-
-export type r_pith_t<S> = {
-  ...o_pith_t,
-  reduce: N<(S) => S>,
-  element: N<string, N<r_pith_t<S>>, ?string>,
-  on: handlers_t,
-};
-const { static_cast } = require("./utils/static_cast");
-type handlers_t = N<"create", N<HTMLElement>> &
-  N<MouseEventTypes, N<MouseEvent>, ?EventListenerOptionsOrUseCapture> &
-  N<FocusEventTypes, N<FocusEvent>, ?EventListenerOptionsOrUseCapture> &
-  N<KeyboardEventTypes, N<KeyboardEvent>, ?EventListenerOptionsOrUseCapture> &
-  N<InputEventTypes, N<InputEvent>, ?EventListenerOptionsOrUseCapture> &
-  N<TouchEventTypes, N<TouchEvent>, ?EventListenerOptionsOrUseCapture> &
-  N<WheelEventTypes, N<WheelEvent>, ?EventListenerOptionsOrUseCapture> &
-  N<ProgressEventTypes, N<ProgressEvent>, ?EventListenerOptionsOrUseCapture> &
-  N<DragEventTypes, N<DragEvent>, ?EventListenerOptionsOrUseCapture> &
-  N<PointerEventTypes, N<PointerEvent>, ?EventListenerOptionsOrUseCapture> &
-  N<AnimationEventTypes, N<AnimationEvent>, ?EventListenerOptionsOrUseCapture> &
-  N<ClipboardEventTypes, N<ClipboardEvent>, ?EventListenerOptionsOrUseCapture> &
-  N<
-    TransitionEventTypes,
-    N<TransitionEvent>,
-    ?EventListenerOptionsOrUseCapture
-  > &
-  N<
-    BeforeUnloadEventTypes,
-    N<BeforeUnloadEvent>,
-    ?EventListenerOptionsOrUseCapture
-  > &
-  N<StorageEventTypes, N<StorageEvent>, ?EventListenerOptionsOrUseCapture>;
-
-export function bark(elm: HTMLElement): N<N<o_pith_t>> {
+|};
+export function bark(elm: HTMLElement): N<N<element_pith_t>> {
   const o = pith(elm);
   return function Ebark(nar) {
     nar(o), o.end();
-  };
-}
-export function oring<S>(nar: N<o_pith_t>): N<pith_t> {
-  return function Erring(o) {
-    o.get((elm) => {
-      const { classList } = elm;
-      nar({
-        ...o,
-        element(sel, nar, key) {
-          o.element(sel, oring(nar), key);
-        },
-        attr(name, value_) {
-          const value =
-            name === "class"
-              ? value_ == null
-                ? classList.join(" ")
-                : Object.keys(
-                    classList.concat(value_.split(" ")).reduce((s, n) => {
-                      s[n] = null;
-                      return s;
-                    }, {})
-                  ).join(" ")
-              : value_;
-          if (value != null) {
-            if (elm.getAttribute(name) !== value) elm.setAttribute(name, value);
-          } else {
-            if (elm.hasAttribute(name)) elm.removeAttribute(name);
-          }
-        },
-        style(name, value) {
-          if (value != null) {
-            if (elm.style.getPropertyValue(name) !== value)
-              elm.style.setProperty(name, value);
-          } else {
-            if (elm.style.getPropertyValue(name))
-              elm.style.removeProperty(name);
-          }
-        },
-        prop(name, value) {
-          const m = (elm: { [string]: mixed });
-          if (m[name] !== value) m[name] = value;
-        },
-        on(type, listener, options) {
-          elm.addEventListener(type, listener, options);
-        },
-      });
-    });
   };
 }
 function pith(
   elm: HTMLElement,
   classList: Array<string> = [],
   depth: number = 0
-): o_pith_t {
+): element_pith_t {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
-  const disposables = [];
   return {
     element(sel, nar, key) {
       let n, ob;
@@ -155,40 +67,9 @@ function pith(
       elm.insertBefore(document.createTextNode(text), childNodes[index]),
         childPiths.splice(index, 0, null);
     },
-    attr(name, value_) {
-      const value =
-        name === "class"
-          ? value_ == null
-            ? classList.join(" ")
-            : Object.keys(
-                classList.concat(value_.split(" ")).reduce((s, n) => {
-                  s[n] = null;
-                  return s;
-                }, {})
-              ).join(" ")
-          : value_;
-      if (value != null) {
-        if (elm.getAttribute(name) !== value) elm.setAttribute(name, value);
-      } else {
-        if (elm.hasAttribute(name)) elm.removeAttribute(name);
-      }
+    get(a) {
+      a(elm);
     },
-    style(name, value) {
-      if (value != null) {
-        if (elm.style.getPropertyValue(name) !== value)
-          elm.style.setProperty(name, value);
-      } else {
-        if (elm.style.getPropertyValue(name)) elm.style.removeProperty(name);
-      }
-    },
-    prop(name, value) {
-      const m = (elm: { [string]: mixed });
-      if (m[name] !== value) m[name] = value;
-    },
-    on(type, listener, options) {
-      elm.addEventListener(type, listener, options);
-    },
-    get(a) {},
     end() {
       for (let l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);
@@ -199,68 +80,6 @@ function pith(
       childs_count = 0;
       for (let mp of piths) mp && mp.end();
     },
-  };
-}
-
-export function rring<S>(reduce: N<(S) => S>): (N<r_pith_t<S>>) => N<o_pith_t> {
-  return (nar) =>
-    function Erring(o) {
-      nar({
-        ...o,
-        element(sel, nar, key) {
-          o.element(sel, rring(reduce)(nar), key);
-        },
-        reduce,
-      });
-    };
-}
-export function rmap<A: { ... }, B>(
-  o: N<(A) => A>
-): (string, B) => N<(B) => B> {
-  return (key, init) =>
-    function Ermap(rb) {
-      o((a) => {
-        const ob = a[key] || init;
-        const nb = rb(ob);
-        if (ob === nb) return a;
-        const ns = { ...a, [key]: nb };
-        if (eq(init, nb)) delete ns[key];
-        return ns;
-      });
-    };
-}
-function eq(a: mixed, b: mixed): boolean {
-  return a === b
-    ? true
-    : a == null || b == null
-    ? false
-    : Array.isArray(a)
-    ? Array.isArray(b) &&
-      a.length === b.length &&
-      a.every((v, i) => eq(v, b[i]))
-    : a instanceof Date
-    ? b instanceof Date && a.getTime() === b.getTime()
-    : typeof a === "object"
-    ? typeof b === "object" &&
-      a.constructor === b.constructor &&
-      Object.keys(a).length === Object.keys(b).length &&
-      Object.keys(a).every((k) => eq(a[k], b[k]))
-    : false;
-}
-export function mmap<A: { ... }, B>(
-  key: string,
-  init: B
-): (N<r_pith_t<B>>) => N<r_pith_t<A>> {
-  return function map(nar) {
-    return function Emmap(o) {
-      nar({
-        ...o,
-        element(sel, nar, k) {
-          o.element(sel, map(nar), k);
-        },
-        reduce: rmap(o.reduce)(key, init),
-      });
-    };
   };
 }
 function parseSelector(

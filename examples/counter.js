@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import type { N } from "../src/purry";
 const element = require("../src/element");
 
@@ -19,7 +19,7 @@ module.exports = (depth: number = 2): N<element.r_pith_t<{}>> => {
           };
           o.element("button", (o) => {
             o.text("+");
-            o.on("click", dt(+1));
+            //            o.on("click", dt(+1));
             depth &&
               o.element(
                 "div",
@@ -29,7 +29,7 @@ module.exports = (depth: number = 2): N<element.r_pith_t<{}>> => {
           });
           o.element("button", (o) => {
             o.text("-");
-            o.on("click", dt(-1));
+            //           o.on("click", dt(-1));
             depth &&
               o.element(
                 "div",

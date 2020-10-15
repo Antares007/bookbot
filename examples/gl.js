@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 const document = require("../src/document");
 var state = {};
 const b = document.bark((r) => {
@@ -36,24 +36,24 @@ function nar(o: document.pith_t<{}>) {
         o.element(
           "link",
           (o) => {
-            o.attr(
-              "href",
-              "https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/css/bootstrap.min.css"
-            );
+            //o.attr(
+            //  "href",
+            //  "https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/css/bootstrap.min.css"
+            //);
           },
           "bootstrap5"
         );
       });
       for (var i = 0; i < w * h; i++)
         o.element("div.pixel", (o) => {
-          o.style(
-            "background-color",
-            `rgb(${i % 256}, ${((256 / 16) * (i % 16)) | 0}, ${
-              ((256 / 8) * (i % 8)) | 0
-            })`
-          );
-          o.style("top", ((i / w) | 0) * ph + "px");
-          o.style("left", (i % w) * pw + "px");
+          //o.style(
+          //  "background-color",
+          //  `rgb(${i % 256}, ${((256 / 16) * (i % 16)) | 0}, ${
+          //    ((256 / 8) * (i % 8)) | 0
+          //  })`
+          //);
+          //o.style("top", ((i / w) | 0) * ph + "px");
+          //o.style("left", (i % w) * pw + "px");
         });
     });
   });

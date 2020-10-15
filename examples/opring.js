@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import type { N } from "../src/purry";
 const element = require("../src/element");
 module.exports = function opring<S: { ... }>(
