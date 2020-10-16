@@ -74,54 +74,34 @@ function ExpressionStatement(o: N<rring_rays_t<ast.ExpressionStatement>>) {
   );
 }
 
-function Statement(
-  o: N<
-    rring_rays_t<
-      ast.BlockStatement | ast.DebuggerStatement | ast.ExpressionStatement
-    >
-  >
-) {
-  const mapStatement = {
-    BlockStatement,
-    DebuggerStatement,
-    ExpressionStatement,
-  };
-  o(
-    reduce((s) => {
-      //if(s.type === 'BlockStatement') BlockStatement(o)
-      //else o({m:'text', a: s.type})
-      o({ m: "text", a: s.type });
-      return s;
-    })
-  );
-}
-
-function rmap<S: { ... }, K>(
-  key: string,
-  init: K
-): (N<N<rring_rays_t<K>>>) => N<N<rring_rays_t<S>>> {
-  return (nar) => (o) =>
-    a.ring((r) => o(reduce((s) => ({ ...s, [key]: r(s[key] || init) }))))(nar)(
-      o
-    );
-}
-function map<A, B, C>(
-  i: number,
-  a: [A, N<N<rring_rays_t<A>>>],
-  b: B,
-  c: C
-): (N<N<rring_rays_t<A>>>) => N<N<rring_rays_t<Array<A>>>> {
-  return (nar) => (o) => {};
-}
 function Program(o: N<rring_rays_t<ast.Program>>) {
   o(
     div(
-      rmap(
+      omap(
         "body",
         ([]: $PropertyType<ast.Program, "body">)
-      )((o) => {
-        o(reduce((s) => s));
-      })
+      )((o) =>
+        o(
+          reduce((s) => {
+            s.forEach((n, i) =>
+              o(
+                div(
+                  n.type === "BlockStatement"
+                    ? amap(i, n)(BlockStatement)
+                    : n.type === "DebuggerStatement"
+                    ? amap(i, n)(DebuggerStatement)
+                    : n.type === "ExpressionStatement"
+                    ? amap(i, n)(ExpressionStatement)
+                    : (o) => {},
+                  i + ""
+                )
+              )
+            );
+            return s;
+          })
+        )
+      ),
+      "body"
     )
   );
   o(
@@ -163,10 +143,29 @@ function Program(o: N<rring_rays_t<ast.Program>>) {
 function File(o: N<rring_rays_t<ast.File>>) {
   o(
     div(
-      rmap("program", { type: "Program", sourceType: "module", body: [] })(
+      omap("program", { type: "Program", sourceType: "module", body: [] })(
         Program
       ),
       "program"
     )
   );
+}
+
+function omap<S: { ... }, K>(
+  key: string,
+  init: K
+): (N<N<rring_rays_t<K>>>) => N<N<rring_rays_t<S>>> {
+  return (nar) => (o) =>
+    a.ring((r) => o(reduce((s) => ({ ...s, [key]: r(s[key] || init) }))))(nar)(
+      o
+    );
+}
+function amap<S, K>(
+  index: number,
+  init: K
+): (N<N<rring_rays_t<K>>>) => N<N<rring_rays_t<Array<S>>>> {
+  return (nar) => (o) => {};
+  //a.ring((r) => o(reduce((s) => ({ ...s, [key]: r(s[key] || init) }))))(nar)(
+  //  o
+  //);
 }
