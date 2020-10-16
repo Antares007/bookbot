@@ -1,0 +1,1 @@
+npm i -g @babel/parser@latest @babel/cli@latest @babel/core@latest @babel/preset-env@latest @babel/preset-flow@latest @babel/register@latest

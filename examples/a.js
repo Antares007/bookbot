@@ -132,5 +132,6 @@ function Program(o: N<rring_rays_t<ast.Program>>) {
   );
 }
 function File(o: N<rring_rays_t<ast.File>>) {
+  o
   kdiv("program", Program)(o)
 }
