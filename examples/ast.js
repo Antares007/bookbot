@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import type { N } from "../src/purry";
 const remove = ["start", "end", "loc"];
 const babel = require("../lib/babel");
@@ -206,7 +206,7 @@ module.exports = (code: string): N<element.element_pith_t> => (o) => {
     },
     "ast"
   );
-  node(babel(code), 0)(o);
+  node(babel.parse(code), 0)(o);
   var focused: HTMLElement;
   //  o.on("create", (elm) => {
   //    focused = elm;

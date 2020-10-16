@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 const ast = require("./ast");
 const element = require("../src/element");
 const b = element.bark(
