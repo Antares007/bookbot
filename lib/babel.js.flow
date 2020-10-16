@@ -276,7 +276,7 @@ export type Program = {
   type: "Program",
   sourceType: "script" | "module",
   directives?: Directive[],
-  body: Array<Statement>,//| ModuleDeclaration
+  body: Array<Statement | ModuleDeclaration>,
 };
 
 export type ObjectExpression = {
@@ -1397,45 +1397,45 @@ export type Block = BlockStatement | Program;
 export type Statement =
   | BlockStatement
   | DebuggerStatement
-  | ExpressionStatement
-  //| BreakStatement
-  //| ContinueStatement
-  //| DoWhileStatement
-  //| EmptyStatement
-  //| ForInStatement
-  //| ForStatement
-  //| FunctionDeclaration
-  //| IfStatement
-  //| LabeledStatement
-  //| ReturnStatement
-  //| SwitchStatement
-  //| ThrowStatement
-  //| TryStatement
-  //| VariableDeclaration
-  //| WhileStatement
-  //| WithStatement
-  //| ClassDeclaration
-  //| ExportAllDeclaration
-  //| ExportDefaultDeclaration
-  //| ExportNamedDeclaration
-  //| ForOfStatement
-  //| ImportDeclaration
-  //| DeclareClass
-  //| DeclareFunction
-  //| DeclareInterface
-  //| DeclareModule
-  //| DeclareTypeAlias
-  //| DeclareVariable
-  //| InterfaceDeclaration
-  //| TypeAlias
-  //| TSDeclareFunction
-  //| TSEnumDeclaration
-  //| TSExportAssignment
-  //| TSImportEqualsDeclaration
-  //| TSInterfaceDeclaration
-  //| TSModuleDeclaration
-  //| TSNamespaceExportDeclaration
-  //| TSTypeAliasDeclaration;
+  | ExpressionStatement;
+//| BreakStatement
+//| ContinueStatement
+//| DoWhileStatement
+//| EmptyStatement
+//| ForInStatement
+//| ForStatement
+//| FunctionDeclaration
+//| IfStatement
+//| LabeledStatement
+//| ReturnStatement
+//| SwitchStatement
+//| ThrowStatement
+//| TryStatement
+//| VariableDeclaration
+//| WhileStatement
+//| WithStatement
+//| ClassDeclaration
+//| ExportAllDeclaration
+//| ExportDefaultDeclaration
+//| ExportNamedDeclaration
+//| ForOfStatement
+//| ImportDeclaration
+//| DeclareClass
+//| DeclareFunction
+//| DeclareInterface
+//| DeclareModule
+//| DeclareTypeAlias
+//| DeclareVariable
+//| InterfaceDeclaration
+//| TypeAlias
+//| TSDeclareFunction
+//| TSEnumDeclaration
+//| TSExportAssignment
+//| TSImportEqualsDeclaration
+//| TSInterfaceDeclaration
+//| TSModuleDeclaration
+//| TSNamespaceExportDeclaration
+//| TSTypeAliasDeclaration;
 
 export type Terminatorless =
   | BreakStatement

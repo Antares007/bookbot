@@ -3,8 +3,7 @@
   "version": "0.0.17",
   "main": "main.js",
   "license": "MIT",
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "scripts": {},
   "dependencies": {
     "pako": "^1.0.11"

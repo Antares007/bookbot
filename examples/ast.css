@@ -1,44 +1,51 @@
-.FunctionDeclaration
-,.VariableDeclaration
-,.VariableDeclarator
-,.params
-{
+.FunctionDeclaration,
+.VariableDeclaration,
+.VariableDeclarator,
+.params {
   display: flex;
   flex-flow: row wrap;
   align-items: flex-start;
 }
-,.params
-{
+,
+.params {
   display: flex;
   flex-flow: row wrap;
   align-items: flex-start;
 }
 
-.value
-{
+.value {
   display: flex;
   flex-flow: row nowrap;
   align-items: flex-start;
 }
 
-.FunctionDeclaration>.id::before {content:"ƒ";color:blue;}
-.FunctionExpression>.id::before {content:"ƒ";color:blue;}
-.ArrowFunctionExpression>.id::before {content:"λ";color:blue;}
+.FunctionDeclaration > .id::before {
+  content: "ƒ";
+  color: blue;
+}
+.FunctionExpression > .id::before {
+  content: "ƒ";
+  color: blue;
+}
+.ArrowFunctionExpression > .id::before {
+  content: "λ";
+  color: blue;
+}
 
 *:focus {
-  box-shadow: 3px 3px 5px 0px rgba(0,0,0,0.75);
-  margin:1rem;
+  box-shadow: 3px 3px 5px 0px rgba(0, 0, 0, 0.75);
+  margin: 1rem;
 }
 
 .params {
-  min-width:1rem;
-  min-height:1rem;
+  min-width: 1rem;
+  min-height: 1rem;
 }
 .params {
   border: 0.1rem solid;
   border-radius: 1rem;
 }
-.params>*{
+.params > * {
   border: 0.05rem dashed;
   border-radius: 1rem;
   padding: 0.3rem;
@@ -143,12 +150,21 @@ body { font-family: Input Mono Compressed; }
 .params > :last-child::after {display:none;color:blue;}
 */
 
-.StringLiteral {color:green;}
-.operator {color:red;}
-.NumericLiteral {color:orange;}
-.BooleanLiteral {color;orange;}
-.VariableDeclaration > .kind {color:blue;}
-
+.StringLiteral {
+  color: green;
+}
+.operator {
+  color: red;
+}
+.NumericLiteral {
+  color: orange;
+}
+.BooleanLiteral {
+  color: orange;
+}
+.VariableDeclaration > .kind {
+  color: blue;
+}
 
 .S0 {
   background-color: #ffffff;

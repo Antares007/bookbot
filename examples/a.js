@@ -46,7 +46,10 @@ function BinaryExpression(o: N<rring_rays_t<ast.BinaryExpression>>) {
   //  })
   //);
 }
-function kdiv<S:{...},K>(key: string, nar: N<N<rring_rays_t<K>>>): N<N<rring_rays_t<S>>> {
+function kdiv<S: { ... }, K>(
+  key: string,
+  nar: N<N<rring_rays_t<K>>>
+): N<N<rring_rays_t<S>>> {
   return (o) =>
     o(
       div(
@@ -55,12 +58,12 @@ function kdiv<S:{...},K>(key: string, nar: N<N<rring_rays_t<K>>>): N<N<rring_ray
       )
     );
 }
-function Expression(o:N<rring_rays_t<ast.Expression>>){}
+function Expression(o: N<rring_rays_t<ast.Expression>>) {}
 function ExpressionStatement(o: N<rring_rays_t<ast.ExpressionStatement>>) {
   o(
     reduce((s: ast.ExpressionStatement) => {
-
-      kdiv( "expression",
+      kdiv(
+        "expression",
         s.expression.type === "BinaryExpression"
           ? BinaryExpression
           : NotImplemented
@@ -71,76 +74,99 @@ function ExpressionStatement(o: N<rring_rays_t<ast.ExpressionStatement>>) {
   );
 }
 
-function Statement(o: N<rring_rays_t<
-    | ast.BlockStatement
-    | ast.DebuggerStatement
-    | ast.ExpressionStatement
-  >>){
+function Statement(
+  o: N<
+    rring_rays_t<
+      ast.BlockStatement | ast.DebuggerStatement | ast.ExpressionStatement
+    >
+  >
+) {
   const mapStatement = {
     BlockStatement,
     DebuggerStatement,
-    ExpressionStatement
-  }
+    ExpressionStatement,
+  };
   o(
     reduce((s) => {
       //if(s.type === 'BlockStatement') BlockStatement(o)
       //else o({m:'text', a: s.type})
-      o({m:'text', a: s.type})
-      return s
+      o({ m: "text", a: s.type });
+      return s;
     })
   );
 }
 
-function rmap<S:{...},K>(key: string, init: K): N<N<rring_rays_t<K>>> => N<N<rring_rays_t<S>>> {
-  return nar=>o=> a.ring((r) => o(reduce((s) => ({ ...s, [key]: r(s[key] || init) }))))(nar)(o)
+function rmap<S: { ... }, K>(
+  key: string,
+  init: K
+): (N<N<rring_rays_t<K>>>) => N<N<rring_rays_t<S>>> {
+  return (nar) => (o) =>
+    a.ring((r) => o(reduce((s) => ({ ...s, [key]: r(s[key] || init) }))))(nar)(
+      o
+    );
 }
-function map<A,B,C>(i:number, a:[A,N<N<rring_rays_t<A>>>],b:B,c:C):N<N<rring_rays_t<A>>>=>N<N<rring_rays_t<Array<A>>>> {
-  return nar => o =>{}
+function map<A, B, C>(
+  i: number,
+  a: [A, N<N<rring_rays_t<A>>>],
+  b: B,
+  c: C
+): (N<N<rring_rays_t<A>>>) => N<N<rring_rays_t<Array<A>>>> {
+  return (nar) => (o) => {};
 }
 function Program(o: N<rring_rays_t<ast.Program>>) {
   o(
+    div(
+      rmap(
+        "body",
+        ([]: $PropertyType<ast.Program, "body">)
+      )((o) => {
+        o(reduce((s) => s));
+      })
+    )
+  );
+  o(
     reduce((s) => {
-      o(div(rmap('body', s.body)(o => {})))
       s.body.forEach((n, i) => {
         o(
           div(
-            n.type==='BlockStatement'
-            ? a.ring((r) =>
-                o(
-                  reduce((s) => ({
-                    ...s,
-                    body: s.body.map((s, k) => k !== i ? s : r(s.type === n.type ? s : n)),
-                  }))
-                )
-              )(BlockStatement)
-            : n.type==='DebuggerStatement'
-            ? a.ring((r) =>
-                o(
-                  reduce((s) => ({
-                    ...s,
-                    body: s.body.map((s, k) => k !== i ? s : r(s.type === n.type ? s : n)),
-                  }))
-                )
-              )(DebuggerStatement)
-            : o=>{},
+            n.type === "BlockStatement"
+              ? a.ring((r) =>
+                  o(
+                    reduce((s) => ({
+                      ...s,
+                      body: s.body.map((s, k) =>
+                        k !== i ? s : r(s.type === n.type ? s : n)
+                      ),
+                    }))
+                  )
+                )(BlockStatement)
+              : n.type === "DebuggerStatement"
+              ? a.ring((r) =>
+                  o(
+                    reduce((s) => ({
+                      ...s,
+                      body: s.body.map((s, k) =>
+                        k !== i ? s : r(s.type === n.type ? s : n)
+                      ),
+                    }))
+                  )
+                )(DebuggerStatement)
+              : (o) => {},
             "" + i
           )
-        )
-      })
-      return s
+        );
+      });
+      return s;
     })
   );
 }
 function File(o: N<rring_rays_t<ast.File>>) {
   o(
     div(
-      rmap(
-        'program',
-        { type:'Program',
-          sourceType: 'module',
-          body: [] }
-      )(Program),
-      'program'
+      rmap("program", { type: "Program", sourceType: "module", body: [] })(
+        Program
+      ),
+      "program"
     )
-  )
+  );
 }
