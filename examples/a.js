@@ -1,6 +1,7 @@
 // @flow strict
 import type { N } from "../src/purry";
 import type { rring_rays_t } from "../src/a";
+const { static_cast } = require("../src/utils/static_cast");
 const a = require("../src/a");
 const ast = require("../lib/babel");
 var state = ast.parse("const a=1,b=1,o=2;a+b*o;");
@@ -24,39 +25,69 @@ const File = make<ast.BNFile>((o) => {
 const DebuggerStatement = make<ast.BNDebuggerStatement>((o) => {});
 const BlockStatement = make<ast.BNBlockStatement>((o) => {});
 const BinaryExpression = make<ast.BNBinaryExpression>((o) => {
-  //{ left: Expression,
-  //  operator: ( "+" | "-" | "/" | "%" | "*" | "**" | "&" | "|" | ">>" | ">>>" | "<<" | "^" | "==" | "===" | "!=" | "!==" | "in" | "instanceof" | ">" | "<" | ">=" | "<="),
-  //  right: Expression,
-  //  type: "BinaryExpression",
-  //}
-  //o(
-  //  reduce((s) => {
-  //    f("left", Expression)(o);
-  //    f("Right", Expression)(o);
-  //    return s;
-  //  })
-  //);
+  console.log("hmmm");
+  o(
+    div(
+      map(
+        (a) => static_cast<ast.BNExpression>(a.left),
+        (a, b) => ({ ...a, left: b })
+      )(Expression),
+      "left"
+    )
+  );
+  o(
+    reduce((s) => {
+      o(
+        div((o) => {
+          o({ m: "text", a: s.operator });
+        }, "operator")
+      );
+      return s;
+    })
+  );
+  o(
+    div(
+      map(
+        (a) => a.right,
+        (a, b) => ({ ...a, right: b })
+      )(Expression),
+      "right"
+    )
+  );
 });
-const Expression = make<ast.BNExpression>((o) => {});
+const Identifier = make<ast.BNIdentifier>((o) => {
+  o(
+    reduce((s) => {
+      o({ m: "text", a: s.name });
+      return s;
+    })
+  );
+});
+const Expression = make<ast.BNExpression>((o) => {
+  o(
+    reduce((s) => {
+      if (s.type === "BinaryExpression")
+        map(
+          (a) => (a.type === "BinaryExpression" ? a : s),
+          (a, b) => b
+        )(BinaryExpression)(o);
+      else if (s.type === "Identifier")
+        map(
+          (a) => (a.type === "Identifier" ? a : s),
+          (a, b) => b
+        )(Identifier)(o);
+      else NotImplemented(o);
+      return s;
+    })
+  );
+});
 const ExpressionStatement = make<ast.BNExpressionStatement>((o) => {
   o(
     div(
       map(
         (a) => a.expression,
         (a, b) => ({ ...a, expression: b })
-      )((o) => {
-        o(
-          reduce((s) => {
-            if (s.type === "BinaryExpression")
-              map(
-                (a) => (a.type === "BinaryExpression" ? a : s),
-                (a, b) => b
-              )(BinaryExpression);
-            else o;
-            return s;
-          })
-        );
-      }),
+      )(Expression),
       "expression"
     )
   );
