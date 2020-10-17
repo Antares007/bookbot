@@ -25,7 +25,6 @@ const File = make<ast.BNFile>((o) => {
 const DebuggerStatement = make<ast.BNDebuggerStatement>((o) => {});
 const BlockStatement = make<ast.BNBlockStatement>((o) => {});
 const BinaryExpression = make<ast.BNBinaryExpression>((o) => {
-  console.log("hmmm");
   o(
     div(
       map(
@@ -63,6 +62,14 @@ const Identifier = make<ast.BNIdentifier>((o) => {
     })
   );
 });
+const NumericLiteral = make<ast.BNNumericLiteral>((o) => {
+  o(
+    reduce((s) => {
+      o({ m: "text", a: s.value + "" });
+      return s;
+    })
+  );
+});
 const Expression = make<ast.BNExpression>((o) => {
   o(
     reduce((s) => {
@@ -76,6 +83,11 @@ const Expression = make<ast.BNExpression>((o) => {
           (a) => (a.type === "Identifier" ? a : s),
           (a, b) => b
         )(Identifier)(o);
+      else if (s.type === "NumericLiteral")
+        map(
+          (a) => (a.type === "NumericLiteral" ? a : s),
+          (a, b) => b
+        )(NumericLiteral)(o);
       else NotImplemented(o);
       return s;
     })
@@ -92,13 +104,45 @@ const ExpressionStatement = make<ast.BNExpressionStatement>((o) => {
     )
   );
 });
-const VariableDeclarator = make<ast.BNVariableDeclarator>((o) => {
+function maybe<T>(nar: N<N<rring_rays_t<T>>>): N<N<rring_rays_t<T | void>>> {
+  return (o) =>
+    a.ring((r) => o(reduce((s) => (typeof s === "undefined" ? s : r(s)))))(nar)(
+      o
+    );
+}
+const LVal = make<ast.BNLVal>((o) => {
   o(
     reduce((s) => {
+      if (s.type === "Identifier")
+        map(
+          (a) => (a.type === "Identifier" ? a : s),
+          (a, b) => b
+        )(Identifier)(o);
+      else NotImplemented(o);
       return s;
     })
   );
-  NotImplemented(o);
+});
+
+const VariableDeclarator = make<ast.BNVariableDeclarator>((o) => {
+  o(
+    div(
+      map(
+        (a) => a.id,
+        (a, id) => ({ ...a, id })
+      )(LVal),
+      "id"
+    )
+  );
+  o(
+    div(
+      map(
+        (a) => a.init,
+        (a, init) => ({ ...a, init })
+      )(maybe(Expression)),
+      "init"
+    )
+  );
 });
 const VariableDeclaration = make<ast.BNVariableDeclaration>((o) => {
   o(
