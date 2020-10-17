@@ -1,17 +1,20 @@
 // @flow strict
-declare export function parse(string): File;
-export type Comment = {
+declare export function parse(string): BNFile;
+export type BNComment = {
   value: string,
   start: number,
   end: number,
-  loc: SourceLocation,
+  loc: BNSourceLocation,
 };
 
-export type CommentBlock = { ...Comment, type: "CommentBlock" };
+export type BNCommentBlock = {
+  ...BNComment,
+  type: "CommentBlock",
+};
 
-export type CommentLine = { ...Comment, type: "CommentLine" };
+export type BNCommentLine = { ...BNComment, type: "CommentLine" };
 
-export type SourceLocation = {
+export type BNSourceLocation = {
   start: {
     line: number,
     column: number,
@@ -23,44 +26,33 @@ export type SourceLocation = {
   },
 };
 
-export type Node = {
-  type: string,
-  //leadingComments?: Comment[],
-  //innerComments?: Comment[],
-  //trailingComments?: Comment[],
-  //start: number,
-  //end: number,
-  //loc: SourceLocation,
+export type BN = {
+  +type: string,
+  leadingComments?: Array<BNComment>,
+  innerComments?: Array<BNComment>,
+  trailingComments?: Array<BNComment>,
+  start: ?number,
+  end: ?number,
+  loc: ?BNSourceLocation,
+  extra?: { [string]: mixed },
 };
 
-export type ArrayExpression = {
-  ...Node,
+export type BNArrayExpression = {
+  ...BN,
   type: "ArrayExpression",
-  elements: Array<null | Expression | SpreadElement>,
+  elements?: Array<null | BNExpression | BNSpreadElement>,
 };
 
-export type AssignmentExpression = {
-  ...Node,
+export type BNAssignmentExpression = {
+  ...BN,
   type: "AssignmentExpression",
-  operator:
-    | "="
-    | "+="
-    | "-="
-    | "*="
-    | "/="
-    | "%="
-    | "<<="
-    | ">>="
-    | ">>>="
-    | "|="
-    | "^="
-    | "&=",
-  left: LVal,
-  right: Expression,
+  operator: string,
+  left: BNLVal,
+  right: BNExpression,
 };
 
-export type BinaryExpression = {
-  ...Node,
+export type BNBinaryExpression = {
+  ...BN,
   type: "BinaryExpression",
   operator:
     | "+"
@@ -85,1617 +77,2260 @@ export type BinaryExpression = {
     | "<"
     | ">="
     | "<=",
-  left: Expression,
-  right: Expression,
+  left: BNExpression | BNPrivateName,
+  right: BNExpression,
 };
 
-export type Directive = { ...Node, type: "Directive", value: DirectiveLiteral };
+export type BNInterpreterDirective = {
+  ...BN,
+  type: "InterpreterDirective",
+  value: string,
+};
 
-export type DirectiveLiteral = {
-  ...Node,
+export type BNDirective = {
+  ...BN,
+  type: "Directive",
+  value: BNDirectiveLiteral,
+};
+
+export type BNDirectiveLiteral = {
+  ...BN,
   type: "DirectiveLiteral",
   value: string,
 };
 
-export type BlockStatement = {
-  //...Node,
+export type BNBlockStatement = {
+  ...BN,
   type: "BlockStatement",
-  directives?: Directive[],
-  body: Statement[],
+  body: Array<BNStatement>,
+  directives?: Array<BNDirective>,
 };
 
-export type BreakStatement = {
-  ...Node,
+export type BNBreakStatement = {
+  ...BN,
   type: "BreakStatement",
-  label: Identifier,
+  label?: BNIdentifier,
 };
 
-export type CallExpression = {
-  ...Node,
+export type BNCallExpression = {
+  ...BN,
   type: "CallExpression",
-  callee: Expression | Super,
-  arguments: Array<Expression | SpreadElement>,
+  callee: BNExpression | BNV8IntrinsicIdentifier,
+  arguments: Array<
+    BNExpression | BNSpreadElement | BNJSXNamespacedName | BNArgumentPlaceholder
+  >,
+  optional?: true | false,
+  typeArguments?: BNTypeParameterInstantiation,
+  typeParameters?: BNTSTypeParameterInstantiation,
 };
 
-export type CatchClause = {
-  ...Node,
+export type BNCatchClause = {
+  ...BN,
   type: "CatchClause",
-  param: Identifier,
-  body: BlockStatement,
+  param?: BNIdentifier | BNArrayPattern | BNObjectPattern,
+  body: BNBlockStatement,
 };
 
-export type ConditionalExpression = {
-  ...Node,
+export type BNConditionalExpression = {
+  ...BN,
   type: "ConditionalExpression",
-  test: Expression,
-  consequent: Expression,
-  alternate: Expression,
+  test: BNExpression,
+  consequent: BNExpression,
+  alternate: BNExpression,
 };
 
-export type ContinueStatement = {
-  ...Node,
+export type BNContinueStatement = {
+  ...BN,
   type: "ContinueStatement",
-  label: Identifier,
+  label?: BNIdentifier,
 };
 
-export type DebuggerStatement = {
-  //...Node,
+export type BNDebuggerStatement = {
+  ...BN,
   type: "DebuggerStatement",
 };
 
-export type DoWhileStatement = {
-  ...Node,
+export type BNDoWhileStatement = {
+  ...BN,
   type: "DoWhileStatement",
-  test: Expression,
-  body: Statement,
+  test: BNExpression,
+  body: BNStatement,
 };
 
-export type EmptyStatement = { ...Node, type: "EmptyStatement" };
+export type BNEmptyStatement = { ...BN, type: "EmptyStatement" };
 
-export type ExpressionStatement = {
-  //...Node,
+export type BNExpressionStatement = {
+  ...BN,
   type: "ExpressionStatement",
-  expression: Expression,
+  expression: BNExpression,
 };
 
-export type File = {
-  ...Node,
+export type BNFile = {
+  ...BN,
   type: "File",
-  program: Program,
-  comments: Comment[],
-  tokens: mixed[],
+  program: BNProgram,
+  comments?: Array<BNCommentBlock | BNCommentLine>,
+  tokens?: Array<mixed>,
 };
 
-export type ForInStatement = {
-  ...Node,
+export type BNForInStatement = {
+  ...BN,
   type: "ForInStatement",
-  left: VariableDeclaration | LVal,
-  right: Expression,
-  body: Statement,
+  left: BNVariableDeclaration | BNLVal,
+  right: BNExpression,
+  body: BNStatement,
 };
 
-export type ForStatement = {
-  ...Node,
+export type BNForStatement = {
+  ...BN,
   type: "ForStatement",
-  init: VariableDeclaration | Expression,
-  test: Expression,
-  update: Expression,
-  body: Statement,
+  init?: BNVariableDeclaration | BNExpression,
+  test?: BNExpression,
+  update?: BNExpression,
+  body: BNStatement,
 };
 
-export type FunctionDeclaration = {
-  ...Node,
+export type BNFunctionDeclaration = {
+  ...BN,
   type: "FunctionDeclaration",
-  id: Identifier,
-  params: LVal[],
-  body: BlockStatement,
-  generator: boolean,
-  async: boolean,
-  returnType?: TypeAnnotation,
-  typeParameters?: TypeParameterDeclaration,
+  id?: BNIdentifier,
+  params: Array<
+    BNIdentifier | BNPattern | BNRestElement | BNTSParameterProperty
+  >,
+  body: BNBlockStatement,
+  generator?: boolean,
+  async?: boolean,
+  declare?: boolean,
+  returnType?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
+  typeParameters?:
+    | BNTypeParameterDeclaration
+    | BNTSTypeParameterDeclaration
+    | BNNoop,
 };
 
-export type FunctionExpression = {
-  ...Node,
+export type BNFunctionExpression = {
+  ...BN,
   type: "FunctionExpression",
-  id: Identifier,
-  params: LVal[],
-  body: BlockStatement,
-  generator: boolean,
-  async: boolean,
-  returnType?: TypeAnnotation,
-  typeParameters?: TypeParameterDeclaration,
+  id?: BNIdentifier,
+  params: Array<
+    BNIdentifier | BNPattern | BNRestElement | BNTSParameterProperty
+  >,
+  body: BNBlockStatement,
+  generator?: boolean,
+  async?: boolean,
+  returnType?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
+  typeParameters?:
+    | BNTypeParameterDeclaration
+    | BNTSTypeParameterDeclaration
+    | BNNoop,
 };
 
-export type Identifier = {
-  ...Node,
+export type BNIdentifier = {
+  ...BN,
   type: "Identifier",
   name: string,
-  typeAnnotation?: TypeAnnotation,
+  decorators?: Array<BNDecorator>,
+  optional?: boolean,
+  typeAnnotation?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
 };
 
-export type IfStatement = {
-  ...Node,
+export type BNIfStatement = {
+  ...BN,
   type: "IfStatement",
-  test: Expression,
-  consequent: Statement,
-  alternate: Statement,
+  test: BNExpression,
+  consequent: BNStatement,
+  alternate?: BNStatement,
 };
 
-export type LabeledStatement = {
-  ...Node,
+export type BNLabeledStatement = {
+  ...BN,
   type: "LabeledStatement",
-  label: Identifier,
-  body: Statement,
+  label: BNIdentifier,
+  body: BNStatement,
 };
 
-export type StringLiteral = { ...Node, type: "StringLiteral", value: string };
+export type BNStringLiteral = {
+  ...BN,
+  type: "StringLiteral",
+  value: string,
+};
 
-export type NumericLiteral = { ...Node, type: "NumericLiteral", value: number };
+export type BNNumericLiteral = {
+  ...BN,
+  type: "NumericLiteral",
+  value: number,
+};
 
-export type NullLiteral = { ...Node, type: "NullLiteral" };
+export type BNNullLiteral = { ...BN, type: "NullLiteral" };
 
-export type BooleanLiteral = {
-  ...Node,
+export type BNBooleanLiteral = {
+  ...BN,
   type: "BooleanLiteral",
   value: boolean,
 };
 
-export type RegExpLiteral = {
-  ...Node,
+export type BNRegExpLiteral = {
+  ...BN,
   type: "RegExpLiteral",
   pattern: string,
   flags?: string,
 };
 
-export type LogicalExpression = {
-  ...Node,
+export type BNLogicalExpression = {
+  ...BN,
   type: "LogicalExpression",
-  operator: "||" | "&&",
-  left: Expression,
-  right: Expression,
+  operator: "||" | "&&" | "??",
+  left: BNExpression,
+  right: BNExpression,
 };
 
-export type MemberExpression = {
-  ...Node,
+export type BNMemberExpression = {
+  ...BN,
   type: "MemberExpression",
-  object: Expression | Super,
-  property: Expression,
-  computed: boolean,
+  object: BNExpression,
+  property: BNExpression | BNIdentifier | BNPrivateName,
+  computed?: boolean,
+  optional?: true | false,
 };
 
-export type NewExpression = {
-  ...Node,
+export type BNNewExpression = {
+  ...BN,
   type: "NewExpression",
-  callee: Expression | Super,
-  arguments: Array<Expression | SpreadElement>,
+  callee: BNExpression | BNV8IntrinsicIdentifier,
+  arguments: Array<
+    BNExpression | BNSpreadElement | BNJSXNamespacedName | BNArgumentPlaceholder
+  >,
+  optional?: true | false,
+  typeArguments?: BNTypeParameterInstantiation,
+  typeParameters?: BNTSTypeParameterInstantiation,
 };
 
-export type Program = {
-  ...Node,
+export type BNProgram = {
+  ...BN,
   type: "Program",
-  sourceType: "script" | "module",
-  directives?: Directive[],
-  body: Array<Statement | ModuleDeclaration>,
+  body: Array<BNStatement>,
+  directives?: Array<BNDirective>,
+  sourceType?: "script" | "module",
+  interpreter?: BNInterpreterDirective,
+  sourceFile: string,
 };
 
-export type ObjectExpression = {
-  ...Node,
+export type BNObjectExpression = {
+  ...BN,
   type: "ObjectExpression",
-  properties: Array<ObjectProperty | ObjectMethod | SpreadProperty>,
+  properties: Array<BNObjectMethod | BNObjectProperty | BNSpreadElement>,
 };
 
-export type ObjectMethod = {
-  ...Node,
+export type BNObjectMethod = {
+  ...BN,
   type: "ObjectMethod",
-  key: Expression,
-  kind: "get" | "set" | "method",
-  shorthand: boolean,
-  computed: boolean,
-  value: Expression,
-  decorators?: Decorator[],
-  id: Identifier,
-  params: LVal[],
-  body: BlockStatement,
-  generator: boolean,
-  async: boolean,
-  returnType?: TypeAnnotation,
-  typeParameters?: TypeParameterDeclaration,
+  kind?: "method" | "get" | "set",
+  key: BNExpression | BNIdentifier | BNStringLiteral | BNNumericLiteral,
+  params: Array<
+    BNIdentifier | BNPattern | BNRestElement | BNTSParameterProperty
+  >,
+  body: BNBlockStatement,
+  computed?: boolean,
+  generator?: boolean,
+  async?: boolean,
+  decorators?: Array<BNDecorator>,
+  returnType?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
+  typeParameters?:
+    | BNTypeParameterDeclaration
+    | BNTSTypeParameterDeclaration
+    | BNNoop,
 };
 
-export type ObjectProperty = {
-  ...Node,
+export type BNObjectProperty = {
+  ...BN,
   type: "ObjectProperty",
-  key: Expression,
-  computed: boolean,
-  value: Expression,
-  decorators?: Decorator[],
-  shorthand: boolean,
+  key: BNExpression | BNIdentifier | BNStringLiteral | BNNumericLiteral,
+  value: BNExpression | BNPatternLike,
+  computed?: boolean,
+  shorthand?: boolean,
+  decorators?: Array<BNDecorator>,
 };
 
-export type RestElement = {
-  ...Node,
+export type BNRestElement = {
+  ...BN,
   type: "RestElement",
-  argument: LVal,
-  typeAnnotation?: TypeAnnotation,
+  argument: BNLVal,
+  decorators?: Array<BNDecorator>,
+  typeAnnotation?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
 };
 
-export type ReturnStatement = {
-  ...Node,
+export type BNReturnStatement = {
+  ...BN,
   type: "ReturnStatement",
-  argument: Expression,
+  argument?: BNExpression,
 };
 
-export type SequenceExpression = {
-  ...Node,
+export type BNSequenceExpression = {
+  ...BN,
   type: "SequenceExpression",
-  expressions: Expression[],
+  expressions: Array<BNExpression>,
 };
 
-export type SwitchCase = {
-  ...Node,
+export type BNParenthesizedExpression = {
+  ...BN,
+  type: "ParenthesizedExpression",
+  expression: BNExpression,
+};
+
+export type BNSwitchCase = {
+  ...BN,
   type: "SwitchCase",
-  test: Expression,
-  consequent: Statement[],
+  test?: BNExpression,
+  consequent: Array<BNStatement>,
 };
 
-export type SwitchStatement = {
-  ...Node,
+export type BNSwitchStatement = {
+  ...BN,
   type: "SwitchStatement",
-  discriminant: Expression,
-  cases: SwitchCase[],
+  discriminant: BNExpression,
+  cases: Array<BNSwitchCase>,
 };
 
-export type ThisExpression = { ...Node, type: "ThisExpression" };
+export type BNThisExpression = { ...BN, type: "ThisExpression" };
 
-export type ThrowStatement = {
-  ...Node,
+export type BNThrowStatement = {
+  ...BN,
   type: "ThrowStatement",
-  argument: Expression,
+  argument: BNExpression,
 };
 
-export type TryStatement = {
-  ...Node,
+export type BNTryStatement = {
+  ...BN,
   type: "TryStatement",
-  block: BlockStatement,
-  handler: CatchClause,
-  finalizer: BlockStatement,
+  block: BNBlockStatement,
+  handler?: BNCatchClause,
+  finalizer?: BNBlockStatement,
 };
 
-export type UnaryExpression = {
-  ...Node,
+export type BNUnaryExpression = {
+  ...BN,
   type: "UnaryExpression",
-  operator: "-" | "+" | "!" | "~" | "typeof" | "void" | "delete",
-  prefix: boolean,
-  argument: Expression,
+  operator: "void" | "throw" | "delete" | "!" | "+" | "-" | "~" | "typeof",
+  argument: BNExpression,
+  prefix?: boolean,
 };
 
-export type UpdateExpression = {
-  ...Node,
+export type BNUpdateExpression = {
+  ...BN,
   type: "UpdateExpression",
   operator: "++" | "--",
-  prefix: boolean,
-  argument: Expression,
+  argument: BNExpression,
+  prefix?: boolean,
 };
 
-export type VariableDeclaration = {
-  ...Node,
+export type BNVariableDeclaration = {
+  ...BN,
   type: "VariableDeclaration",
-  declarations: VariableDeclarator[],
   kind: "var" | "let" | "const",
+  declarations: Array<BNVariableDeclarator>,
+  declare?: boolean,
 };
 
-export type VariableDeclarator = {
-  ...Node,
+export type BNVariableDeclarator = {
+  ...BN,
   type: "VariableDeclarator",
-  id: LVal,
-  init: Expression,
+  id: BNLVal,
+  init?: BNExpression,
+  definite?: boolean,
 };
 
-export type WhileStatement = {
-  ...Node,
+export type BNWhileStatement = {
+  ...BN,
   type: "WhileStatement",
-  test: Expression,
-  body: Statement,
+  test: BNExpression,
+  body: BNStatement,
 };
 
-export type WithStatement = {
-  ...Node,
+export type BNWithStatement = {
+  ...BN,
   type: "WithStatement",
-  object: Expression,
-  body: BlockStatement | Statement,
+  object: BNExpression,
+  body: BNStatement,
 };
 
-export type AssignmentPattern = {
-  ...Node,
+export type BNAssignmentPattern = {
+  ...BN,
   type: "AssignmentPattern",
-  left: Identifier,
-  right: Expression,
+  left: BNIdentifier | BNObjectPattern | BNArrayPattern | BNMemberExpression,
+  right: BNExpression,
+  decorators?: Array<BNDecorator>,
+  typeAnnotation?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
 };
 
-export type ArrayPattern = {
-  ...Node,
+export type BNArrayPattern = {
+  ...BN,
   type: "ArrayPattern",
-  elements: Expression[],
-  typeAnnotation?: TypeAnnotation,
+  elements: Array<null | BNPatternLike>,
+  decorators?: Array<BNDecorator>,
+  typeAnnotation?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
 };
 
-export type ArrowFunctionExpression = {
-  ...Node,
+export type BNArrowFunctionExpression = {
+  ...BN,
   type: "ArrowFunctionExpression",
-  id: Identifier,
-  params: LVal[],
-  body: BlockStatement | Expression,
-  generator: boolean,
-  async: boolean,
+  params: Array<
+    BNIdentifier | BNPattern | BNRestElement | BNTSParameterProperty
+  >,
+  body: BNBlockStatement | BNExpression,
+  async?: boolean,
   expression: boolean,
-  returnType?: TypeAnnotation,
-  typeParameters?: TypeParameterDeclaration,
+  generator?: boolean,
+  returnType?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
+  typeParameters?:
+    | BNTypeParameterDeclaration
+    | BNTSTypeParameterDeclaration
+    | BNNoop,
 };
 
-export type ClassBody = {
-  ...Node,
+export type BNClassBody = {
+  ...BN,
   type: "ClassBody",
-  body: Array<ClassMethod | ClassProperty>,
+  body: Array<
+    | BNClassMethod
+    | BNClassPrivateMethod
+    | BNClassProperty
+    | BNClassPrivateProperty
+    | BNTSDeclareMethod
+    | BNTSIndexSignature
+  >,
 };
 
-export type ClassDeclaration = {
-  ...Node,
-  type: "ClassDeclaration",
-  id: Identifier,
-  superClass: Expression,
-  body: ClassBody,
-  decorators?: Decorator[],
-  implements?: ClassImplements[],
-  mixins?: mixed[],
-  typeParameters?: TypeParameterDeclaration,
-  superTypeParameters?: TypeParameterInstantiation,
-};
-
-export type ClassExpression = {
-  ...Node,
+export type BNClassExpression = {
+  ...BN,
   type: "ClassExpression",
-  id: Identifier,
-  superClass: Expression,
-  body: ClassBody,
-  decorators?: Decorator[],
-  implements?: ClassImplements[],
-  mixins?: mixed[],
-  typeParameters?: TypeParameterDeclaration,
-  superTypeParameters?: TypeParameterInstantiation,
+  id?: BNIdentifier,
+  superClass?: BNExpression,
+  body: BNClassBody,
+  decorators?: Array<BNDecorator>,
+  mixins?: BNInterfaceExtends,
+  superTypeParameters?:
+    | BNTypeParameterInstantiation
+    | BNTSTypeParameterInstantiation,
+  typeParameters?:
+    | BNTypeParameterDeclaration
+    | BNTSTypeParameterDeclaration
+    | BNNoop,
 };
 
-export type ExportAllDeclaration = {
-  ...Node,
+export type BNClassDeclaration = {
+  ...BN,
+  type: "ClassDeclaration",
+  id: BNIdentifier,
+  superClass?: BNExpression,
+  body: BNClassBody,
+  decorators?: Array<BNDecorator>,
+  abstract?: boolean,
+  declare?: boolean,
+  mixins?: BNInterfaceExtends,
+  superTypeParameters?:
+    | BNTypeParameterInstantiation
+    | BNTSTypeParameterInstantiation,
+  typeParameters?:
+    | BNTypeParameterDeclaration
+    | BNTSTypeParameterDeclaration
+    | BNNoop,
+};
+
+export type BNExportAllDeclaration = {
+  ...BN,
   type: "ExportAllDeclaration",
-  source: StringLiteral,
+  source: BNStringLiteral,
 };
 
-export type ExportDefaultDeclaration = {
-  ...Node,
+export type BNExportDefaultDeclaration = {
+  ...BN,
   type: "ExportDefaultDeclaration",
-  declaration: Declaration | Expression,
+  declaration:
+    | BNFunctionDeclaration
+    | BNTSDeclareFunction
+    | BNClassDeclaration
+    | BNExpression,
 };
 
-export type ExportNamedDeclaration = {
-  ...Node,
+export type BNExportNamedDeclaration = {
+  ...BN,
   type: "ExportNamedDeclaration",
-  declaration: Declaration,
-  specifiers: ExportSpecifier[],
-  source: StringLiteral | null,
+  declaration?: BNDeclaration,
+  specifiers?: Array<
+    BNExportSpecifier | BNExportDefaultSpecifier | BNExportNamespaceSpecifier
+  >,
+  source?: BNStringLiteral,
+  exportKind?: "type" | "value",
 };
 
-export type ExportSpecifier = {
-  ...Node,
+export type BNExportSpecifier = {
+  ...BN,
   type: "ExportSpecifier",
-  local: Identifier,
-  imported: Identifier,
-  exported: Identifier,
+  local: BNIdentifier,
+  exported: BNIdentifier | BNStringLiteral,
 };
 
-export type ForOfStatement = {
-  ...Node,
+export type BNForOfStatement = {
+  ...BN,
   type: "ForOfStatement",
-  left: VariableDeclaration | LVal,
-  right: Expression,
-  body: Statement,
+  left: BNVariableDeclaration | BNLVal,
+  right: BNExpression,
+  body: BNStatement,
 };
 
-export type ImportDeclaration = {
-  ...Node,
+export type BNImportDeclaration = {
+  ...BN,
   type: "ImportDeclaration",
   specifiers: Array<
-    ImportSpecifier | ImportDefaultSpecifier | ImportNamespaceSpecifier
+    BNImportSpecifier | BNImportDefaultSpecifier | BNImportNamespaceSpecifier
   >,
-  source: StringLiteral,
+  source: BNStringLiteral,
+  importKind?: "type" | "typeof" | "value",
 };
 
-export type ImportDefaultSpecifier = {
-  ...Node,
+export type BNImportDefaultSpecifier = {
+  ...BN,
   type: "ImportDefaultSpecifier",
-  local: Identifier,
+  local: BNIdentifier,
 };
 
-export type ImportNamespaceSpecifier = {
-  ...Node,
+export type BNImportNamespaceSpecifier = {
+  ...BN,
   type: "ImportNamespaceSpecifier",
-  local: Identifier,
+  local: BNIdentifier,
 };
 
-export type ImportSpecifier = {
-  ...Node,
+export type BNImportSpecifier = {
+  ...BN,
   type: "ImportSpecifier",
-  local: Identifier,
-  imported: Identifier,
+  local: BNIdentifier,
+  imported: BNIdentifier | BNStringLiteral,
+  importKind?: "type" | "typeof",
 };
 
-export type MetaProperty = {
-  ...Node,
+export type BNMetaProperty = {
+  ...BN,
   type: "MetaProperty",
-  meta: Identifier,
-  property: Identifier,
+  meta: BNIdentifier,
+  property: BNIdentifier,
 };
 
-export type ClassMethod = {
-  ...Node,
+export type BNClassMethod = {
+  ...BN,
   type: "ClassMethod",
-  key: Expression,
-  value?: FunctionExpression,
-  kind: "constructor" | "method" | "get" | "set",
-  computed: boolean,
-  static: boolean,
-  decorators?: Decorator[],
-  id: Identifier,
-  params: LVal[],
-  body: BlockStatement,
-  generator: boolean,
-  async: boolean,
-  expression: boolean,
-  returnType?: TypeAnnotation,
-  typeParameters?: TypeParameterDeclaration,
+  kind?: "get" | "set" | "method" | "constructor",
+  key: BNIdentifier | BNStringLiteral | BNNumericLiteral | BNExpression,
+  params: Array<
+    BNIdentifier | BNPattern | BNRestElement | BNTSParameterProperty
+  >,
+  body: BNBlockStatement,
+  computed?: boolean,
+  generator?: boolean,
+  async?: boolean,
+  abstract?: boolean,
+  access?: "public" | "private" | "protected",
+  accessibility?: "public" | "private" | "protected",
+  decorators?: Array<BNDecorator>,
+  optional?: boolean,
+  returnType?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
+  typeParameters?:
+    | BNTypeParameterDeclaration
+    | BNTSTypeParameterDeclaration
+    | BNNoop,
 };
 
-// See: https://github.com/babel/babel/blob/master/doc/ast/spec.md#objectpattern
-export type AssignmentProperty = {
-  ...Node,
-  type: "ObjectProperty",
-  key: Expression,
-  computed: boolean,
-  value: Pattern,
-  decorators?: Decorator[],
-  shorthand: boolean,
-};
-
-export type ObjectPattern = {
-  ...Node,
+export type BNObjectPattern = {
+  ...BN,
   type: "ObjectPattern",
-  properties: Array<AssignmentProperty | RestProperty>,
-  typeAnnotation?: TypeAnnotation,
+  properties: Array<BNRestElement | BNObjectProperty>,
+  decorators?: Array<BNDecorator>,
+  typeAnnotation?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
 };
 
-export type SpreadElement = {
-  ...Node,
+export type BNSpreadElement = {
+  ...BN,
   type: "SpreadElement",
-  argument: Expression,
+  argument: BNExpression,
 };
 
-export type Super = { ...Node, type: "Super" };
+export type BNSuper = { ...BN, type: "Super" };
 
-export type TaggedTemplateExpression = {
-  ...Node,
+export type BNTaggedTemplateExpression = {
+  ...BN,
   type: "TaggedTemplateExpression",
-  tag: Expression,
-  quasi: TemplateLiteral,
+  tag: BNExpression,
+  quasi: BNTemplateLiteral,
+  typeParameters?:
+    | BNTypeParameterInstantiation
+    | BNTSTypeParameterInstantiation,
 };
 
-export type TemplateElement = {
-  ...Node,
+export type BNTemplateElement = {
+  ...BN,
   type: "TemplateElement",
-  tail: boolean,
-  value: {
-    cooked: string,
-    raw: string,
-  },
+  value: { raw: string, cooked?: string },
+  tail?: boolean,
 };
 
-export type TemplateLiteral = {
-  ...Node,
+export type BNTemplateLiteral = {
+  ...BN,
   type: "TemplateLiteral",
-  quasis: TemplateElement[],
-  expressions: Expression[],
+  quasis: Array<BNTemplateElement>,
+  expressions: Array<BNExpression | BNTSType>,
 };
 
-export type YieldExpression = {
-  ...Node,
+export type BNYieldExpression = {
+  ...BN,
   type: "YieldExpression",
-  argument: Expression,
-  delegate: boolean,
+  argument?: BNExpression,
+  delegate?: boolean,
 };
 
-export type AnyTypeAnnotation = { ...Node, type: "AnyTypeAnnotation" };
+export type BNAwaitExpression = {
+  ...BN,
+  type: "AwaitExpression",
+  argument: BNExpression,
+};
 
-export type ArrayTypeAnnotation = {
-  ...Node,
+export type BNImport = { ...BN, type: "Import" };
+
+export type BNBigIntLiteral = {
+  ...BN,
+  type: "BigIntLiteral",
+  value: string,
+};
+
+export type BNExportNamespaceSpecifier = {
+  ...BN,
+  type: "ExportNamespaceSpecifier",
+  exported: BNIdentifier,
+};
+
+export type BNOptionalMemberExpression = {
+  ...BN,
+  type: "OptionalMemberExpression",
+  object: BNExpression,
+  property: BNExpression | BNIdentifier,
+  computed?: boolean,
+  optional: boolean,
+};
+
+export type BNOptionalCallExpression = {
+  ...BN,
+  type: "OptionalCallExpression",
+  callee: BNExpression,
+  arguments: Array<BNExpression | BNSpreadElement | BNJSXNamespacedName>,
+  optional: boolean,
+  typeArguments?: BNTypeParameterInstantiation,
+  typeParameters?: BNTSTypeParameterInstantiation,
+};
+
+export type BNAnyTypeAnnotation = {
+  ...BN,
+  type: "AnyTypeAnnotation",
+};
+
+export type BNArrayTypeAnnotation = {
+  ...BN,
   type: "ArrayTypeAnnotation",
-  elementType: FlowTypeAnnotation,
+  elementType: BNFlowType,
 };
 
-export type BooleanTypeAnnotation = { ...Node, type: "BooleanTypeAnnotation" };
+export type BNBooleanTypeAnnotation = {
+  ...BN,
+  type: "BooleanTypeAnnotation",
+};
 
-export type BooleanLiteralTypeAnnotation = {
-  ...Node,
+export type BNBooleanLiteralTypeAnnotation = {
+  ...BN,
   type: "BooleanLiteralTypeAnnotation",
+  value: boolean,
 };
 
-export type NullLiteralTypeAnnotation = {
-  ...Node,
+export type BNNullLiteralTypeAnnotation = {
+  ...BN,
   type: "NullLiteralTypeAnnotation",
 };
 
-export type ClassImplements = {
-  ...Node,
+export type BNClassImplements = {
+  ...BN,
   type: "ClassImplements",
-  id: Identifier,
-  typeParameters: TypeParameterInstantiation,
+  id: BNIdentifier,
+  typeParameters?: BNTypeParameterInstantiation,
 };
 
-export type ClassProperty = {
-  ...Node,
-  type: "ClassProperty",
-  key: Identifier,
-  value: Expression,
-  decorators?: Decorator[],
-  typeAnnotation?: TypeAnnotation,
-};
-
-export type DeclareClass = {
-  ...Node,
+export type BNDeclareClass = {
+  ...BN,
   type: "DeclareClass",
-  id: Identifier,
-  typeParameters: TypeParameterDeclaration,
-  extends: InterfaceExtends[],
-  body: ObjectTypeAnnotation,
+  id: BNIdentifier,
+  typeParameters?: BNTypeParameterDeclaration,
+  body: BNObjectTypeAnnotation,
+  mixins?: Array<BNInterfaceExtends>,
 };
 
-export type DeclareFunction = {
-  ...Node,
+export type BNDeclareFunction = {
+  ...BN,
   type: "DeclareFunction",
-  id: Identifier,
+  id: BNIdentifier,
+  predicate?: BNDeclaredPredicate,
 };
 
-export type DeclareInterface = {
-  ...Node,
+export type BNDeclareInterface = {
+  ...BN,
   type: "DeclareInterface",
-  id: Identifier,
-  typeParameters: TypeParameterDeclaration,
-  extends: InterfaceExtends[],
-  body: ObjectTypeAnnotation,
+  id: BNIdentifier,
+  typeParameters?: BNTypeParameterDeclaration,
+  body: BNObjectTypeAnnotation,
+  mixins?: Array<BNInterfaceExtends>,
 };
 
-export type DeclareModule = {
-  ...Node,
+export type BNDeclareModule = {
+  ...BN,
   type: "DeclareModule",
-  id: StringLiteral | Identifier,
-  body: BlockStatement,
+  id: BNIdentifier | BNStringLiteral,
+  body: BNBlockStatement,
+  kind?: "CommonJS" | "ES",
 };
 
-export type DeclareTypeAlias = {
-  ...Node,
+export type BNDeclareModuleExports = {
+  ...BN,
+  type: "DeclareModuleExports",
+  typeAnnotation: BNTypeAnnotation,
+};
+
+export type BNDeclareTypeAlias = {
+  ...BN,
   type: "DeclareTypeAlias",
-  id: Identifier,
-  typeParameters: TypeParameterDeclaration,
-  right: FlowTypeAnnotation,
+  id: BNIdentifier,
+  typeParameters?: BNTypeParameterDeclaration,
+  right: BNFlowType,
 };
 
-export type DeclareVariable = {
-  ...Node,
+export type BNDeclareOpaqueType = {
+  ...BN,
+  type: "DeclareOpaqueType",
+  id: BNIdentifier,
+  typeParameters?: BNTypeParameterDeclaration,
+  supertype?: BNFlowType,
+};
+
+export type BNDeclareVariable = {
+  ...BN,
   type: "DeclareVariable",
-  id: Identifier,
+  id: BNIdentifier,
 };
 
-export type ExistentialTypeParam = { ...Node, type: "ExistentialTypeParam" };
+export type BNDeclareExportDeclaration = {
+  ...BN,
+  type: "DeclareExportDeclaration",
+  declaration?: BNFlow,
+  specifiers?: Array<BNExportSpecifier | BNExportNamespaceSpecifier>,
+  source?: BNStringLiteral,
+};
 
-export type FunctionTypeAnnotation = {
-  ...Node,
+export type BNDeclareExportAllDeclaration = {
+  ...BN,
+  type: "DeclareExportAllDeclaration",
+  source: BNStringLiteral,
+  exportKind?: "type" | "value",
+};
+
+export type BNDeclaredPredicate = {
+  ...BN,
+  type: "DeclaredPredicate",
+  value: BNFlow,
+};
+
+export type BNExistsTypeAnnotation = {
+  ...BN,
+  type: "ExistsTypeAnnotation",
+};
+
+export type BNFunctionTypeAnnotation = {
+  ...BN,
   type: "FunctionTypeAnnotation",
-  typeParameters: TypeParameterDeclaration,
-  params: FunctionTypeParam[],
-  rest: FunctionTypeParam,
-  returnType: FlowTypeAnnotation,
+  typeParameters?: BNTypeParameterDeclaration,
+  params: Array<BNFunctionTypeParam>,
+  rest?: BNFunctionTypeParam,
+  returnType: BNFlowType,
 };
 
-export type FunctionTypeParam = {
-  ...Node,
+export type BNFunctionTypeParam = {
+  ...BN,
   type: "FunctionTypeParam",
-  name: Identifier,
-  typeAnnotation: FlowTypeAnnotation,
+  name?: BNIdentifier,
+  typeAnnotation: BNFlowType,
+  optional?: boolean,
 };
 
-export type GenericTypeAnnotation = {
-  ...Node,
+export type BNGenericTypeAnnotation = {
+  ...BN,
   type: "GenericTypeAnnotation",
-  id: Identifier,
-  typeParameters: TypeParameterInstantiation,
+  id: BNIdentifier | BNQualifiedTypeIdentifier,
+  typeParameters?: BNTypeParameterInstantiation,
 };
 
-export type InterfaceExtends = {
-  ...Node,
+export type BNInferredPredicate = {
+  ...BN,
+  type: "InferredPredicate",
+};
+
+export type BNInterfaceExtends = {
+  ...BN,
   type: "InterfaceExtends",
-  id: Identifier,
-  typeParameters: TypeParameterInstantiation,
+  id: BNIdentifier | BNQualifiedTypeIdentifier,
+  typeParameters?: BNTypeParameterInstantiation,
 };
 
-export type InterfaceDeclaration = {
-  ...Node,
+export type BNInterfaceDeclaration = {
+  ...BN,
   type: "InterfaceDeclaration",
-  id: Identifier,
-  typeParameters: TypeParameterDeclaration,
-  extends: InterfaceExtends[],
-  mixins?: mixed[],
-  body: ObjectTypeAnnotation,
+  id: BNIdentifier,
+  typeParameters?: BNTypeParameterDeclaration,
+  body: BNObjectTypeAnnotation,
+  mixins?: Array<BNInterfaceExtends>,
 };
 
-export type IntersectionTypeAnnotation = {
-  ...Node,
+export type BNInterfaceTypeAnnotation = {
+  ...BN,
+  type: "InterfaceTypeAnnotation",
+  body: BNObjectTypeAnnotation,
+};
+
+export type BNIntersectionTypeAnnotation = {
+  ...BN,
   type: "IntersectionTypeAnnotation",
-  types: FlowTypeAnnotation[],
+  types: Array<BNFlowType>,
 };
 
-export type MixedTypeAnnotation = { ...Node, type: "MixedTypeAnnotation" };
+export type BNMixedTypeAnnotation = {
+  ...BN,
+  type: "MixedTypeAnnotation",
+};
 
-export type NullableTypeAnnotation = {
-  ...Node,
+export type BNEmptyTypeAnnotation = {
+  ...BN,
+  type: "EmptyTypeAnnotation",
+};
+
+export type BNNullableTypeAnnotation = {
+  ...BN,
   type: "NullableTypeAnnotation",
-  typeAnnotation: FlowTypeAnnotation,
+  typeAnnotation: BNFlowType,
 };
 
-export type NumericLiteralTypeAnnotation = {
-  ...Node,
-  type: "NumericLiteralTypeAnnotation",
+export type BNNumberLiteralTypeAnnotation = {
+  ...BN,
+  type: "NumberLiteralTypeAnnotation",
+  value: number,
 };
 
-export type NumberTypeAnnotation = { ...Node, type: "NumberTypeAnnotation" };
-
-export type StringLiteralTypeAnnotation = {
-  ...Node,
-  type: "StringLiteralTypeAnnotation",
+export type BNNumberTypeAnnotation = {
+  ...BN,
+  type: "NumberTypeAnnotation",
 };
 
-export type StringTypeAnnotation = { ...Node, type: "StringTypeAnnotation" };
-
-export type ThisTypeAnnotation = { ...Node, type: "ThisTypeAnnotation" };
-
-export type TupleTypeAnnotation = {
-  ...Node,
-  type: "TupleTypeAnnotation",
-  types: FlowTypeAnnotation[],
-};
-
-export type TypeofTypeAnnotation = {
-  ...Node,
-  type: "TypeofTypeAnnotation",
-  argument: FlowTypeAnnotation,
-};
-
-export type TypeAlias = {
-  ...Node,
-  type: "TypeAlias",
-  id: Identifier,
-  typeParameters: TypeParameterDeclaration,
-  right: FlowTypeAnnotation,
-};
-
-export type TypeAnnotation = {
-  ...Node,
-  type: "TypeAnnotation",
-  typeAnnotation: FlowTypeAnnotation,
-};
-
-export type TypeCastExpression = {
-  ...Node,
-  type: "TypeCastExpression",
-  expression: Expression,
-  typeAnnotation: FlowTypeAnnotation,
-};
-
-export type TypeParameter = {
-  ...Node,
-  type: "TypeParameterDeclaration",
-  bound: TypeAnnotation | null,
-  default: Flow | null,
-  name: string | null,
-};
-
-export type TypeParameterDeclaration = {
-  ...Node,
-  type: "TypeParameterDeclaration",
-  params: Identifier[],
-};
-
-export type TypeParameterInstantiation = {
-  ...Node,
-  type: "TypeParameterInstantiation",
-  params: FlowTypeAnnotation[],
-};
-
-export type ObjectTypeAnnotation = {
-  ...Node,
+export type BNObjectTypeAnnotation = {
+  ...BN,
   type: "ObjectTypeAnnotation",
-  properties: ObjectTypeProperty[],
-  indexers: ObjectTypeIndexer[],
-  callProperties: ObjectTypeCallProperty[],
+  properties: Array<BNObjectTypeProperty | BNObjectTypeSpreadProperty>,
+  indexers?: Array<BNObjectTypeIndexer>,
+  callProperties?: Array<BNObjectTypeCallProperty>,
+  internalSlots?: Array<BNObjectTypeInternalSlot>,
+  exact?: boolean,
+  inexact?: boolean,
 };
 
-export type ObjectTypeCallProperty = {
-  ...Node,
+export type BNObjectTypeInternalSlot = {
+  ...BN,
+  type: "ObjectTypeInternalSlot",
+  id: BNIdentifier,
+  value: BNFlowType,
+  optional: boolean,
+  method: boolean,
+};
+
+export type BNObjectTypeCallProperty = {
+  ...BN,
   type: "ObjectTypeCallProperty",
-  value: FlowTypeAnnotation,
+  value: BNFlowType,
 };
 
-export type ObjectTypeIndexer = {
-  ...Node,
+export type BNObjectTypeIndexer = {
+  ...BN,
   type: "ObjectTypeIndexer",
-  id: Expression,
-  key: FlowTypeAnnotation,
-  value: FlowTypeAnnotation,
+  id?: BNIdentifier,
+  key: BNFlowType,
+  value: BNFlowType,
+  variance?: BNVariance,
 };
 
-export type ObjectTypeProperty = {
-  ...Node,
+export type BNObjectTypeProperty = {
+  ...BN,
   type: "ObjectTypeProperty",
-  key: Expression,
-  value: FlowTypeAnnotation,
+  key: BNIdentifier | BNStringLiteral,
+  value: BNFlowType,
+  variance?: BNVariance,
+  kind: "init" | "get" | "set",
+  optional: boolean,
+  proto: boolean,
 };
 
-export type QualifiedTypeIdentifier = {
-  ...Node,
+export type BNObjectTypeSpreadProperty = {
+  ...BN,
+  type: "ObjectTypeSpreadProperty",
+  argument: BNFlowType,
+};
+
+export type BNOpaqueType = {
+  ...BN,
+  type: "OpaqueType",
+  id: BNIdentifier,
+  typeParameters?: BNTypeParameterDeclaration,
+  supertype?: BNFlowType,
+  impltype: BNFlowType,
+};
+
+export type BNQualifiedTypeIdentifier = {
+  ...BN,
   type: "QualifiedTypeIdentifier",
-  id: Identifier,
-  qualification: Identifier | QualifiedTypeIdentifier,
+  id: BNIdentifier,
+  qualification: BNIdentifier | BNQualifiedTypeIdentifier,
 };
 
-export type UnionTypeAnnotation = {
-  ...Node,
+export type BNStringLiteralTypeAnnotation = {
+  ...BN,
+  type: "StringLiteralTypeAnnotation",
+  value: string,
+};
+
+export type BNStringTypeAnnotation = {
+  ...BN,
+  type: "StringTypeAnnotation",
+};
+
+export type BNSymbolTypeAnnotation = {
+  ...BN,
+  type: "SymbolTypeAnnotation",
+};
+
+export type BNThisTypeAnnotation = {
+  ...BN,
+  type: "ThisTypeAnnotation",
+};
+
+export type BNTupleTypeAnnotation = {
+  ...BN,
+  type: "TupleTypeAnnotation",
+  types: Array<BNFlowType>,
+};
+
+export type BNTypeofTypeAnnotation = {
+  ...BN,
+  type: "TypeofTypeAnnotation",
+  argument: BNFlowType,
+};
+
+export type BNTypeAlias = {
+  ...BN,
+  type: "TypeAlias",
+  id: BNIdentifier,
+  typeParameters?: BNTypeParameterDeclaration,
+  right: BNFlowType,
+};
+
+export type BNTypeAnnotation = {
+  ...BN,
+  type: "TypeAnnotation",
+  typeAnnotation: BNFlowType,
+};
+
+export type BNTypeCastExpression = {
+  ...BN,
+  type: "TypeCastExpression",
+  expression: BNExpression,
+  typeAnnotation: BNTypeAnnotation,
+};
+
+export type BNTypeParameter = {
+  ...BN,
+  type: "TypeParameter",
+  bound?: BNTypeAnnotation,
+  variance?: BNVariance,
+  name: string,
+};
+
+export type BNTypeParameterDeclaration = {
+  ...BN,
+  type: "TypeParameterDeclaration",
+  params: Array<BNTypeParameter>,
+};
+
+export type BNTypeParameterInstantiation = {
+  ...BN,
+  type: "TypeParameterInstantiation",
+  params: Array<BNFlowType>,
+};
+
+export type BNUnionTypeAnnotation = {
+  ...BN,
   type: "UnionTypeAnnotation",
-  types: FlowTypeAnnotation[],
+  types: Array<BNFlowType>,
 };
 
-export type VoidTypeAnnotation = { ...Node, type: "VoidTypeAnnotation" };
+export type BNVariance = {
+  ...BN,
+  type: "Variance",
+  kind: "minus" | "plus",
+};
 
-export type JSXAttribute = {
-  ...Node,
+export type BNVoidTypeAnnotation = {
+  ...BN,
+  type: "VoidTypeAnnotation",
+};
+
+export type BNEnumDeclaration = {
+  ...BN,
+  type: "EnumDeclaration",
+  id: BNIdentifier,
+  body:
+    | BNEnumBooleanBody
+    | BNEnumNumberBody
+    | BNEnumStringBody
+    | BNEnumSymbolBody,
+};
+
+export type BNEnumBooleanBody = {
+  ...BN,
+  type: "EnumBooleanBody",
+  members: Array<BNEnumBooleanMember>,
+  explicit: boolean,
+};
+
+export type BNEnumNumberBody = {
+  ...BN,
+  type: "EnumNumberBody",
+  members: Array<BNEnumNumberMember>,
+  explicit: boolean,
+};
+
+export type BNEnumStringBody = {
+  ...BN,
+  type: "EnumStringBody",
+  members: Array<BNEnumStringMember | BNEnumDefaultedMember>,
+  explicit: boolean,
+};
+
+export type BNEnumSymbolBody = {
+  ...BN,
+  type: "EnumSymbolBody",
+  members: Array<BNEnumDefaultedMember>,
+};
+
+export type BNEnumBooleanMember = {
+  ...BN,
+  type: "EnumBooleanMember",
+  id: BNIdentifier,
+  init: BNBooleanLiteral,
+};
+
+export type BNEnumNumberMember = {
+  ...BN,
+  type: "EnumNumberMember",
+  id: BNIdentifier,
+  init: BNNumericLiteral,
+};
+
+export type BNEnumStringMember = {
+  ...BN,
+  type: "EnumStringMember",
+  id: BNIdentifier,
+  init: BNStringLiteral,
+};
+
+export type BNEnumDefaultedMember = {
+  ...BN,
+  type: "EnumDefaultedMember",
+  id: BNIdentifier,
+};
+
+export type BNJSXAttribute = {
+  ...BN,
   type: "JSXAttribute",
-  name: JSXIdentifier | JSXNamespacedName,
-  value: JSXElement | StringLiteral | JSXExpressionContainer | null,
+  name: BNJSXIdentifier | BNJSXNamespacedName,
+  value?:
+    | BNJSXElement
+    | BNJSXFragment
+    | BNStringLiteral
+    | BNJSXExpressionContainer,
 };
 
-export type JSXClosingElement = {
-  ...Node,
+export type BNJSXClosingElement = {
+  ...BN,
   type: "JSXClosingElement",
-  name: JSXIdentifier | JSXMemberExpression,
+  name: BNJSXIdentifier | BNJSXMemberExpression | BNJSXNamespacedName,
 };
 
-export type JSXElement = {
-  ...Node,
+export type BNJSXElement = {
+  ...BN,
   type: "JSXElement",
-  openingElement: JSXOpeningElement,
-  closingElement: JSXClosingElement,
-  children: Array<JSXElement | JSXExpressionContainer | JSXText>,
+  openingElement: BNJSXOpeningElement,
+  closingElement?: BNJSXClosingElement,
+  children: Array<
+    | BNJSXText
+    | BNJSXExpressionContainer
+    | BNJSXSpreadChild
+    | BNJSXElement
+    | BNJSXFragment
+  >,
   selfClosing?: boolean,
 };
 
-export type JSXEmptyExpression = { ...Node, type: "JSXEmptyExpression" };
+export type BNJSXEmptyExpression = {
+  ...BN,
+  type: "JSXEmptyExpression",
+};
 
-export type JSXExpressionContainer = {
-  ...Node,
+export type BNJSXExpressionContainer = {
+  ...BN,
   type: "JSXExpressionContainer",
-  expression: Expression,
+  expression: BNExpression | BNJSXEmptyExpression,
 };
 
-export type JSXIdentifier = { ...Node, type: "JSXIdentifier", name: string };
+export type BNJSXSpreadChild = {
+  ...BN,
+  type: "JSXSpreadChild",
+  expression: BNExpression,
+};
 
-export type JSXMemberExpression = {
-  ...Node,
+export type BNJSXIdentifier = {
+  ...BN,
+  type: "JSXIdentifier",
+  name: string,
+};
+
+export type BNJSXMemberExpression = {
+  ...BN,
   type: "JSXMemberExpression",
-  object: JSXMemberExpression | JSXIdentifier,
-  property: JSXIdentifier,
+  object: BNJSXMemberExpression | BNJSXIdentifier,
+  property: BNJSXIdentifier,
 };
 
-export type JSXNamespacedName = {
-  ...Node,
+export type BNJSXNamespacedName = {
+  ...BN,
   type: "JSXNamespacedName",
-  namespace: JSXIdentifier,
-  name: JSXIdentifier,
+  namespace: BNJSXIdentifier,
+  name: BNJSXIdentifier,
 };
 
-export type JSXOpeningElement = {
-  ...Node,
+export type BNJSXOpeningElement = {
+  ...BN,
   type: "JSXOpeningElement",
-  name: JSXIdentifier | JSXMemberExpression,
-  selfClosing: boolean,
-  attributes: JSXAttribute[],
+  name: BNJSXIdentifier | BNJSXMemberExpression | BNJSXNamespacedName,
+  attributes: Array<BNJSXAttribute | BNJSXSpreadAttribute>,
+  selfClosing?: boolean,
+  typeParameters?:
+    | BNTypeParameterInstantiation
+    | BNTSTypeParameterInstantiation,
 };
 
-export type JSXSpreadAttribute = {
-  ...Node,
+export type BNJSXSpreadAttribute = {
+  ...BN,
   type: "JSXSpreadAttribute",
-  argument: Expression,
+  argument: BNExpression,
 };
 
-export type JSXText = { ...Node, type: "JSXText", value: string };
+export type BNJSXText = { ...BN, type: "JSXText", value: string };
 
-export type Noop = { ...Node, type: "Noop" };
-
-export type ParenthesizedExpression = {
-  ...Node,
-  type: "ParenthesizedExpression",
-  expression: Expression,
+export type BNJSXFragment = {
+  ...BN,
+  type: "JSXFragment",
+  openingFragment: BNJSXOpeningFragment,
+  closingFragment: BNJSXClosingFragment,
+  children: Array<
+    | BNJSXText
+    | BNJSXExpressionContainer
+    | BNJSXSpreadChild
+    | BNJSXElement
+    | BNJSXFragment
+  >,
 };
 
-export type AwaitExpression = {
-  ...Node,
-  type: "AwaitExpression",
-  argument: Expression,
+export type BNJSXOpeningFragment = {
+  ...BN,
+  type: "JSXOpeningFragment",
 };
 
-export type BindExpression = {
-  ...Node,
+export type BNJSXClosingFragment = {
+  ...BN,
+  type: "JSXClosingFragment",
+};
+
+export type BNNoop = { ...BN, type: "Noop" };
+
+export type BNPlaceholder = {
+  ...BN,
+  type: "Placeholder",
+  expectedNode:
+    | "Identifier"
+    | "StringLiteral"
+    | "Expression"
+    | "Statement"
+    | "Declaration"
+    | "BlockStatement"
+    | "ClassBody"
+    | "Pattern",
+  name: BNIdentifier,
+};
+
+export type BNV8IntrinsicIdentifier = {
+  ...BN,
+  type: "V8IntrinsicIdentifier",
+  name: string,
+};
+
+export type BNArgumentPlaceholder = {
+  ...BN,
+  type: "ArgumentPlaceholder",
+};
+
+export type BNBindExpression = {
+  ...BN,
   type: "BindExpression",
-  object: Expression,
-  callee: Expression,
+  object: BNExpression,
+  callee: BNExpression,
 };
 
-export type Decorator = { ...Node, type: "Decorator", expression: Expression };
+export type BNClassProperty = {
+  ...BN,
+  type: "ClassProperty",
+  key: BNIdentifier | BNStringLiteral | BNNumericLiteral | BNExpression,
+  value?: BNExpression,
+  typeAnnotation?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
+  decorators?: Array<BNDecorator>,
+  computed?: boolean,
+  abstract?: boolean,
+  accessibility?: "public" | "private" | "protected",
+  declare?: boolean,
+  definite?: boolean,
+  optional?: boolean,
+  readonly?: boolean,
+};
 
-export type DoExpression = {
-  ...Node,
+export type BNPipelineTopicExpression = {
+  ...BN,
+  type: "PipelineTopicExpression",
+  expression: BNExpression,
+};
+
+export type BNPipelineBareFunction = {
+  ...BN,
+  type: "PipelineBareFunction",
+  callee: BNExpression,
+};
+
+export type BNPipelinePrimaryTopicReference = {
+  ...BN,
+  type: "PipelinePrimaryTopicReference",
+};
+
+export type BNClassPrivateProperty = {
+  ...BN,
+  type: "ClassPrivateProperty",
+  key: BNPrivateName,
+  value?: BNExpression,
+  decorators?: Array<BNDecorator>,
+};
+
+export type BNClassPrivateMethod = {
+  ...BN,
+  type: "ClassPrivateMethod",
+  kind?: "get" | "set" | "method" | "constructor",
+  key: BNPrivateName,
+  params: Array<
+    BNIdentifier | BNPattern | BNRestElement | BNTSParameterProperty
+  >,
+  body: BNBlockStatement,
+  abstract?: boolean,
+  access?: "public" | "private" | "protected",
+  accessibility?: "public" | "private" | "protected",
+  async?: boolean,
+  computed?: boolean,
+  decorators?: Array<BNDecorator>,
+  generator?: boolean,
+  optional?: boolean,
+  returnType?: BNTypeAnnotation | BNTSTypeAnnotation | BNNoop,
+  typeParameters?:
+    | BNTypeParameterDeclaration
+    | BNTSTypeParameterDeclaration
+    | BNNoop,
+};
+
+export type BNImportAttribute = {
+  ...BN,
+  type: "ImportAttribute",
+  key: BNIdentifier | BNStringLiteral,
+  value: BNStringLiteral,
+};
+
+export type BNDecorator = {
+  ...BN,
+  type: "Decorator",
+  expression: BNExpression,
+};
+
+export type BNDoExpression = {
+  ...BN,
   type: "DoExpression",
-  body: BlockStatement,
+  body: BNBlockStatement,
 };
 
-export type ExportDefaultSpecifier = {
-  ...Node,
+export type BNExportDefaultSpecifier = {
+  ...BN,
   type: "ExportDefaultSpecifier",
-  exported: Identifier,
+  exported: BNIdentifier,
 };
 
-export type ExportNamespaceSpecifier = {
-  ...Node,
-  type: "ExportNamespaceSpecifier",
-  exported: Identifier,
+export type BNPrivateName = {
+  ...BN,
+  type: "PrivateName",
+  id: BNIdentifier,
 };
 
-export type RestProperty = { ...Node, type: "RestProperty", argument: LVal };
-
-export type SpreadProperty = {
-  ...Node,
-  type: "SpreadProperty",
-  argument: Expression,
+export type BNRecordExpression = {
+  ...BN,
+  type: "RecordExpression",
+  properties: Array<BNObjectProperty | BNSpreadElement>,
 };
 
-export type TSAnyKeyword = { ...Node, type: "TSAnyKeyword" };
-
-export type TSArrayType = { ...Node, type: "TSArrayType", elementType: TSType };
-
-export type TSAsExpression = {
-  ...Node,
-  type: "TSAsExpression",
-  expression: Expression,
-  typeAnnotation: TSType,
+export type BNTupleExpression = {
+  ...BN,
+  type: "TupleExpression",
+  elements?: Array<BNExpression | BNSpreadElement>,
 };
 
-export type TSBooleanKeyword = { ...Node, type: "TSBooleanKeyword" };
-
-export type TSCallSignatureDeclaration = {
-  ...Node,
-  type: "TSCallSignatureDeclaration",
-  typeParameters: TypeParameterDeclaration | null,
-  parameters: Array<Identifier | RestElement> | null,
-  typeAnnotation: TSTypeAnnotation | null,
+export type BNDecimalLiteral = {
+  ...BN,
+  type: "DecimalLiteral",
+  value: string,
 };
 
-export type TSConstructSignatureDeclaration = {
-  ...Node,
-  type: "TSConstructSignatureDeclaration",
-  typeParameters: TypeParameterDeclaration | null,
-  parameters: Array<Identifier | RestElement> | null,
-  typeAnnotation: TSTypeAnnotation | null,
+export type BNStaticBlock = {
+  ...BN,
+  type: "StaticBlock",
+  body: Array<BNStatement>,
 };
 
-export type TSConstructorType = {
-  ...Node,
-  type: "TSConstructorType",
-  typeParameters: TypeParameterDeclaration | null,
-  typeAnnotation: TSTypeAnnotation | null,
-  parameters: Array<Identifier | RestElement> | null,
-};
-
-export type TSDeclareFunction = {
-  ...Node,
-  type: "TSDeclareFunction",
-  id: Identifier | null,
-  typeParameters: TypeParameterDeclaration | Noop | null,
-  params: LVal[],
-  returnType: TypeAnnotation | TSTypeAnnotation | Noop | null,
-  async: boolean,
-  declare: boolean | null,
-  generator: boolean,
-};
-
-export type TSDeclareMethod = {
-  ...Node,
-  type: "TSDeclareMethod",
-  decorators: Decorator[] | null,
-  key: Expression,
-  typeParameters: TypeParameterDeclaration | Noop | null,
-  params: LVal[],
-  returnType: TypeAnnotation | TSTypeAnnotation | Noop | null,
-  abstract: boolean | null,
-  access: "public" | "private" | "protected" | null,
-  accessibility: "public" | "private" | "protected" | null,
-  async: boolean,
-  computed: boolean,
-  generator: boolean,
-  kind: "get" | "set" | "method" | "constructor",
-  optional: boolean | null,
-  static: boolean | null,
-};
-
-export type TSEnumDeclaration = {
-  ...Node,
-  type: "TSEnumDeclaration",
-  id: Identifier,
-  members: TSEnumMember[],
-  const: boolean | null,
-  declare: boolean | null,
-  initializer: Expression | null,
-};
-
-export type TSEnumMember = {
-  ...Node,
-  type: "TSEnumMember",
-  id: Identifier | StringLiteral,
-  initializer: Expression | null,
-};
-
-export type TSExportAssignment = {
-  ...Node,
-  type: "TSExportAssignment",
-  expression: Expression,
-};
-
-export type TSExpressionWithTypeArguments = {
-  ...Node,
-  type: "TSExpressionWithTypeArguments",
-  expression: TSEntityName,
-  typeParameters: TypeParameterInstantiation | null,
-};
-
-export type TSExternalModuleReference = {
-  ...Node,
-  type: "TSExternalModuleReference",
-  expression: StringLiteral,
-};
-
-export type TSFunctionType = {
-  ...Node,
-  type: "TSFunctionType",
-  typeParameters: TypeParameterDeclaration | null,
-  typeAnnotation: TSTypeAnnotation | null,
-  parameters: Array<Identifier | RestElement> | null,
-};
-
-export type TSImportEqualsDeclaration = {
-  ...Node,
-  type: "TSImportEqualsDeclaration",
-  id: Identifier,
-  moduleReference: TSEntityName | TSExternalModuleReference,
-  isExport: boolean | null,
-};
-
-export type TSIndexSignature = {
-  ...Node,
-  type: "TSIndexSignature",
-  parameters: Identifier[],
-  typeAnnotation: TSTypeAnnotation | null,
-  readonly: boolean | null,
-};
-
-export type TSIndexedAccessType = {
-  ...Node,
-  type: "TSIndexedAccessType",
-  objectType: TSType,
-  indexType: TSType,
-};
-
-export type TSInterfaceBody = {
-  ...Node,
-  type: "TSInterfaceBody",
-  body: TSTypeElement[],
-};
-
-export type TSInterfaceDeclaration = {
-  ...Node,
-  type: "TSInterfaceDeclaration",
-  id: Identifier,
-  typeParameters: TypeParameterDeclaration | null,
-  extends: TSExpressionWithTypeArguments[] | null,
-  body: TSInterfaceBody,
-  declare: boolean | null,
-};
-
-export type TSIntersectionType = {
-  ...Node,
-  type: "TSIntersectionType",
-  types: TSType[],
-};
-
-export type TSLiteralType = {
-  ...Node,
-  type: "TSLiteralType",
-  literal: NumericLiteral | StringLiteral | BooleanLiteral,
-};
-
-export type TSMappedType = {
-  ...Node,
-  type: "TSMappedType",
-  typeParameter: TypeParameter,
-  typeAnnotation: TSType | null,
-  optional: boolean | null,
-  readonly: boolean | null,
-};
-
-export type TSMethodSignature = {
-  ...Node,
-  type: "TSMethodSignature",
-  key: Expression,
-  typeParameters: TypeParameterDeclaration | null,
-  parameters: Array<Identifier | RestElement> | null,
-  typeAnnotation: TSTypeAnnotation | null,
-  computed: boolean | null,
-  optional: boolean | null,
-};
-
-export type TSModuleBlock = {
-  ...Node,
-  type: "TSModuleBlock",
-  body: Statement[],
-};
-
-export type TSModuleDeclaration = {
-  ...Node,
-  type: "TSModuleDeclaration",
-  id: Identifier | StringLiteral,
-  body: TSModuleBlock | TSModuleDeclaration,
-  declare: boolean | null,
-  global: boolean | null,
-};
-
-export type TSNamespaceExportDeclaration = {
-  ...Node,
-  type: "TSNamespaceExportDeclaration",
-  id: Identifier,
-};
-
-export type TSNeverKeyword = { ...Node, type: "TSNeverKeyword" };
-
-export type TSNonNullExpression = {
-  ...Node,
-  type: "TSNonNullExpression",
-  expression: Expression,
-};
-
-export type TSNullKeyword = { ...Node, type: "TSNullKeyword" };
-
-export type TSNumberKeyword = { ...Node, type: "TSNumberKeyword" };
-
-export type TSObjectKeyword = { ...Node, type: "TSObjectKeyword" };
-
-export type TSParameterProperty = {
-  ...Node,
+export type BNTSParameterProperty = {
+  ...BN,
   type: "TSParameterProperty",
-  parameter: Identifier | AssignmentPattern,
-  accessibility: "public" | "private" | "protected" | null,
-  readonly: boolean | null,
+  parameter: BNIdentifier | BNAssignmentPattern,
+  accessibility?: "public" | "private" | "protected",
+  readonly?: boolean,
 };
 
-export type TSParenthesizedType = {
-  ...Node,
-  type: "TSParenthesizedType",
-  typeAnnotation: TSType,
+export type BNTSDeclareFunction = {
+  ...BN,
+  type: "TSDeclareFunction",
+  id?: BNIdentifier,
+  typeParameters?: BNTSTypeParameterDeclaration | BNNoop,
+  params: Array<
+    BNIdentifier | BNPattern | BNRestElement | BNTSParameterProperty
+  >,
+  returnType?: BNTSTypeAnnotation | BNNoop,
+  async?: boolean,
+  declare?: boolean,
+  generator?: boolean,
 };
 
-export type TSPropertySignature = {
-  ...Node,
-  type: "TSPropertySignature",
-  key: Expression,
-  typeAnnotation: TSTypeAnnotation | null,
-  initializer: Expression | null,
-  computed: boolean | null,
-  optional: boolean | null,
-  readonly: boolean | null,
+export type BNTSDeclareMethod = {
+  ...BN,
+  type: "TSDeclareMethod",
+  decorators?: Array<BNDecorator>,
+  key: BNIdentifier | BNStringLiteral | BNNumericLiteral | BNExpression,
+  typeParameters?: BNTSTypeParameterDeclaration | BNNoop,
+  params: Array<
+    BNIdentifier | BNPattern | BNRestElement | BNTSParameterProperty
+  >,
+  returnType?: BNTSTypeAnnotation | BNNoop,
+  abstract?: boolean,
+  access?: "public" | "private" | "protected",
+  accessibility?: "public" | "private" | "protected",
+  async?: boolean,
+  computed?: boolean,
+  generator?: boolean,
+  kind?: "get" | "set" | "method" | "constructor",
+  optional?: boolean,
 };
 
-export type TSQualifiedName = {
-  ...Node,
+export type BNTSQualifiedName = {
+  ...BN,
   type: "TSQualifiedName",
-  left: TSEntityName,
-  right: Identifier,
+  left: BNTSEntityName,
+  right: BNIdentifier,
 };
 
-export type TSStringKeyword = { ...Node, type: "TSStringKeyword" };
-
-export type TSSymbolKeyword = { ...Node, type: "TSSymbolKeyword" };
-
-export type TSThisType = { ...Node, type: "TSThisType" };
-
-export type TSTupleType = {
-  ...Node,
-  type: "TSTupleType",
-  elementTypes: TSType[],
+export type BNTSCallSignatureDeclaration = {
+  ...BN,
+  type: "TSCallSignatureDeclaration",
+  typeParameters?: BNTSTypeParameterDeclaration,
+  parameters: Array<BNIdentifier | BNRestElement>,
+  typeAnnotation?: BNTSTypeAnnotation,
 };
 
-export type TSTypeAliasDeclaration = {
-  ...Node,
-  type: "TSTypeAliasDeclaration",
-  id: Identifier,
-  typeParameters: TypeParameterDeclaration | null,
-  typeAnnotation: TSType,
-  declare: boolean | null,
+export type BNTSConstructSignatureDeclaration = {
+  ...BN,
+  type: "TSConstructSignatureDeclaration",
+  typeParameters?: BNTSTypeParameterDeclaration,
+  parameters: Array<BNIdentifier | BNRestElement>,
+  typeAnnotation?: BNTSTypeAnnotation,
 };
 
-export type TSTypeAnnotation = {
-  ...Node,
-  type: "TSTypeAnnotation",
-  typeAnnotation: TSType,
+export type BNTSPropertySignature = {
+  ...BN,
+  type: "TSPropertySignature",
+  key: BNExpression,
+  typeAnnotation?: BNTSTypeAnnotation,
+  initializer?: BNExpression,
+  computed?: boolean,
+  optional?: boolean,
+  readonly?: boolean,
 };
 
-export type TSTypeAssertion = {
-  ...Node,
-  type: "TSTypeAssertion",
-  typeAnnotation: TSType,
-  expression: Expression,
+export type BNTSMethodSignature = {
+  ...BN,
+  type: "TSMethodSignature",
+  key: BNExpression,
+  typeParameters?: BNTSTypeParameterDeclaration,
+  parameters: Array<BNIdentifier | BNRestElement>,
+  typeAnnotation?: BNTSTypeAnnotation,
+  computed?: boolean,
+  optional?: boolean,
 };
 
-export type TSTypeLiteral = {
-  ...Node,
-  type: "TSTypeLiteral",
-  members: TSTypeElement[],
+export type BNTSIndexSignature = {
+  ...BN,
+  type: "TSIndexSignature",
+  parameters: Array<BNIdentifier>,
+  typeAnnotation?: BNTSTypeAnnotation,
+  readonly?: boolean,
 };
 
-export type TSTypeOperator = {
-  ...Node,
-  type: "TSTypeOperator",
-  typeAnnotation: TSType,
-  operator: string | null,
+export type BNTSAnyKeyword = { ...BN, type: "TSAnyKeyword" };
+
+export type BNTSBooleanKeyword = {
+  ...BN,
+  type: "TSBooleanKeyword",
 };
 
-export type TSTypeParameter = {
-  ...Node,
-  type: "TSTypeParameter",
-  constraint: TSType | null,
-  default: TSType | null,
-  name: string | null,
+export type BNTSBigIntKeyword = {
+  ...BN,
+  type: "TSBigIntKeyword",
 };
 
-export type TSTypeParameterDeclaration = {
-  ...Node,
-  type: "TSTypeParameterDeclaration",
-  params: TSTypeParameter[],
+export type BNTSIntrinsicKeyword = {
+  ...BN,
+  type: "TSIntrinsicKeyword",
 };
 
-export type TSTypeParameterInstantiation = {
-  ...Node,
-  type: "TSTypeParameterInstantiation",
-  params: TSType[],
+export type BNTSNeverKeyword = { ...BN, type: "TSNeverKeyword" };
+
+export type BNTSNullKeyword = { ...BN, type: "TSNullKeyword" };
+
+export type BNTSNumberKeyword = {
+  ...BN,
+  type: "TSNumberKeyword",
 };
 
-export type TSTypePredicate = {
-  ...Node,
-  type: "TSTypePredicate",
-  parameterName: Identifier | TSThisType,
-  typeAnnotation: TSTypeAnnotation,
+export type BNTSObjectKeyword = {
+  ...BN,
+  type: "TSObjectKeyword",
 };
 
-export type TSTypeQuery = {
-  ...Node,
-  type: "TSTypeQuery",
-  exprName: TSEntityName,
+export type BNTSStringKeyword = {
+  ...BN,
+  type: "TSStringKeyword",
 };
 
-export type TSTypeReference = {
-  ...Node,
+export type BNTSSymbolKeyword = {
+  ...BN,
+  type: "TSSymbolKeyword",
+};
+
+export type BNTSUndefinedKeyword = {
+  ...BN,
+  type: "TSUndefinedKeyword",
+};
+
+export type BNTSUnknownKeyword = {
+  ...BN,
+  type: "TSUnknownKeyword",
+};
+
+export type BNTSVoidKeyword = { ...BN, type: "TSVoidKeyword" };
+
+export type BNTSThisType = { ...BN, type: "TSThisType" };
+
+export type BNTSFunctionType = {
+  ...BN,
+  type: "TSFunctionType",
+  typeParameters?: BNTSTypeParameterDeclaration,
+  parameters: Array<BNIdentifier | BNRestElement>,
+  typeAnnotation?: BNTSTypeAnnotation,
+};
+
+export type BNTSConstructorType = {
+  ...BN,
+  type: "TSConstructorType",
+  typeParameters?: BNTSTypeParameterDeclaration,
+  parameters: Array<BNIdentifier | BNRestElement>,
+  typeAnnotation?: BNTSTypeAnnotation,
+};
+
+export type BNTSTypeReference = {
+  ...BN,
   type: "TSTypeReference",
-  typeName: TSEntityName,
-  typeParameters: TypeParameterInstantiation | null,
+  typeName: BNTSEntityName,
+  typeParameters?: BNTSTypeParameterInstantiation,
 };
 
-export type TSUndefinedKeyword = { ...Node, type: "TSUndefinedKeyword" };
+export type BNTSTypePredicate = {
+  ...BN,
+  type: "TSTypePredicate",
+  parameterName: BNIdentifier | BNTSThisType,
+  typeAnnotation?: BNTSTypeAnnotation,
+  asserts?: boolean,
+};
 
-export type TSUnionType = { ...Node, type: "TSUnionType", types: TSType[] };
+export type BNTSTypeQuery = {
+  ...BN,
+  type: "TSTypeQuery",
+  exprName: BNTSEntityName | BNTSImportType,
+};
 
-export type TSVoidKeyword = { ...Node, type: "TSVoidKeyword" };
+export type BNTSTypeLiteral = {
+  ...BN,
+  type: "TSTypeLiteral",
+  members: Array<BNTSTypeElement>,
+};
 
-export type Expression =
-  | ArrayExpression
-  | AssignmentExpression
-  | BinaryExpression
-  | CallExpression
-  | ConditionalExpression
-  | FunctionExpression
-  | Identifier
-  | StringLiteral
-  | NumericLiteral
-  | BooleanLiteral
-  | NullLiteral
-  | RegExpLiteral
-  | LogicalExpression
-  | MemberExpression
-  | NewExpression
-  | ObjectExpression
-  | SequenceExpression
-  | ThisExpression
-  | UnaryExpression
-  | UpdateExpression
-  | ArrowFunctionExpression
-  | ClassExpression
-  | MetaProperty
-  | Super
-  | TaggedTemplateExpression
-  | TemplateLiteral
-  | YieldExpression
-  | TypeCastExpression
-  | JSXElement
-  | JSXEmptyExpression
-  | JSXIdentifier
-  | JSXMemberExpression
-  | ParenthesizedExpression
-  | AwaitExpression
-  | BindExpression
-  | DoExpression
-  | TSAsExpression
-  | TSNonNullExpression
-  | TSTypeAssertion;
+export type BNTSArrayType = {
+  ...BN,
+  type: "TSArrayType",
+  elementType: BNTSType,
+};
 
-export type Binary = BinaryExpression | LogicalExpression;
+export type BNTSTupleType = {
+  ...BN,
+  type: "TSTupleType",
+  elementTypes: Array<BNTSType | BNTSNamedTupleMember>,
+};
 
-export type Scopable =
-  | BlockStatement
-  | CatchClause
-  | DoWhileStatement
-  | ForInStatement
-  | ForStatement
-  | FunctionDeclaration
-  | FunctionExpression
-  | Program
-  | ObjectMethod
-  | SwitchStatement
-  | WhileStatement
-  | ArrowFunctionExpression
-  | ClassDeclaration
-  | ClassExpression
-  | ForOfStatement
-  | ClassMethod;
+export type BNTSOptionalType = {
+  ...BN,
+  type: "TSOptionalType",
+  typeAnnotation: BNTSType,
+};
 
-export type BlockParent =
-  | BlockStatement
-  | DoWhileStatement
-  | ForInStatement
-  | ForStatement
-  | FunctionDeclaration
-  | FunctionExpression
-  | Program
-  | ObjectMethod
-  | SwitchStatement
-  | WhileStatement
-  | ArrowFunctionExpression
-  | ForOfStatement
-  | ClassMethod;
+export type BNTSRestType = {
+  ...BN,
+  type: "TSRestType",
+  typeAnnotation: BNTSType,
+};
 
-export type Block = BlockStatement | Program;
+export type BNTSNamedTupleMember = {
+  ...BN,
+  type: "TSNamedTupleMember",
+  label: BNIdentifier,
+  elementType: BNTSType,
+  optional?: boolean,
+};
 
-export type Statement =
-  | BlockStatement
-  | DebuggerStatement
-  | ExpressionStatement;
-//| BreakStatement
-//| ContinueStatement
-//| DoWhileStatement
-//| EmptyStatement
-//| ForInStatement
-//| ForStatement
-//| FunctionDeclaration
-//| IfStatement
-//| LabeledStatement
-//| ReturnStatement
-//| SwitchStatement
-//| ThrowStatement
-//| TryStatement
-//| VariableDeclaration
-//| WhileStatement
-//| WithStatement
-//| ClassDeclaration
-//| ExportAllDeclaration
-//| ExportDefaultDeclaration
-//| ExportNamedDeclaration
-//| ForOfStatement
-//| ImportDeclaration
-//| DeclareClass
-//| DeclareFunction
-//| DeclareInterface
-//| DeclareModule
-//| DeclareTypeAlias
-//| DeclareVariable
-//| InterfaceDeclaration
-//| TypeAlias
-//| TSDeclareFunction
-//| TSEnumDeclaration
-//| TSExportAssignment
-//| TSImportEqualsDeclaration
-//| TSInterfaceDeclaration
-//| TSModuleDeclaration
-//| TSNamespaceExportDeclaration
-//| TSTypeAliasDeclaration;
+export type BNTSUnionType = {
+  ...BN,
+  type: "TSUnionType",
+  types: Array<BNTSType>,
+};
 
-export type Terminatorless =
-  | BreakStatement
-  | ContinueStatement
-  | ReturnStatement
-  | ThrowStatement
-  | YieldExpression
-  | AwaitExpression;
-export type CompletionStatement =
-  | BreakStatement
-  | ContinueStatement
-  | ReturnStatement
-  | ThrowStatement;
-export type Conditional = ConditionalExpression | IfStatement;
-export type Loop =
-  | DoWhileStatement
-  | ForInStatement
-  | ForStatement
-  | WhileStatement
-  | ForOfStatement;
-export type While = DoWhileStatement | WhileStatement;
-export type ExpressionWrapper =
-  | ExpressionStatement
-  | TypeCastExpression
-  | ParenthesizedExpression;
-export type For = ForInStatement | ForStatement | ForOfStatement;
-export type ForXStatement = ForInStatement | ForOfStatement;
-export type Function =
-  | FunctionDeclaration
-  | FunctionExpression
-  | ObjectMethod
-  | ArrowFunctionExpression
-  | ClassMethod;
-export type FunctionParent =
-  | FunctionDeclaration
-  | FunctionExpression
-  | Program
-  | ObjectMethod
-  | ArrowFunctionExpression
-  | ClassMethod;
-export type Pureish =
-  | FunctionDeclaration
-  | FunctionExpression
-  | StringLiteral
-  | NumericLiteral
-  | BooleanLiteral
-  | NullLiteral
-  | ArrowFunctionExpression
-  | ClassDeclaration
-  | ClassExpression;
+export type BNTSIntersectionType = {
+  ...BN,
+  type: "TSIntersectionType",
+  types: Array<BNTSType>,
+};
 
-export type Declaration =
-  | FunctionDeclaration
-  | VariableDeclaration
-  | ClassDeclaration
-  | ExportAllDeclaration
-  | ExportDefaultDeclaration
-  | ExportNamedDeclaration
-  | ImportDeclaration
-  | DeclareClass
-  | DeclareFunction
-  | DeclareInterface
-  | DeclareModule
-  | DeclareTypeAlias
-  | DeclareVariable
-  | InterfaceDeclaration
-  | TypeAlias
-  | TSDeclareFunction
-  | TSEnumDeclaration
-  | TSInterfaceDeclaration
-  | TSModuleDeclaration
-  | TSTypeAliasDeclaration;
+export type BNTSConditionalType = {
+  ...BN,
+  type: "TSConditionalType",
+  checkType: BNTSType,
+  extendsType: BNTSType,
+  trueType: BNTSType,
+  falseType: BNTSType,
+};
 
-export type LVal =
-  | Identifier
-  | MemberExpression
-  | RestElement
-  | AssignmentPattern
-  | ArrayPattern
-  | ObjectPattern
-  | TSParameterProperty;
-export type Literal =
-  | StringLiteral
-  | NumericLiteral
-  | BooleanLiteral
-  | NullLiteral
-  | RegExpLiteral
-  | TemplateLiteral;
-export type Immutable =
-  | StringLiteral
-  | NumericLiteral
-  | BooleanLiteral
-  | NullLiteral
-  | JSXAttribute
-  | JSXClosingElement
-  | JSXElement
-  | JSXExpressionContainer
-  | JSXOpeningElement;
-export type UserWhitespacable =
-  | ObjectMethod
-  | ObjectProperty
-  | ObjectTypeCallProperty
-  | ObjectTypeIndexer
-  | ObjectTypeProperty;
-export type Method = ObjectMethod | ClassMethod;
-export type ObjectMember = ObjectMethod | ObjectProperty;
-export type Property = ObjectProperty | ClassProperty;
-export type UnaryLike =
-  | UnaryExpression
-  | SpreadElement
-  | RestProperty
-  | SpreadProperty;
-export type Pattern = AssignmentPattern | ArrayPattern | ObjectPattern;
-export type Class = ClassDeclaration | ClassExpression;
-export type ModuleDeclaration =
-  | ExportAllDeclaration
-  | ExportDefaultDeclaration
-  | ExportNamedDeclaration
-  | ImportDeclaration;
-export type ExportDeclaration =
-  | ExportAllDeclaration
-  | ExportDefaultDeclaration
-  | ExportNamedDeclaration;
-export type ModuleSpecifier =
-  | ExportSpecifier
-  | ImportDefaultSpecifier
-  | ImportNamespaceSpecifier
-  | ImportSpecifier
-  | ExportDefaultSpecifier
-  | ExportNamespaceSpecifier;
+export type BNTSInferType = {
+  ...BN,
+  type: "TSInferType",
+  typeParameter: BNTSTypeParameter,
+};
 
-export type Flow =
-  | AnyTypeAnnotation
-  | ArrayTypeAnnotation
-  | BooleanTypeAnnotation
-  | BooleanLiteralTypeAnnotation
-  | ClassImplements
-  | ClassProperty
-  | DeclareClass
-  | DeclareFunction
-  | DeclareInterface
-  | DeclareModule
-  | DeclareTypeAlias
-  | DeclareVariable
-  | ExistentialTypeParam
-  | FunctionTypeAnnotation
-  | FunctionTypeParam
-  | GenericTypeAnnotation
-  | InterfaceExtends
-  | InterfaceDeclaration
-  | IntersectionTypeAnnotation
-  | MixedTypeAnnotation
-  | NullableTypeAnnotation
-  | NumericLiteralTypeAnnotation
-  | NumberTypeAnnotation
-  | StringLiteralTypeAnnotation
-  | StringTypeAnnotation
-  | ThisTypeAnnotation
-  | TupleTypeAnnotation
-  | TypeofTypeAnnotation
-  | TypeAlias
-  | TypeAnnotation
-  | TypeCastExpression
-  | TypeParameterDeclaration
-  | TypeParameterInstantiation
-  | ObjectTypeAnnotation
-  | ObjectTypeCallProperty
-  | ObjectTypeIndexer
-  | ObjectTypeProperty
-  | QualifiedTypeIdentifier
-  | UnionTypeAnnotation
-  | VoidTypeAnnotation;
+export type BNTSParenthesizedType = {
+  ...BN,
+  type: "TSParenthesizedType",
+  typeAnnotation: BNTSType,
+};
 
-export type FlowTypeAnnotation =
-  | AnyTypeAnnotation
-  | ArrayTypeAnnotation
-  | BooleanTypeAnnotation
-  | BooleanLiteralTypeAnnotation
-  | FunctionTypeAnnotation
-  | GenericTypeAnnotation
-  | IntersectionTypeAnnotation
-  | MixedTypeAnnotation
-  | NullableTypeAnnotation
-  | NumericLiteralTypeAnnotation
-  | NumberTypeAnnotation
-  | StringLiteralTypeAnnotation
-  | StringTypeAnnotation
-  | ThisTypeAnnotation
-  | TupleTypeAnnotation
-  | TypeofTypeAnnotation
-  | TypeAnnotation
-  | ObjectTypeAnnotation
-  | UnionTypeAnnotation
-  | VoidTypeAnnotation;
+export type BNTSTypeOperator = {
+  ...BN,
+  type: "TSTypeOperator",
+  typeAnnotation: BNTSType,
+  operator: string,
+};
 
-export type FlowBaseAnnotation =
-  | AnyTypeAnnotation
-  | BooleanTypeAnnotation
-  | MixedTypeAnnotation
-  | NumberTypeAnnotation
-  | StringTypeAnnotation
-  | ThisTypeAnnotation
-  | VoidTypeAnnotation;
-export type FlowDeclaration =
-  | DeclareClass
-  | DeclareFunction
-  | DeclareInterface
-  | DeclareModule
-  | DeclareTypeAlias
-  | DeclareVariable
-  | InterfaceDeclaration
-  | TypeAlias;
+export type BNTSIndexedAccessType = {
+  ...BN,
+  type: "TSIndexedAccessType",
+  objectType: BNTSType,
+  indexType: BNTSType,
+};
 
-export type JSX =
-  | JSXAttribute
-  | JSXClosingElement
-  | JSXElement
-  | JSXEmptyExpression
-  | JSXExpressionContainer
-  | JSXIdentifier
-  | JSXMemberExpression
-  | JSXNamespacedName
-  | JSXOpeningElement
-  | JSXSpreadAttribute
-  | JSXText;
+export type BNTSMappedType = {
+  ...BN,
+  type: "TSMappedType",
+  typeParameter: BNTSTypeParameter,
+  typeAnnotation?: BNTSType,
+  nameType?: BNTSType,
+  optional?: boolean,
+  readonly?: boolean,
+};
 
-export type TSType =
-  | TSAnyKeyword
-  | TSArrayType
-  | TSBooleanKeyword
-  | TSConstructorType
-  | TSExpressionWithTypeArguments
-  | TSFunctionType
-  | TSIndexedAccessType
-  | TSIntersectionType
-  | TSLiteralType
-  | TSMappedType
-  | TSNeverKeyword
-  | TSNullKeyword
-  | TSNumberKeyword
-  | TSObjectKeyword
-  | TSParenthesizedType
-  | TSStringKeyword
-  | TSSymbolKeyword
-  | TSThisType
-  | TSTupleType
-  | TSTypeLiteral
-  | TSTypeOperator
-  | TSTypePredicate
-  | TSTypeQuery
-  | TSTypeReference
-  | TSUndefinedKeyword
-  | TSUnionType
-  | TSVoidKeyword;
+export type BNTSLiteralType = {
+  ...BN,
+  type: "TSLiteralType",
+  literal:
+    | BNNumericLiteral
+    | BNStringLiteral
+    | BNBooleanLiteral
+    | BNBigIntLiteral,
+};
 
-export type TSEntityName = Identifier | TSQualifiedName;
+export type BNTSExpressionWithTypeArguments = {
+  ...BN,
+  type: "TSExpressionWithTypeArguments",
+  expression: BNTSEntityName,
+  typeParameters?: BNTSTypeParameterInstantiation,
+};
 
-export type TSTypeElement =
-  | TSCallSignatureDeclaration
-  | TSConstructSignatureDeclaration
-  | TSIndexSignature
-  | TSMethodSignature
-  | TSPropertySignature;
+export type BNTSInterfaceDeclaration = {
+  ...BN,
+  type: "TSInterfaceDeclaration",
+  id: BNIdentifier,
+  typeParameters?: BNTSTypeParameterDeclaration,
+  body: BNTSInterfaceBody,
+  declare?: boolean,
+};
+
+export type BNTSInterfaceBody = {
+  ...BN,
+  type: "TSInterfaceBody",
+  body: Array<BNTSTypeElement>,
+};
+
+export type BNTSTypeAliasDeclaration = {
+  ...BN,
+  type: "TSTypeAliasDeclaration",
+  id: BNIdentifier,
+  typeParameters?: BNTSTypeParameterDeclaration,
+  typeAnnotation: BNTSType,
+  declare?: boolean,
+};
+
+export type BNTSAsExpression = {
+  ...BN,
+  type: "TSAsExpression",
+  expression: BNExpression,
+  typeAnnotation: BNTSType,
+};
+
+export type BNTSTypeAssertion = {
+  ...BN,
+  type: "TSTypeAssertion",
+  typeAnnotation: BNTSType,
+  expression: BNExpression,
+};
+
+export type BNTSEnumDeclaration = {
+  ...BN,
+  type: "TSEnumDeclaration",
+  id: BNIdentifier,
+  members: Array<BNTSEnumMember>,
+  declare?: boolean,
+  initializer?: BNExpression,
+};
+
+export type BNTSEnumMember = {
+  ...BN,
+  type: "TSEnumMember",
+  id: BNIdentifier | BNStringLiteral,
+  initializer?: BNExpression,
+};
+
+export type BNTSModuleDeclaration = {
+  ...BN,
+  type: "TSModuleDeclaration",
+  id: BNIdentifier | BNStringLiteral,
+  body: BNTSModuleBlock | BNTSModuleDeclaration,
+  declare?: boolean,
+  global?: boolean,
+};
+
+export type BNTSModuleBlock = {
+  ...BN,
+  type: "TSModuleBlock",
+  body: Array<BNStatement>,
+};
+
+export type BNTSImportType = {
+  ...BN,
+  type: "TSImportType",
+  argument: BNStringLiteral,
+  qualifier?: BNTSEntityName,
+  typeParameters?: BNTSTypeParameterInstantiation,
+};
+
+export type BNTSImportEqualsDeclaration = {
+  ...BN,
+  type: "TSImportEqualsDeclaration",
+  id: BNIdentifier,
+  moduleReference: BNTSEntityName | BNTSExternalModuleReference,
+  isExport: boolean,
+};
+
+export type BNTSExternalModuleReference = {
+  ...BN,
+  type: "TSExternalModuleReference",
+  expression: BNStringLiteral,
+};
+
+export type BNTSNonNullExpression = {
+  ...BN,
+  type: "TSNonNullExpression",
+  expression: BNExpression,
+};
+
+export type BNTSExportAssignment = {
+  ...BN,
+  type: "TSExportAssignment",
+  expression: BNExpression,
+};
+
+export type BNTSNamespaceExportDeclaration = {
+  ...BN,
+  type: "TSNamespaceExportDeclaration",
+  id: BNIdentifier,
+};
+
+export type BNTSTypeAnnotation = {
+  ...BN,
+  type: "TSTypeAnnotation",
+  typeAnnotation: BNTSType,
+};
+
+export type BNTSTypeParameterInstantiation = {
+  ...BN,
+  type: "TSTypeParameterInstantiation",
+  params: Array<BNTSType>,
+};
+
+export type BNTSTypeParameterDeclaration = {
+  ...BN,
+  type: "TSTypeParameterDeclaration",
+  params: Array<BNTSTypeParameter>,
+};
+
+export type BNTSTypeParameter = {
+  ...BN,
+  type: "TSTypeParameter",
+  constraint?: BNTSType,
+  name: string,
+};
+
+export type BNExpression =
+  | BNArrayExpression
+  | BNAssignmentExpression
+  | BNBinaryExpression
+  | BNCallExpression
+  | BNConditionalExpression
+  | BNFunctionExpression
+  | BNIdentifier
+  | BNStringLiteral
+  | BNNumericLiteral
+  | BNNullLiteral
+  | BNBooleanLiteral
+  | BNRegExpLiteral
+  | BNLogicalExpression
+  | BNMemberExpression
+  | BNNewExpression
+  | BNObjectExpression
+  | BNSequenceExpression
+  | BNParenthesizedExpression
+  | BNThisExpression
+  | BNUnaryExpression
+  | BNUpdateExpression
+  | BNArrowFunctionExpression
+  | BNClassExpression
+  | BNMetaProperty
+  | BNSuper
+  | BNTaggedTemplateExpression
+  | BNTemplateLiteral
+  | BNYieldExpression
+  | BNAwaitExpression
+  | BNImport
+  | BNBigIntLiteral
+  | BNOptionalMemberExpression
+  | BNOptionalCallExpression
+  | BNTypeCastExpression
+  | BNJSXElement
+  | BNJSXFragment
+  | BNBindExpression
+  | BNPipelinePrimaryTopicReference
+  | BNDoExpression
+  | BNRecordExpression
+  | BNTupleExpression
+  | BNDecimalLiteral
+  | BNTSAsExpression
+  | BNTSTypeAssertion
+  | BNTSNonNullExpression;
+export type BNBinary = BNBinaryExpression | BNLogicalExpression;
+export type BNScopable =
+  | BNBlockStatement
+  | BNCatchClause
+  | BNDoWhileStatement
+  | BNForInStatement
+  | BNForStatement
+  | BNFunctionDeclaration
+  | BNFunctionExpression
+  | BNProgram
+  | BNObjectMethod
+  | BNSwitchStatement
+  | BNWhileStatement
+  | BNArrowFunctionExpression
+  | BNClassExpression
+  | BNClassDeclaration
+  | BNForOfStatement
+  | BNClassMethod
+  | BNClassPrivateMethod
+  | BNStaticBlock
+  | BNTSModuleBlock;
+export type BNBlockParent =
+  | BNBlockStatement
+  | BNCatchClause
+  | BNDoWhileStatement
+  | BNForInStatement
+  | BNForStatement
+  | BNFunctionDeclaration
+  | BNFunctionExpression
+  | BNProgram
+  | BNObjectMethod
+  | BNSwitchStatement
+  | BNWhileStatement
+  | BNArrowFunctionExpression
+  | BNForOfStatement
+  | BNClassMethod
+  | BNClassPrivateMethod
+  | BNStaticBlock
+  | BNTSModuleBlock;
+export type BNBlock = BNBlockStatement | BNProgram | BNTSModuleBlock;
+export type BNStatement =
+  | BNBlockStatement
+  | BNBreakStatement
+  | BNContinueStatement
+  | BNDebuggerStatement
+  | BNDoWhileStatement
+  | BNEmptyStatement
+  | BNExpressionStatement
+  | BNForInStatement
+  | BNForStatement
+  | BNFunctionDeclaration
+  | BNIfStatement
+  | BNLabeledStatement
+  | BNReturnStatement
+  | BNSwitchStatement
+  | BNThrowStatement
+  | BNTryStatement
+  | BNVariableDeclaration
+  | BNWhileStatement
+  | BNWithStatement
+  | BNClassDeclaration
+  | BNExportAllDeclaration
+  | BNExportDefaultDeclaration
+  | BNExportNamedDeclaration
+  | BNForOfStatement
+  | BNImportDeclaration
+  | BNDeclareClass
+  | BNDeclareFunction
+  | BNDeclareInterface
+  | BNDeclareModule
+  | BNDeclareModuleExports
+  | BNDeclareTypeAlias
+  | BNDeclareOpaqueType
+  | BNDeclareVariable
+  | BNDeclareExportDeclaration
+  | BNDeclareExportAllDeclaration
+  | BNInterfaceDeclaration
+  | BNOpaqueType
+  | BNTypeAlias
+  | BNEnumDeclaration
+  | BNTSDeclareFunction
+  | BNTSInterfaceDeclaration
+  | BNTSTypeAliasDeclaration
+  | BNTSEnumDeclaration
+  | BNTSModuleDeclaration
+  | BNTSImportEqualsDeclaration
+  | BNTSExportAssignment
+  | BNTSNamespaceExportDeclaration;
+export type BNTerminatorless =
+  | BNBreakStatement
+  | BNContinueStatement
+  | BNReturnStatement
+  | BNThrowStatement
+  | BNYieldExpression
+  | BNAwaitExpression;
+export type BNCompletionStatement =
+  | BNBreakStatement
+  | BNContinueStatement
+  | BNReturnStatement
+  | BNThrowStatement;
+export type BNConditional = BNConditionalExpression | BNIfStatement;
+export type BNLoop =
+  | BNDoWhileStatement
+  | BNForInStatement
+  | BNForStatement
+  | BNWhileStatement
+  | BNForOfStatement;
+export type BNWhile = BNDoWhileStatement | BNWhileStatement;
+export type BNExpressionWrapper =
+  | BNExpressionStatement
+  | BNParenthesizedExpression
+  | BNTypeCastExpression;
+export type BNFor = BNForInStatement | BNForStatement | BNForOfStatement;
+export type BNForXStatement = BNForInStatement | BNForOfStatement;
+export type BNFunction =
+  | BNFunctionDeclaration
+  | BNFunctionExpression
+  | BNObjectMethod
+  | BNArrowFunctionExpression
+  | BNClassMethod
+  | BNClassPrivateMethod;
+export type BNFunctionParent =
+  | BNFunctionDeclaration
+  | BNFunctionExpression
+  | BNObjectMethod
+  | BNArrowFunctionExpression
+  | BNClassMethod
+  | BNClassPrivateMethod;
+export type BNPureish =
+  | BNFunctionDeclaration
+  | BNFunctionExpression
+  | BNStringLiteral
+  | BNNumericLiteral
+  | BNNullLiteral
+  | BNBooleanLiteral
+  | BNRegExpLiteral
+  | BNArrowFunctionExpression
+  | BNBigIntLiteral
+  | BNDecimalLiteral;
+export type BNDeclaration =
+  | BNFunctionDeclaration
+  | BNVariableDeclaration
+  | BNClassDeclaration
+  | BNExportAllDeclaration
+  | BNExportDefaultDeclaration
+  | BNExportNamedDeclaration
+  | BNImportDeclaration
+  | BNDeclareClass
+  | BNDeclareFunction
+  | BNDeclareInterface
+  | BNDeclareModule
+  | BNDeclareModuleExports
+  | BNDeclareTypeAlias
+  | BNDeclareOpaqueType
+  | BNDeclareVariable
+  | BNDeclareExportDeclaration
+  | BNDeclareExportAllDeclaration
+  | BNInterfaceDeclaration
+  | BNOpaqueType
+  | BNTypeAlias
+  | BNEnumDeclaration
+  | BNTSDeclareFunction
+  | BNTSInterfaceDeclaration
+  | BNTSTypeAliasDeclaration
+  | BNTSEnumDeclaration
+  | BNTSModuleDeclaration;
+export type BNPatternLike =
+  | BNIdentifier
+  | BNRestElement
+  | BNAssignmentPattern
+  | BNArrayPattern
+  | BNObjectPattern;
+export type BNLVal =
+  | BNIdentifier
+  | BNMemberExpression
+  | BNRestElement
+  | BNAssignmentPattern
+  | BNArrayPattern
+  | BNObjectPattern
+  | BNTSParameterProperty;
+export type BNTSEntityName = BNIdentifier | BNTSQualifiedName;
+export type BNLiteral =
+  | BNStringLiteral
+  | BNNumericLiteral
+  | BNNullLiteral
+  | BNBooleanLiteral
+  | BNRegExpLiteral
+  | BNTemplateLiteral
+  | BNBigIntLiteral
+  | BNDecimalLiteral;
+export type BNImmutable =
+  | BNStringLiteral
+  | BNNumericLiteral
+  | BNNullLiteral
+  | BNBooleanLiteral
+  | BNBigIntLiteral
+  | BNJSXAttribute
+  | BNJSXClosingElement
+  | BNJSXElement
+  | BNJSXExpressionContainer
+  | BNJSXSpreadChild
+  | BNJSXOpeningElement
+  | BNJSXText
+  | BNJSXFragment
+  | BNJSXOpeningFragment
+  | BNJSXClosingFragment
+  | BNDecimalLiteral;
+export type BNUserWhitespacable =
+  | BNObjectMethod
+  | BNObjectProperty
+  | BNObjectTypeInternalSlot
+  | BNObjectTypeCallProperty
+  | BNObjectTypeIndexer
+  | BNObjectTypeProperty
+  | BNObjectTypeSpreadProperty;
+export type BNMethod = BNObjectMethod | BNClassMethod | BNClassPrivateMethod;
+export type BNObjectMember = BNObjectMethod | BNObjectProperty;
+export type BNProperty =
+  | BNObjectProperty
+  | BNClassProperty
+  | BNClassPrivateProperty;
+export type BNUnaryLike = BNUnaryExpression | BNSpreadElement;
+export type BNPattern = BNAssignmentPattern | BNArrayPattern | BNObjectPattern;
+export type BNClass = BNClassExpression | BNClassDeclaration;
+export type BNModuleDeclaration =
+  | BNExportAllDeclaration
+  | BNExportDefaultDeclaration
+  | BNExportNamedDeclaration
+  | BNImportDeclaration;
+export type BNExportDeclaration =
+  | BNExportAllDeclaration
+  | BNExportDefaultDeclaration
+  | BNExportNamedDeclaration;
+export type BNModuleSpecifier =
+  | BNExportSpecifier
+  | BNImportDefaultSpecifier
+  | BNImportNamespaceSpecifier
+  | BNImportSpecifier
+  | BNExportNamespaceSpecifier
+  | BNExportDefaultSpecifier;
+export type BNFlow =
+  | BNAnyTypeAnnotation
+  | BNArrayTypeAnnotation
+  | BNBooleanTypeAnnotation
+  | BNBooleanLiteralTypeAnnotation
+  | BNNullLiteralTypeAnnotation
+  | BNClassImplements
+  | BNDeclareClass
+  | BNDeclareFunction
+  | BNDeclareInterface
+  | BNDeclareModule
+  | BNDeclareModuleExports
+  | BNDeclareTypeAlias
+  | BNDeclareOpaqueType
+  | BNDeclareVariable
+  | BNDeclareExportDeclaration
+  | BNDeclareExportAllDeclaration
+  | BNDeclaredPredicate
+  | BNExistsTypeAnnotation
+  | BNFunctionTypeAnnotation
+  | BNFunctionTypeParam
+  | BNGenericTypeAnnotation
+  | BNInferredPredicate
+  | BNInterfaceExtends
+  | BNInterfaceDeclaration
+  | BNInterfaceTypeAnnotation
+  | BNIntersectionTypeAnnotation
+  | BNMixedTypeAnnotation
+  | BNEmptyTypeAnnotation
+  | BNNullableTypeAnnotation
+  | BNNumberLiteralTypeAnnotation
+  | BNNumberTypeAnnotation
+  | BNObjectTypeAnnotation
+  | BNObjectTypeInternalSlot
+  | BNObjectTypeCallProperty
+  | BNObjectTypeIndexer
+  | BNObjectTypeProperty
+  | BNObjectTypeSpreadProperty
+  | BNOpaqueType
+  | BNQualifiedTypeIdentifier
+  | BNStringLiteralTypeAnnotation
+  | BNStringTypeAnnotation
+  | BNSymbolTypeAnnotation
+  | BNThisTypeAnnotation
+  | BNTupleTypeAnnotation
+  | BNTypeofTypeAnnotation
+  | BNTypeAlias
+  | BNTypeAnnotation
+  | BNTypeCastExpression
+  | BNTypeParameter
+  | BNTypeParameterDeclaration
+  | BNTypeParameterInstantiation
+  | BNUnionTypeAnnotation
+  | BNVariance
+  | BNVoidTypeAnnotation;
+export type BNFlowType =
+  | BNAnyTypeAnnotation
+  | BNArrayTypeAnnotation
+  | BNBooleanTypeAnnotation
+  | BNBooleanLiteralTypeAnnotation
+  | BNNullLiteralTypeAnnotation
+  | BNExistsTypeAnnotation
+  | BNFunctionTypeAnnotation
+  | BNGenericTypeAnnotation
+  | BNInterfaceTypeAnnotation
+  | BNIntersectionTypeAnnotation
+  | BNMixedTypeAnnotation
+  | BNEmptyTypeAnnotation
+  | BNNullableTypeAnnotation
+  | BNNumberLiteralTypeAnnotation
+  | BNNumberTypeAnnotation
+  | BNObjectTypeAnnotation
+  | BNStringLiteralTypeAnnotation
+  | BNStringTypeAnnotation
+  | BNSymbolTypeAnnotation
+  | BNThisTypeAnnotation
+  | BNTupleTypeAnnotation
+  | BNTypeofTypeAnnotation
+  | BNUnionTypeAnnotation
+  | BNVoidTypeAnnotation;
+export type BNFlowBaseAnnotation =
+  | BNAnyTypeAnnotation
+  | BNBooleanTypeAnnotation
+  | BNNullLiteralTypeAnnotation
+  | BNMixedTypeAnnotation
+  | BNEmptyTypeAnnotation
+  | BNNumberTypeAnnotation
+  | BNStringTypeAnnotation
+  | BNSymbolTypeAnnotation
+  | BNThisTypeAnnotation
+  | BNVoidTypeAnnotation;
+export type BNFlowDeclaration =
+  | BNDeclareClass
+  | BNDeclareFunction
+  | BNDeclareInterface
+  | BNDeclareModule
+  | BNDeclareModuleExports
+  | BNDeclareTypeAlias
+  | BNDeclareOpaqueType
+  | BNDeclareVariable
+  | BNDeclareExportDeclaration
+  | BNDeclareExportAllDeclaration
+  | BNInterfaceDeclaration
+  | BNOpaqueType
+  | BNTypeAlias;
+export type BNFlowPredicate = BNDeclaredPredicate | BNInferredPredicate;
+export type BNEnumBody =
+  | BNEnumBooleanBody
+  | BNEnumNumberBody
+  | BNEnumStringBody
+  | BNEnumSymbolBody;
+export type BNEnumMember =
+  | BNEnumBooleanMember
+  | BNEnumNumberMember
+  | BNEnumStringMember
+  | BNEnumDefaultedMember;
+export type BNJSX =
+  | BNJSXAttribute
+  | BNJSXClosingElement
+  | BNJSXElement
+  | BNJSXEmptyExpression
+  | BNJSXExpressionContainer
+  | BNJSXSpreadChild
+  | BNJSXIdentifier
+  | BNJSXMemberExpression
+  | BNJSXNamespacedName
+  | BNJSXOpeningElement
+  | BNJSXSpreadAttribute
+  | BNJSXText
+  | BNJSXFragment
+  | BNJSXOpeningFragment
+  | BNJSXClosingFragment;
+export type BNPrivate =
+  | BNClassPrivateProperty
+  | BNClassPrivateMethod
+  | BNPrivateName;
+export type BNTSTypeElement =
+  | BNTSCallSignatureDeclaration
+  | BNTSConstructSignatureDeclaration
+  | BNTSPropertySignature
+  | BNTSMethodSignature
+  | BNTSIndexSignature;
+export type BNTSType =
+  | BNTSAnyKeyword
+  | BNTSBooleanKeyword
+  | BNTSBigIntKeyword
+  | BNTSIntrinsicKeyword
+  | BNTSNeverKeyword
+  | BNTSNullKeyword
+  | BNTSNumberKeyword
+  | BNTSObjectKeyword
+  | BNTSStringKeyword
+  | BNTSSymbolKeyword
+  | BNTSUndefinedKeyword
+  | BNTSUnknownKeyword
+  | BNTSVoidKeyword
+  | BNTSThisType
+  | BNTSFunctionType
+  | BNTSConstructorType
+  | BNTSTypeReference
+  | BNTSTypePredicate
+  | BNTSTypeQuery
+  | BNTSTypeLiteral
+  | BNTSArrayType
+  | BNTSTupleType
+  | BNTSOptionalType
+  | BNTSRestType
+  | BNTSUnionType
+  | BNTSIntersectionType
+  | BNTSConditionalType
+  | BNTSInferType
+  | BNTSParenthesizedType
+  | BNTSTypeOperator
+  | BNTSIndexedAccessType
+  | BNTSMappedType
+  | BNTSLiteralType
+  | BNTSExpressionWithTypeArguments
+  | BNTSImportType;
+export type BNTSBaseType =
+  | BNTSAnyKeyword
+  | BNTSBooleanKeyword
+  | BNTSBigIntKeyword
+  | BNTSIntrinsicKeyword
+  | BNTSNeverKeyword
+  | BNTSNullKeyword
+  | BNTSNumberKeyword
+  | BNTSObjectKeyword
+  | BNTSStringKeyword
+  | BNTSSymbolKeyword
+  | BNTSUndefinedKeyword
+  | BNTSUnknownKeyword
+  | BNTSVoidKeyword
+  | BNTSThisType
+  | BNTSLiteralType;
