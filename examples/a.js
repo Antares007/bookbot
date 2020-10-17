@@ -92,6 +92,51 @@ const ExpressionStatement = make<ast.BNExpressionStatement>((o) => {
     )
   );
 });
+const VariableDeclarator = make<ast.BNVariableDeclarator>((o) => {
+  o(
+    reduce((s) => {
+      return s;
+    })
+  );
+  NotImplemented(o);
+});
+const VariableDeclaration = make<ast.BNVariableDeclaration>((o) => {
+  o(
+    div(
+      map(
+        (s) => s.kind,
+        (s, kind) => ({ ...s, kind })
+      )((o) => o(reduce((a) => (o({ m: "text", a }), a)))),
+      "kind"
+    )
+  );
+  o(
+    div(
+      map(
+        (s) => s.declarations,
+        (s, declarations) => ({ ...s, declarations })
+      )((o) =>
+        o(
+          reduce((s) => {
+            s.forEach((n, i) => {
+              o(
+                div(
+                  map(
+                    (a) => (a[i].type === "VariableDeclarator" ? a[i] : n),
+                    (a, b) => a.map((n, j) => (j === i ? b : n))
+                  )(VariableDeclarator),
+                  i + ""
+                )
+              );
+            });
+            return s;
+          })
+        )
+      ),
+      "declarations"
+    )
+  );
+});
 
 const Program = make<ast.BNProgram>((o) => {
   o(
@@ -121,6 +166,11 @@ const Program = make<ast.BNProgram>((o) => {
                         (a) => (a[i].type === "ExpressionStatement" ? a[i] : n),
                         merge
                       )(ExpressionStatement)
+                    : n.type === "VariableDeclaration"
+                    ? map(
+                        (a) => (a[i].type === "VariableDeclaration" ? a[i] : n),
+                        merge
+                      )(VariableDeclaration)
                     : map((a) => a[i], merge)(NotImplemented),
                   i + ""
                 )
