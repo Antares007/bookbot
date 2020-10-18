@@ -11,7 +11,7 @@ const b = a.bark((r) => {
   state = r(state);
 }, (document.body = document.body || document.createElement("body")));
 
-const File = make<ast.BNFile>((o) => {
+const File = make<ast.File>((o) => {
   o(
     div(
       map(
@@ -23,13 +23,13 @@ const File = make<ast.BNFile>((o) => {
   );
 });
 
-const DebuggerStatement = make<ast.BNDebuggerStatement>((o) => {});
-const BlockStatement = make<ast.BNBlockStatement>((o) => {});
-const BinaryExpression = make<ast.BNBinaryExpression>((o) => {
+const DebuggerStatement = make<ast.DebuggerStatement>((o) => {});
+const BlockStatement = make<ast.BlockStatement>((o) => {});
+const BinaryExpression = make<ast.BinaryExpression>((o) => {
   o(
     div(
       map(
-        (a) => static_cast<ast.BNExpression>(a.left),
+        (a) => static_cast<ast.Expression>(a.left),
         (a, b) => ({ ...a, left: b })
       )(Expression),
       "left"
@@ -55,7 +55,7 @@ const BinaryExpression = make<ast.BNBinaryExpression>((o) => {
     )
   );
 });
-const Identifier = make<ast.BNIdentifier>((o) => {
+const Identifier = make<ast.Identifier>((o) => {
   o(
     reduce((s) => {
       o({ m: "text", a: s.name });
@@ -63,7 +63,7 @@ const Identifier = make<ast.BNIdentifier>((o) => {
     })
   );
 });
-const NumericLiteral = make<ast.BNNumericLiteral>((o) => {
+const NumericLiteral = make<ast.NumericLiteral>((o) => {
   o(
     reduce((s) => {
       o({ m: "text", a: s.value + "" });
@@ -71,7 +71,7 @@ const NumericLiteral = make<ast.BNNumericLiteral>((o) => {
     })
   );
 });
-const Expression = make<ast.BNExpression>((o) => {
+const Expression = make<ast.Expression>((o) => {
   o(
     reduce((s) => {
       if (s.type === "BinaryExpression")
@@ -94,7 +94,7 @@ const Expression = make<ast.BNExpression>((o) => {
     })
   );
 });
-const ExpressionStatement = make<ast.BNExpressionStatement>((o) => {
+const ExpressionStatement = make<ast.ExpressionStatement>((o) => {
   o(
     div(
       map(
@@ -111,7 +111,7 @@ function maybe<T>(nar: N<N<rring_rays_t<T>>>): N<N<rring_rays_t<T | void>>> {
       o
     );
 }
-const LVal = make<ast.BNLVal>((o) => {
+const LVal = make<ast.LVal>((o) => {
   o(
     reduce((s) => {
       if (s.type === "Identifier")
@@ -125,7 +125,7 @@ const LVal = make<ast.BNLVal>((o) => {
   );
 });
 
-const VariableDeclarator = make<ast.BNVariableDeclarator>((o) => {
+const VariableDeclarator = make<ast.VariableDeclarator>((o) => {
   o(
     div(
       map(
@@ -145,7 +145,7 @@ const VariableDeclarator = make<ast.BNVariableDeclarator>((o) => {
     )
   );
 });
-const VariableDeclaration = make<ast.BNVariableDeclaration>((o) => {
+const VariableDeclaration = make<ast.VariableDeclaration>((o) => {
   o(
     div(
       map(
@@ -183,7 +183,7 @@ const VariableDeclaration = make<ast.BNVariableDeclaration>((o) => {
   );
 });
 
-const Program = make<ast.BNProgram>((o) => {
+const Program = make<ast.Program>((o) => {
   o(
     div(
       map(
@@ -236,7 +236,7 @@ b(File);
 // ***************************************
 // ***************************************
 
-function make<S: ast.BN>(nar: N<N<rring_rays_t<S>>>): N<N<rring_rays_t<S>>> {
+function make<S: {+type: string}>(nar: N<N<rring_rays_t<S>>>): N<N<rring_rays_t<S>>> {
   return (o) => {
     o({
       m: "reduce",
