@@ -28,12 +28,12 @@ export type SourceLocation = {
 
 export type Node = {
   +type: string,
-  leadingComments?: Array<Comment>,
-  innerComments?: Array<Comment>,
-  trailingComments?: Array<Comment>,
-  start: ?number,
-  end: ?number,
-  loc: ?SourceLocation,
+  //leadingComments?: Array<Comment>,
+  //innerComments?: Array<Comment>,
+  //trailingComments?: Array<Comment>,
+  //start: ?number,
+  //end: ?number,
+  //loc: ?SourceLocation,
   extra?: { [string]: mixed },
 };
 
