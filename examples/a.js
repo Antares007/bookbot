@@ -268,26 +268,6 @@ function map<A, B>(
       )
     )(nar)(o);
 }
-function omap<A: { ... }, B>(
-  key: string,
-  assert: (mixed) => B
-): (N<N<rring_rays_t<B>>>) => N<N<rring_rays_t<A>>> {
-  return (nar) =>
-    map(
-      (a) => assert(a[key]),
-      (a, b) => ({ ...a, [key]: b })
-    )(nar);
-}
-function amap<A, B>(
-  i: number,
-  extract: (A | B) => B
-): (N<N<rring_rays_t<B>>>) => N<N<rring_rays_t<Array<A | B>>>> {
-  return (nar) =>
-    map(
-      (a) => extract(a[i]),
-      (a, b) => a.map((n, j) => (j === i ? b : n))
-    )(nar);
-}
 function NotImplemented<T: { +type: string }>(o: N<rring_rays_t<T>>) {
   o(
     reduce((s) => {
