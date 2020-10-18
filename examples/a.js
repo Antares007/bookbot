@@ -11,20 +11,19 @@ const b = a.bark((r) => {
   state = r(state);
 }, (document.body = document.body || document.createElement("body")));
 
+
 const File = make<ast.File>((o) => {
   o(
     div(
       map(
         (a) => a.program,
         (a, b) => ({ ...a, program: b })
-      )(Program),
+      )(BlockStatement),
       "program"
     )
   );
 });
-
 const DebuggerStatement = make<ast.DebuggerStatement>(NotImplemented);
-const BlockStatement = make<ast.BlockStatement>(NotImplemented);
 const BinaryExpression = make<ast.BinaryExpression>((o) => {
   o(
     div(
@@ -105,12 +104,6 @@ const ExpressionStatement = make<ast.ExpressionStatement>((o) => {
     )
   );
 });
-function maybe<T>(nar: N<N<rring_rays_t<T>>>): N<N<rring_rays_t<T | void>>> {
-  return (o) =>
-    a.ring((r) => o(reduce((s) => (typeof s === "undefined" ? s : r(s)))))(nar)(
-      o
-    );
-}
 const LVal = make<ast.LVal>((o) => {
   o(
     reduce((s) => {
@@ -124,7 +117,6 @@ const LVal = make<ast.LVal>((o) => {
     })
   );
 });
-
 const VariableDeclarator = make<ast.VariableDeclarator>((o) => {
   o(
     div(
@@ -231,7 +223,7 @@ const FunctionDeclaration = make<ast.FunctionDeclaration>((o) => {
     )
   );
 });
-const Program = make<ast.Program>((o) => {
+const BlockStatement = make<ast.BlockStatement>(o=>{
   o(
     div(
       map(
@@ -282,16 +274,18 @@ const Program = make<ast.Program>((o) => {
     )
   );
 });
-
 b(File);
 
 // ***************************************
 // ***************************************
 // ***************************************
-
-function make<S: { +type: string }>(
-  nar: N<N<rring_rays_t<S>>>
-): N<N<rring_rays_t<S>>> {
+function maybe<T>(nar: N<N<rring_rays_t<T>>>): N<N<rring_rays_t<T | void>>> {
+  return (o) =>
+    a.ring((r) => o(reduce((s) => (typeof s === "undefined" ? s : r(s)))))(nar)(
+      o
+    );
+}
+function make<S: { +type: string }>(nar: N<N<rring_rays_t<S>>>): N<N<rring_rays_t<S>>> {
   return (o) => {
     o({
       m: "reduce",
@@ -309,10 +303,7 @@ function make<S: { +type: string }>(
     });
   };
 }
-function map<A, B>(
-  extract: (A) => B,
-  merge: (A, B) => A
-): (N<N<rring_rays_t<B>>>) => N<N<rring_rays_t<A>>> {
+function map<A, B>(extract: (A) => B, merge: (A, B) => A): (N<N<rring_rays_t<B>>>) => N<N<rring_rays_t<A>>> {
   return (nar) => (o) =>
     a.ring((r) =>
       o(
@@ -339,13 +330,7 @@ function NotImplemented<T: { +type: string }>(o: N<rring_rays_t<T>>) {
     })
   );
 }
-function div<S>(
-  nar: N<N<rring_rays_t<S>>>,
-  key: string
-): {|
-  m: "relement",
-  a: {| tag: string, nar: N<N<rring_rays_t<S>>>, key?: ?string |},
-|} {
+function div<S>(nar: N<N<rring_rays_t<S>>>, key: string): {| m: "relement", a: {| tag: string, nar: N<N<rring_rays_t<S>>>, key?: ?string |}, |} {
   return { m: ("relement": "relement"), a: { tag: "div", nar, key } };
 }
 function reduce<S>(a: (S) => S): {| m: "reduce", a: (S) => S |} {
