@@ -23,8 +23,8 @@ const File = make<ast.File>((o) => {
   );
 });
 
-const DebuggerStatement = make<ast.DebuggerStatement>((o) => {});
-const BlockStatement = make<ast.BlockStatement>((o) => {});
+const DebuggerStatement = make<ast.DebuggerStatement>(NotImplemented);
+const BlockStatement = make<ast.BlockStatement>(NotImplemented);
 const BinaryExpression = make<ast.BinaryExpression>((o) => {
   o(
     div(
@@ -182,7 +182,55 @@ const VariableDeclaration = make<ast.VariableDeclaration>((o) => {
     )
   );
 });
-
+const FunctionDeclaration = make<ast.FunctionDeclaration>((o) => {
+  o(
+    div(
+      map(
+        (s) => s.id,
+        (s, id) => ({ ...s, id })
+      )(maybe(Identifier)),
+      "id"
+    )
+  );
+  o(
+    div(
+      map(
+        (s) => s.params,
+        (s, params) => ({ ...s, params })
+      )((o) =>
+        o(
+          reduce((s) => {
+            s.forEach((n, i) => {
+              const merge = (a, b) => a.map((n, j) => (j === i ? b : n));
+              o(
+                div(
+                  n.type === "Identifier"
+                    ? map(
+                        (a) => (a[i].type === "Identifier" ? a[i] : n),
+                        merge
+                      )(Identifier)
+                    : map((a) => a[i], merge)(NotImplemented),
+                  i + ""
+                )
+              );
+            });
+            return s;
+          })
+        )
+      ),
+      "params"
+    )
+  );
+  o(
+    div(
+      map(
+        (s) => s.body,
+        (s, body) => ({ ...s, body })
+      )(BlockStatement),
+      "body"
+    )
+  );
+});
 const Program = make<ast.Program>((o) => {
   o(
     div(
@@ -216,6 +264,11 @@ const Program = make<ast.Program>((o) => {
                         (a) => (a[i].type === "VariableDeclaration" ? a[i] : n),
                         merge
                       )(VariableDeclaration)
+                    : n.type === "FunctionDeclaration"
+                    ? map(
+                        (a) => (a[i].type === "FunctionDeclaration" ? a[i] : n),
+                        merge
+                      )(FunctionDeclaration)
                     : map((a) => a[i], merge)(NotImplemented),
                   i + ""
                 )
@@ -236,7 +289,9 @@ b(File);
 // ***************************************
 // ***************************************
 
-function make<S: {+type: string}>(nar: N<N<rring_rays_t<S>>>): N<N<rring_rays_t<S>>> {
+function make<S: { +type: string }>(
+  nar: N<N<rring_rays_t<S>>>
+): N<N<rring_rays_t<S>>> {
   return (o) => {
     o({
       m: "reduce",
@@ -245,6 +300,7 @@ function make<S: {+type: string}>(nar: N<N<rring_rays_t<S>>>): N<N<rring_rays_t<
           m: "get",
           a(elm) {
             elm.className = s.type;
+            for (let k in s) if (s[k] === true) elm.classList.add(k);
           },
         });
         nar(o);
