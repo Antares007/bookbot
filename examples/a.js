@@ -4,7 +4,8 @@ import type { rring_rays_t } from "../src/a";
 const { static_cast } = require("../src/utils/static_cast");
 const a = require("../src/a");
 const ast = require("../lib/babel");
-var state = ast.parse("const a=1,b=1,o=2;a+b*o;");
+const code = require("fs").readFileSync(__filename, "utf8");
+var state = ast.parse(code);
 
 const b = a.bark((r) => {
   state = r(state);
@@ -290,6 +291,13 @@ function amap<A, B>(
 function NotImplemented<T: { +type: string }>(o: N<rring_rays_t<T>>) {
   o(
     reduce((s) => {
+      o({
+        m: "get",
+        a(elm) {
+          elm.style.color = "red";
+        },
+      });
+      o({ m: "text", a: s.type });
       console.log("NotImplemented", s.type, s);
       return s;
     })
