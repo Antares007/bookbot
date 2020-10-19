@@ -305,16 +305,15 @@ export type NewExpression = {
   typeParameters?: TSTypeParameterInstantiation,
 };
 
-export type Program = BlockStatement
-//{
-//  ...Node,
-//  type: "Program",
-//  body: Array<Statement>,
-//  directives?: Array<Directive>,
-//  sourceType?: "script" | "module",
-//  interpreter?: InterpreterDirective,
-//  sourceFile: string,
-//};
+export type Program = {
+  ...Node,
+  type: "Program",
+  body: Array<Statement>,
+  directives?: Array<Directive>,
+  sourceType?: "script" | "module",
+  interpreter?: InterpreterDirective,
+  sourceFile: string,
+};
 
 export type ObjectExpression = {
   ...Node,
