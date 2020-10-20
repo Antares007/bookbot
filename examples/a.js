@@ -11,7 +11,7 @@ const b = a.bark((r) => {
   state = r(state);
 }, (document.body = document.body || document.createElement("body")));
 
-const initNodeAction = (s) => ({
+const initNodeAction = <S: { +type: string }>(s: S) => ({
   m: "get",
   a(elm) {
     elm.className = s.type;
@@ -19,13 +19,56 @@ const initNodeAction = (s) => ({
   },
 });
 
+const node = <S: { +type: string }, M: {}>(m: M): N<N<rring_rays_t<S>>> => (
+  o
+) =>
+  o(
+    reduce((s) => {
+      o(initNodeAction(s));
+      const n = m[s.type];
+      if (n) n(s)(o);
+      else NotImplemented(o);
+      return s;
+    })
+  );
+
 const emap = {
   ArrayExpression: (init) => NotImplemented,
   ArrowFunctionExpression: (init) => NotImplemented,
   AssignmentExpression: (init) => NotImplemented,
   AwaitExpression: (init) => NotImplemented,
   BigIntLiteral: (init) => NotImplemented,
-  BinaryExpression: (init) => NotImplemented,
+  BinaryExpression: (init) => (_o) => {
+    const o = static_cast<N<rring_rays_t<ast.BinaryExpression>>>(_o);
+    o(
+      div(
+        "left",
+        map(
+          (a) => a.left,
+          (a, b) => ({ ...a, left: b })
+        )(node({ ...emap, PrivateName: (init) => NotImplemented }))
+      )
+    );
+    o(
+      reduce((s) => {
+        o(
+          div("operator", (o) => {
+            o({ m: "text", a: s.operator });
+          })
+        );
+        return s;
+      })
+    );
+    o(
+      div(
+        "right",
+        map(
+          (a) => a.right,
+          (a, b) => ({ ...a, right: b })
+        )(node(emap))
+      )
+    );
+  },
   BindExpression: (init) => NotImplemented,
   BooleanLiteral: (init) => NotImplemented,
   CallExpression: (init) => (_o) => {
@@ -36,17 +79,7 @@ const emap = {
         map(
           (s) => s.callee,
           (s, callee) => ({ ...s, callee })
-        )((o) =>
-          o(
-            reduce((s) => {
-              o(initNodeAction(s));
-              const n = cmap[s.type];
-              if (n) n(s)(o);
-              else NotImplemented(o);
-              return s;
-            })
-          )
-        )
+        )(node(cmap))
       )
     );
     o(
@@ -65,17 +98,7 @@ const emap = {
                     map(
                       (a) => (a[i] === n.type ? a[i] : n),
                       (a, b) => a.map((n, j) => (j === i ? b : n))
-                    )((o) =>
-                      o(
-                        reduce((s) => {
-                          o(initNodeAction(s));
-                          const n = amap[s.type];
-                          if (n) n(s)(o);
-                          else NotImplemented(o);
-                          return s;
-                        })
-                      )
-                    )
+                    )(node(amap))
                   )
                 );
               });
@@ -108,7 +131,11 @@ const emap = {
   MetaProperty: (init) => NotImplemented,
   NewExpression: (init) => NotImplemented,
   NullLiteral: (init) => NotImplemented,
-  NumericLiteral: (init) => NotImplemented,
+  NumericLiteral: (init) => (o) =>
+    o({
+      m: "text",
+      a: static_cast<ast.NumericLiteral>(init).value + "",
+    }),
   ObjectExpression: (init) => NotImplemented,
   OptionalCallExpression: (init) => NotImplemented,
   OptionalMemberExpression: (init) => NotImplemented,
@@ -176,17 +203,7 @@ const nmap = {
         map(
           (a) => a.expression,
           (a, b) => ({ ...a, expression: b })
-        )((o) =>
-          o(
-            reduce((s) => {
-              o(initNodeAction(s));
-              const n = emap[s.type];
-              if (n) n(s)(o);
-              else NotImplemented(o);
-              return s;
-            })
-          )
-        )
+        )(node(emap))
       )
     );
   },
@@ -200,19 +217,7 @@ const nmap = {
         map(
           (s) => s.id,
           (s, id) => ({ ...s, id })
-        )(
-          maybe((o) =>
-            o(
-              reduce((s) => {
-                o(initNodeAction(s));
-                const n = emap[s.type];
-                if (n) n(s)(o);
-                else NotImplemented(o);
-                return s;
-              })
-            )
-          )
-        )
+        )(maybe(node(emap)))
       )
     );
     o(
@@ -231,17 +236,7 @@ const nmap = {
                     map(
                       (a) => (a[i] === n.type ? a[i] : n),
                       (a, b) => a.map((n, j) => (j === i ? b : n))
-                    )((o) =>
-                      o(
-                        reduce((s) => {
-                          o(initNodeAction(s));
-                          const n = pmap[s.type];
-                          if (n) n(s)(o);
-                          else NotImplemented(o);
-                          return s;
-                        })
-                      )
-                    )
+                    )(node(pmap))
                   )
                 );
               });
@@ -257,17 +252,7 @@ const nmap = {
         map(
           (s) => s.body,
           (s, body) => ({ ...s, body })
-        )((o) =>
-          o(
-            reduce((s) => {
-              o(initNodeAction(s));
-              const n = nmap[s.type];
-              if (n) n(s)(o);
-              else NotImplemented(o);
-              return s;
-            })
-          )
-        )
+        )(node(nmap))
       )
     );
   },
@@ -311,17 +296,7 @@ const nmap = {
                           map(
                             (a) => a.id,
                             (a, id) => ({ ...a, id })
-                          )((o) =>
-                            o(
-                              reduce((s) => {
-                                o(initNodeAction(s));
-                                const n = lmap[s.type];
-                                if (n) n(s)(o);
-                                else NotImplemented(o);
-                                return s;
-                              })
-                            )
-                          )
+                          )(node(lmap))
                         )
                       );
                       o(
@@ -330,19 +305,7 @@ const nmap = {
                           map(
                             (a) => a.init,
                             (a, init) => ({ ...a, init })
-                          )(
-                            maybe((o) =>
-                              o(
-                                reduce((s) => {
-                                  o(initNodeAction(s));
-                                  const n = emap[s.type];
-                                  if (n) n(s)(o);
-                                  else NotImplemented(o);
-                                  return s;
-                                })
-                              )
-                            )
-                          )
+                          )(maybe(node(emap)))
                         )
                       );
                     })
@@ -403,17 +366,7 @@ const nmap = {
                     map(
                       (a) => (a[i].type === n.type ? a[i] : n),
                       (a, b) => a.map((n, j) => (j === i ? b : n))
-                    )((o) =>
-                      o(
-                        reduce((s) => {
-                          o(initNodeAction(s));
-                          const n = nmap[s.type];
-                          if (n) n(s)(o);
-                          else NotImplemented(o);
-                          return s;
-                        })
-                      )
-                    )
+                    )(node(nmap))
                   )
                 );
               });
@@ -432,71 +385,14 @@ const nmap = {
         map(
           (a) => a.program,
           (a, b) => ({ ...a, program: b })
-        )((o) =>
-          o(
-            reduce((s) => {
-              o(initNodeAction(s));
-              const n = nmap[s.type];
-              if (n) n(s)(o);
-              else NotImplemented(o);
-              return s;
-            })
-          )
-        )
+        )(node(nmap))
       )
     );
   },
 };
-const node = () => (o) =>
-  o(
-    reduce((s) => {
-      o(initNodeAction(s));
-      const n = nmap[s.type];
-      if (n) n(s)(o);
-      else NotImplemented(o);
-      return s;
-    })
-  );
-b(node());
+b(node(nmap));
 
-//const BinaryExpression = make<ast.BinaryExpression>((o) => {
-//  o(
-//    div(
-//      "left",
-//      map(
-//        (a) => static_cast<ast.Expression>(a.left),
-//        (a, b) => ({ ...a, left: b })
-//      )(Expression)
-//    )
-//  );
-//  o(
-//    reduce((s) => {
-//      o(
-//        div("operator", (o) => {
-//          o({ m: "text", a: s.operator });
-//        })
-//      );
-//      return s;
-//    })
-//  );
-//  o(
-//    div(
-//      "right",
-//      map(
-//        (a) => a.right,
-//        (a, b) => ({ ...a, right: b })
-//      )(Expression)
-//    )
-//  );
-//});
-//const NumericLiteral = make<ast.NumericLiteral>((o) => {
-//  o(
-//    reduce((s) => {
-//      o({ m: "text", a: s.value + "" });
-//      return s;
-//    })
-//  );
-//});
+//const BinaryExpression = make<ast.BinaryExpression>();
 
 // ***************************************
 // ***************************************
@@ -506,40 +402,6 @@ function maybe<T>(nar: N<N<rring_rays_t<T>>>): N<N<rring_rays_t<T | void>>> {
     a.ring((r) => o(reduce((s) => (typeof s === "undefined" ? s : r(s)))))(nar)(
       o
     );
-}
-function make2<A, B: { +type: string }>(
-  assert: (A | B) => ?B,
-  nar: N<N<rring_rays_t<B>>>
-): (B) => N<N<rring_rays_t<A | B>>> {
-  return (init) => (o) => {
-    a.ring((r) =>
-      o(
-        reduce((s) => {
-          return r(assert(s) || init);
-        })
-      )
-    )(nar)(o);
-  };
-}
-function make<S: { +type: string }>(
-  nar: N<N<rring_rays_t<S>>>
-): N<N<rring_rays_t<S>>> {
-  return (o) => {
-    o({
-      m: "reduce",
-      a(s) {
-        o({
-          m: "get",
-          a(elm) {
-            elm.className = s.type;
-            for (let k in s) if (s[k] === true) elm.classList.add(k);
-          },
-        });
-        nar(o);
-        return s;
-      },
-    });
-  };
 }
 function map<A, B>(
   extract: (A) => B,
