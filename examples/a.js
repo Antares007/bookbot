@@ -13,8 +13,50 @@ const b = a.bark((r) => {
 
 const emap = {
   ArrayExpression: (init) => NotImplemented,
-  ArrowFunctionExpression: (init) => NotImplemented,
-  AssignmentExpression: (init) => NotImplemented,
+  ArrowFunctionExpression: (init) => (_o) => {
+    const o = static_cast<N<rring_rays_t<ast.ArrowFunctionExpression>>>(_o);
+    o(
+      div(
+        "params",
+        map(
+          (s) => s.params,
+          (s, params) => ({ ...s, params })
+        )(nodelist(pmap))
+      )
+    );
+    o(
+      div(
+        "body",
+        map(
+          (s) => s.body,
+          (s, body) => ({ ...s, body })
+        )(node({ ...emap, BlockStatement: nmap.BlockStatement }))
+      )
+    );
+  },
+  AssignmentExpression: (_i) => (_o) => {
+    const i = static_cast<ast.AssignmentExpression>(_i);
+    const o = static_cast<N<rring_rays_t<ast.AssignmentExpression>>>(_o);
+    o(
+      div(
+        "left",
+        map(
+          (a) => a.left,
+          (a, b) => ({ ...a, left: b })
+        )(node(lmap))
+      )
+    );
+    o(div("operator", (o) => o({ m: "text", a: i.operator })));
+    o(
+      div(
+        "right",
+        map(
+          (a) => a.right,
+          (a, b) => ({ ...a, right: b })
+        )(node(emap))
+      )
+    );
+  },
   AwaitExpression: (init) => NotImplemented,
   BigIntLiteral: (init) => NotImplemented,
   BinaryExpression: (init) => (_o) => {
@@ -88,7 +130,29 @@ const emap = {
   Import: (init) => NotImplemented,
   JSXElement: (init) => NotImplemented,
   JSXFragment: (init) => NotImplemented,
-  LogicalExpression: (init) => NotImplemented,
+  LogicalExpression: (_i) => (_o) => {
+    const i = static_cast<ast.LogicalExpression>(_i);
+    const o = static_cast<N<rring_rays_t<ast.LogicalExpression>>>(_o);
+    o(
+      div(
+        "left",
+        map(
+          (a) => a.left,
+          (a, b) => ({ ...a, left: b })
+        )(node(emap))
+      )
+    );
+    o(div("operator", (o) => o({ m: "text", a: i.operator })));
+    o(
+      div(
+        "right",
+        map(
+          (a) => a.right,
+          (a, b) => ({ ...a, right: b })
+        )(node(emap))
+      )
+    );
+  },
   MemberExpression: (init) => (_o) => {
     const o = static_cast<N<rring_rays_t<ast.MemberExpression>>>(_o);
     o(
@@ -118,7 +182,9 @@ const emap = {
       m: "text",
       a: static_cast<ast.NumericLiteral>(init).value + "",
     }),
-  ObjectExpression: (init) => NotImplemented,
+  ObjectExpression: (init) => (_o) => {
+    const o = static_cast<N<rring_rays_t<ast.ObjectExpression>>>(_o);
+  },
   OptionalCallExpression: (init) => NotImplemented,
   OptionalMemberExpression: (init) => NotImplemented,
   ParenthesizedExpression: (init) => NotImplemented,
@@ -153,7 +219,7 @@ const cmap = {
 const lmap = {
   ArrayPattern: (init) => NotImplemented,
   AssignmentPattern: (init) => NotImplemented,
-  Identifier: (init) => emap.Identifier,
+  Identifier: (init) => emap.Identifier(init),
   MemberExpression: (init) => emap.MemberExpression,
   ObjectPattern: (init) => (_o) => {
     const o = static_cast<N<rring_rays_t<ast.ObjectPattern>>>(_o);
@@ -345,7 +411,8 @@ const epmap = {
   PrivateName: (init) => NotImplemented,
 };
 const vdmap = {
-  VariableDeclarator: (i) => (o) => {
+  VariableDeclarator: (i) => (_o) => {
+    const o = static_cast<N<rring_rays_t<ast.VariableDeclarator>>>(_o);
     o(
       div(
         "id",
