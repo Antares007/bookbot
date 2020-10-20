@@ -89,7 +89,27 @@ const emap = {
   JSXElement: (init) => NotImplemented,
   JSXFragment: (init) => NotImplemented,
   LogicalExpression: (init) => NotImplemented,
-  MemberExpression: (init) => NotImplemented,
+  MemberExpression: (init) => (_o) => {
+    const o = static_cast<N<rring_rays_t<ast.MemberExpression>>>(_o);
+    o(
+      div(
+        "object",
+        map(
+          (a) => a.object,
+          (a, b) => ({ ...a, object: b })
+        )(node(emap))
+      )
+    );
+    o(
+      div(
+        "property",
+        map(
+          (a) => a.property,
+          (a, b) => ({ ...a, property: b })
+        )(node(emap))
+      )
+    );
+  },
   MetaProperty: (init) => NotImplemented,
   NewExpression: (init) => NotImplemented,
   NullLiteral: (init) => NotImplemented,
