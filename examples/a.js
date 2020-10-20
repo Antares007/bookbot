@@ -143,7 +143,31 @@ const lmap = {
         map(
           (a) => a.properties,
           (a, b) => ({ ...a, properties: b })
-        )(nodelist({}))
+        )(
+          nodelist({
+            ObjectProperty: (i) => (_o) => {
+              const o = static_cast<N<rring_rays_t<ast.ObjectProperty>>>(_o);
+              o(
+                div(
+                  "key",
+                  map(
+                    (a) => a.key,
+                    (a, b) => ({ ...a, key: b })
+                  )(node(emap))
+                )
+              );
+              o(
+                div(
+                  "value",
+                  map(
+                    (a) => a.value,
+                    (a, b) => ({ ...a, value: b })
+                  )(node(emap))
+                )
+              );
+            },
+          })
+        )
       )
     );
   },
@@ -322,9 +346,7 @@ const vdmap = {
     );
   },
 };
-const node = <S: ast.Node,M:{}>(m: M): N<N<rring_rays_t<S>>> => (
-  o
-) =>
+const node = <S: ast.Node, M: {}>(m: M): N<N<rring_rays_t<S>>> => (o) =>
   o(
     reduce((s) => {
       o({
@@ -343,9 +365,9 @@ const node = <S: ast.Node,M:{}>(m: M): N<N<rring_rays_t<S>>> => (
       return s;
     })
   );
-const nodelist = <S: ast.Node,M:{}>(
-  m:M
-): N<N<rring_rays_t<Array<S>>>> => (o) =>
+const nodelist = <S: ast.Node, M: {}>(m: M): N<N<rring_rays_t<Array<S>>>> => (
+  o
+) =>
   o(
     reduce((s) => {
       s.forEach((n, i) => {
