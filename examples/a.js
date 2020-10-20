@@ -11,27 +11,6 @@ const b = a.bark((r) => {
   state = r(state);
 }, (document.body = document.body || document.createElement("body")));
 
-const initNodeAction = <S: { +type: string }>(s: S) => ({
-  m: "get",
-  a(elm) {
-    elm.className = s.type;
-    for (let k in s) if (s[k] === true) elm.classList.add(k);
-  },
-});
-
-const node = <S: { +type: string }, M: {}>(m: M): N<N<rring_rays_t<S>>> => (
-  o
-) =>
-  o(
-    reduce((s) => {
-      o(initNodeAction(s));
-      const n = m[s.type];
-      if (n) n(s)(o);
-      else NotImplemented(o);
-      return s;
-    })
-  );
-
 const emap = {
   ArrayExpression: (init) => NotImplemented,
   ArrowFunctionExpression: (init) => NotImplemented,
@@ -46,7 +25,7 @@ const emap = {
         map(
           (a) => a.left,
           (a, b) => ({ ...a, left: b })
-        )(node({ ...emap, PrivateName: (init) => NotImplemented }))
+        )(node(epmap))
       )
     );
     o(
@@ -88,24 +67,7 @@ const emap = {
         map(
           (a) => a.arguments,
           (a, b) => ({ ...a, arguments: b })
-        )((o) =>
-          o(
-            reduce((s) => {
-              s.forEach((n, i) => {
-                o(
-                  div(
-                    i + "",
-                    map(
-                      (a) => (a[i] === n.type ? a[i] : n),
-                      (a, b) => a.map((n, j) => (j === i ? b : n))
-                    )(node(amap))
-                  )
-                );
-              });
-              return s;
-            })
-          )
-        )
+        )(nodelist(amap))
       )
     );
   },
@@ -164,13 +126,36 @@ const emap = {
   UpdateExpression: (init) => NotImplemented,
   YieldExpression: (init) => NotImplemented,
 };
-const cmap = { ...emap, V8IntrinsicIdentifier: (init) => NotImplemented };
+const cmap = {
+  ...emap,
+  V8IntrinsicIdentifier: (init) => NotImplemented,
+};
+const lmap = {
+  ArrayPattern: (init) => NotImplemented,
+  AssignmentPattern: (init) => NotImplemented,
+  Identifier: (init) => emap.Identifier,
+  MemberExpression: (init) => emap.MemberExpression,
+  ObjectPattern: (init) => (_o) => {
+    const o = static_cast<N<rring_rays_t<ast.ObjectPattern>>>(_o);
+    o(
+      div(
+        "properties",
+        map(
+          (a) => a.properties,
+          (a, b) => ({ ...a, properties: b })
+        )(nodelist({}))
+      )
+    );
+  },
+  RestElement: (init) => NotImplemented,
+  TSParameterProperty: (init) => NotImplemented,
+};
 const pmap = {
   ...emap,
   ArrayPattern: (init) => NotImplemented,
   AssignmentPattern: (init) => NotImplemented,
-  ObjectPattern: (init) => NotImplemented,
-  RestElement: (init) => NotImplemented,
+  ObjectPattern: lmap.ObjectPattern,
+  RestElement: lmap.RestElement,
   TSParameterProperty: (init) => NotImplemented,
 };
 const amap = {
@@ -179,15 +164,6 @@ const amap = {
   JSXNamespacedName: (init) => NotImplemented,
   ArgumentPlaceholder: (init) => NotImplemented,
   YieldExpression: (init) => NotImplemented,
-};
-const lmap = {
-  ArrayPattern: (init) => NotImplemented,
-  AssignmentPattern: (init) => NotImplemented,
-  Identifier: (init) => emap.Identifier,
-  MemberExpression: (init) => emap.MemberExpression,
-  ObjectPattern: (init) => NotImplemented,
-  RestElement: (init) => NotImplemented,
-  TSParameterProperty: (init) => NotImplemented,
 };
 const nmap = {
   BreakStatement: (init) => NotImplemented,
@@ -226,24 +202,7 @@ const nmap = {
         map(
           (s) => s.params,
           (s, params) => ({ ...s, params })
-        )((o) =>
-          o(
-            reduce((s) => {
-              s.forEach((n, i) => {
-                o(
-                  div(
-                    i + "",
-                    map(
-                      (a) => (a[i] === n.type ? a[i] : n),
-                      (a, b) => a.map((n, j) => (j === i ? b : n))
-                    )(node(pmap))
-                  )
-                );
-              });
-              return s;
-            })
-          )
-        )
+        )(nodelist(pmap))
       )
     );
     o(
@@ -279,43 +238,7 @@ const nmap = {
         map(
           (s) => s.declarations,
           (s, declarations) => ({ ...s, declarations })
-        )((o) =>
-          o(
-            reduce((s) => {
-              s.forEach((n, i) => {
-                o(
-                  div(
-                    i + "",
-                    map(
-                      (a) => (a[i].type === n.type ? a[i] : n),
-                      (a, b) => a.map((n, j) => (j === i ? b : n))
-                    )((o) => {
-                      o(
-                        div(
-                          "id",
-                          map(
-                            (a) => a.id,
-                            (a, id) => ({ ...a, id })
-                          )(node(lmap))
-                        )
-                      );
-                      o(
-                        div(
-                          "init",
-                          map(
-                            (a) => a.init,
-                            (a, init) => ({ ...a, init })
-                          )(maybe(node(emap)))
-                        )
-                      );
-                    })
-                  )
-                );
-              });
-              return s;
-            })
-          )
-        )
+        )(nodelist(vdmap))
       )
     );
   },
@@ -356,24 +279,7 @@ const nmap = {
         map(
           (a) => a.body,
           (a, b) => ({ ...a, body: b })
-        )((o) =>
-          o(
-            reduce((s) => {
-              s.forEach((n, i) => {
-                o(
-                  div(
-                    i + "",
-                    map(
-                      (a) => (a[i].type === n.type ? a[i] : n),
-                      (a, b) => a.map((n, j) => (j === i ? b : n))
-                    )(node(nmap))
-                  )
-                );
-              });
-              return s;
-            })
-          )
-        )
+        )(nodelist(nmap))
       )
     );
   },
@@ -390,6 +296,73 @@ const nmap = {
     );
   },
 };
+const epmap = {
+  ...emap,
+  PrivateName: (init) => NotImplemented,
+};
+const vdmap = {
+  VariableDeclarator: (i) => (o) => {
+    o(
+      div(
+        "id",
+        map(
+          (a) => a.id,
+          (a, id) => ({ ...a, id })
+        )(node(lmap))
+      )
+    );
+    o(
+      div(
+        "init",
+        map(
+          (a) => a.init,
+          (a, init) => ({ ...a, init })
+        )(maybe(node(emap)))
+      )
+    );
+  },
+};
+const node = <S: ast.Node,M:{}>(m: M): N<N<rring_rays_t<S>>> => (
+  o
+) =>
+  o(
+    reduce((s) => {
+      o({
+        m: "get",
+        a(elm) {
+          elm.className = s.type;
+          for (let k in s) if (s[k] === true) elm.classList.add(k);
+          if (s.extra)
+            for (let k in s.extra)
+              if (s.extra[k] === true) elm.classList.add("extra_" + k);
+        },
+      });
+      const n = m[s.type];
+      if (n) n(s)(o);
+      else NotImplemented(o);
+      return s;
+    })
+  );
+const nodelist = <S: ast.Node,M:{}>(
+  m:M
+): N<N<rring_rays_t<Array<S>>>> => (o) =>
+  o(
+    reduce((s) => {
+      s.forEach((n, i) => {
+        o(
+          div(
+            i + "",
+            map(
+              (a) => (a[i] === n.type ? a[i] : n),
+              (a, b) => a.map((n, j) => (j === i ? b : n))
+            )(node(m))
+          )
+        );
+      });
+      return s;
+    })
+  );
+
 b(node(nmap));
 
 //const BinaryExpression = make<ast.BinaryExpression>();

@@ -34,7 +34,7 @@ export type Node = {
   //start: ?number,
   //end: ?number,
   //loc: ?SourceLocation,
-  extra?: { [string]: mixed },
+  +extra?: { [string]: mixed },
 };
 
 export type ArrayExpression = {
