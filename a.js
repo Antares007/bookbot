@@ -29,12 +29,12 @@ export type SourceLocation = {
 };
 
 export type BaseNode = {
-  // leadingComments: ReadonlyArray<Comment> | null;
-  // innerComments: ReadonlyArray<Comment> | null;
-  // trailingComments: ReadonlyArray<Comment> | null;
-  // start: number | null;
-  // end: number | null;
-  // loc: SourceLocation | null;
+  leadingComments: Array<Comment> | null;
+  innerComments: Array<Comment> | null;
+  trailingComments: Array<Comment> | null;
+  start: number | null;
+  end: number | null;
+  loc: SourceLocation | null;
   +type: string,
   +extra?: [string, mixed],
 };

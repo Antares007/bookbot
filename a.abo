@@ -1,0 +1,310 @@
+// args ""
+:= id
+	true
+	a
+:= fun
+	{function: f}
+	f
+	true
+	null
+
+:= purry
+	{function: [f, g]}
+			{function: o}
+				f
+					{ number: len }
+					call
+						len < 0
+							apply o a
+						true
+							apply(g, a) o
+:= pstr
+	{string: match}
+			{string: input, function: o} 
+				:= m
+					match.length > input.length
+						o (input.length - match.length)
+					match.length === 0
+						o 0
+					true
+						:= loop
+							{number:i} && i === match.length
+								//
+							match[i] !== input[i]
+								//
+							{number:i} && i < match.length 
+								loop (i + 1)
+						loop 0 
+				m
+
+:= pnot
+	{function: pnar}
+			{string: input, function: o}
+				call pnar
+					&& {number: len} < len 0
+						apply o a
+					{number: len}
+						call o - 0 len
+:= por
+	{function [lnar rnar]}
+			{function o}
+				call lnar
+					&& {number: len} < len 0
+						call rnar o
+					{number _}
+						apply o a
+:= pand
+	{function [lnar rnar]}
+			{function o}
+				call lnar
+					&& {number: len} < len 0
+						apply o a
+					{number lenl}
+						call rnar 
+							&& {number: len} < len 0
+								apply o a
+							{number lenr}
+								call o + lenl lenr
+:= pmany
+	{function pnar}
+			{function o}
+				:= p
+					&& {number len}
+					   < len 0
+						apply o a
+					{number 0}
+						apply o a
+					{number len}
+						call o - 0 len
+				call pnar p
+
+:= Tab
+	{string input function o}
+		call
+			&& > input.length 0
+			   === 0x09 input.charCodeAt(0)
+				call o 1
+			&& > input.length 1
+			&& === 0x20 input.charCodeAt(0)
+			   === 0x09 input.charCodeAt(1)
+				call o 2
+			&& > input.length 2
+			&& === 0x20 input.charCodeAt(0)
+			&& === 0x20 input.charCodeAt(1)
+			   === 0x09 input.charCodeAt(2)
+				call o 3
+			&& > input.length 3
+			&& === 0x20 input.charCodeAt(0)
+			&& === 0x20 input.charCodeAt(1)
+			&& === 0x20 input.charCodeAt(2)
+			   === 0x09 input.charCodeAt(3)
+				call o 4
+			else
+				call o -1
+:= Eol
+	{ string input function o }
+		call
+			&& >   input.length 0
+			   === 0x0a input.charCodeAt(0) 
+				call o 1
+			else
+				call o -1
+:= Eof
+	{ string input function o }
+		call
+			=== input.length 0
+				call o 0
+			else
+				call o -1
+:= Line
+	{number d}
+			{ string input function o }
+				call
+					=== input.length 0
+						call o 0
+					else
+						call o -1
+
+
+
+
+
+Line[i] :=
+	| Tab0 ... Tabi pnot(Tab) pnot(Eol) Eol
+	| 
+	| Eol
+
+Bolk[i] :=
+	| Line[i]*
+	| Bolk[i+1]
+	| Eol
+
+
+
+1
+2
+	1
+	2
+		1
+		2
+		3
+	3
+		1
+	4
+	5
+3
+
+
+
+Kind = ("const" | "var") Id 
+
+:= g
+	=== 'function' typeof a
+	//
+:= a_person_t
+	{ string: ['person' name lastname] }
+		a
+	{ string: ['person' name lastname] object a_person_t }
+		a
+	___
+		null
+
+:= ramiz ('person' 'ramiz' 'bolkvadze')
+:= otar ('person' 'otar' 'bolkvadze' ramiz)
+:= archil ('person' 'archil' 'bolkvadze' otar)
+
+
+:= a_string_t
+	=== 'string' typeof a a    // a_string_t ''
+	{ string a }          a    // a_string_t ('')
+	___ null
+
+:= p
+	a_string_t  a
+	a_element_t a
+
+:= a_element_t
+	{ string ['element' tag key] function f(p) } a
+	{ string ['element' tag]     function f(p) } a
+	___											 null
+
+:= pith
+	instanceof a HTMLElement
+		:= elm          a
+		:= childNodes   elm.childNodes
+		:= childPiths   []
+		:=   childs_count 0
+		:= o
+			=== 'string' typeof a
+				//
+			=== 'undefined' typeof a
+				//
+			{ function f(elm) }
+				//
+			{ string ['element', tag, key] function f(o) }
+				//
+
+		o
+:= c
+	=== 'number' typeof a
+		:= nar
+			
+			
+		nar
+:= o pith document.createElement('div')
+o 'hello'
+o 'element' 'div' ''
+	o 'hello'
+	o 'element' 'div' ''
+	
+	
+
+
+
+
+= s.sum
+	 
+= s.pith
+	=== a.object instanceof HTMLElement
+	:= elm		   a.object
+	:=   childs_count 0
+	:= childNodes   elm.childNodes
+	:= childPiths   []
+	s.parent.pith
+	return
+		= s.test i.string
+
+if lexp else  exp  exp
+else exp
+else
+	exp_bolk
+pith document.createElement('div')
+
+:= pith
+	=== a.object.constructor.name HTMLElement
+	:= elm          a.object
+	:= childNodes   elm.childNodes
+	:= childPiths   []
+	:=   childs_count 0
+	return
+		=== i void 0
+			let l childNodes.length
+			for > l childs_count l++
+				elm.removeChild childNodes[childs_count]
+		=== i.string 'get'
+		  i.function elm
+		>   a.string.length 0
+			:= text = a.string
+			:= loop
+				&& iof    a.object[0] Node
+				   || iof a.object[1] Node
+				      ==  a.object[1] null
+				 
+					//
+					//
+				iof a.object Node
+					loop a.object a.object.nextSibling 
+					//
+					//
+				== a.object null
+					//
+
+				:= i = a.number[0]
+				:= index = a.number[1]
+				:= l = a.number[2]
+				< i l
+					:= aa
+						=== a.boolean true
+							< index i
+								elm.insertBefore elm.childNodes[a.number] elm.childNodes[index]
+								childPiths.splice index 0 ...childPiths.splice(i, 1)
+						___
+							loop + i 1 l elm
+					aa && === a.object.nodeType 3
+						  === a.string a.object.textContent
+			loop childNodes[childNodes++]
+
+			for < i l i++
+		  	    if
+		  	        &&  === childNodes[i].nodeType 3
+		  	            &&  === childNodes[i].nodeType 3
+		  	                === i.string childNodes[i].textContent
+		  	        if < index i
+		  	            elm.insertBefore childNodes[i] childNodes[index]
+		  	            childPiths.splice index 0 ...childPiths.splice(i, 1)
+		  	    return
+		  	elm.insertBefore document.createTextNode(i.string) childNodes[index]
+			childPiths.splice index 0 null
+		>   i.string.length 0
+		  //pith 'div'
+		  //  o 'hello world'
+		  //  o 'div'
+		  //    o 'hi'
+		  := nar = i.function
+		>   i.string[0].length 0
+		  let n
+		  let ob
+		  := index childs_count++
+		  := tag   i.string[0].toUpperCase()
+		  := nar   i.function
+		  := key   i.string[1]

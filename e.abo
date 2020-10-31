@@ -1,0 +1,46 @@
+op precedence
++  1 left
+-  1 left
+*  2 left
+/  2 left
+^  3 right
+
+const compute_expr {number: min_prec, function o}
+  o
+	{string}
+	true
+  := result  compute_atom()
+
+  while cur token is a binary operator with precedence >= min_prec:
+    prec, assoc = precedence and associativity of current token
+    if assoc is left:
+      next_min_prec = prec + 1
+    else:
+      next_min_prec = prec
+    rhs = compute_expr(next_min_prec)
+    result = compute operator(result, rhs)
+
+  return result
+
+2 + 3 ^ 2 * 3 + 4
+-----------------
+    ---------
+    -----
+
+* compute_expr(1)                # Initial call on the whole expression
+  * compute_atom() --> 2
+  * compute_expr(2)              # Loop entered, operator '+'
+    * compute_atom() --> 3
+    * compute_expr(3)
+      * compute_atom() --> 2
+      * result --> 2             # Loop not entered for '*' (prec < '^')
+    * result = 3 ^ 2 --> 9
+    * compute_expr(3)
+      * compute_atom() --> 3
+      * result --> 3             # Loop not entered for '+' (prec < '*')
+    * result = 9 * 3 --> 27
+  * result = 2 + 27 --> 29
+  * compute_expr(2)              # Loop entered, operator '+'
+    * compute_atom() --> 4
+    * result --> 4               # Loop not entered - end of expression
+  * result = 29 + 4 --> 33
