@@ -1,3 +1,38 @@
+compute_atom :=
+    {string:[ input ], function:[ o ]}
+    leftparen(input) 
+
+def compute_atom(tokenizer):
+    tok = tokenizer.cur_token
+    if tok.name == 'LEFTPAREN':
+        tokenizer.get_next_token()
+        val = compute_expr(tokenizer, 1)
+        if tokenizer.cur_token.name != 'RIGHTPAREN':
+            parse_error('unmatched "("')
+        tokenizer.get_next_token()
+        return val
+    elif tok is None:
+            parse_error('source ended unexpectedly')
+    elif tok.name == 'BINOP':
+        parse_error('expected an atom, not an operator "%s"' % tok.value)
+    else:
+        assert tok.name == 'NUMBER'
+        tokenizer.get_next_token()
+        return int(tok.value)
+
+CPRange :=
+	{ string: input, number: [from, to], function: o }
+		input.length === 0 || input.charCodeAt(0) < from || to < input.charCodeAt(0)
+		o -1
+		true
+		o 1
+
+		
+	
+NumberLiteral := {string: input, function: o}
+	
+	
+
 op precedence
 +  1 left
 -  1 left
@@ -5,12 +40,8 @@ op precedence
 /  2 left
 ^  3 right
 
-const compute_expr {number: min_prec, function o}
-  o
-	{string}
-	true
-  := result  compute_atom()
-
+compute_expr := { string: input, number: min_prec, function: o }
+  result = compute_atom()
   while cur token is a binary operator with precedence >= min_prec:
     prec, assoc = precedence and associativity of current token
     if assoc is left:
