@@ -105,8 +105,16 @@ export const bolk = <F: {}>(...funs: Array<F>): (({}) => mixed) => {
           ObjectPattern(n, mae + "[" + i + "]", o);
         } else if ("RestElement" === n.type) {
         } else if ("Identifier" === n.type) {
+        } else if ("AssignmentPattern" === n.type) {
+          if ("StringLiteral" === n.right.type) {
+            o(`${mae}[${i}] === "${n.right.value}"`)
+          } else if ("NumericLiteral" === n.right.type) {
+            o(`${mae}[${i}] === ${n.right.value}`)
+          } else {
+            throw new Error(n.type);
+          }
         } else {
-          throw new Error("empty");
+          throw new Error(n?.type);
         }
       });
     }
