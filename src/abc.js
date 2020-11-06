@@ -1,22 +1,6 @@
 // @flow strict
-const ast = require("../lib/babel");
+const { bexp } = require("./bexp");
 const { static_cast } = require("./utils/static_cast");
-const parseArrow = (f: {}) => {
-  var code = f.toString();
-  if (/^function\s*\(/.test(code)) code = "function anon" + code.slice(8);
-  const {
-    program: {
-      body: [n],
-    },
-  } = ast.parse(code);
-  if (
-    n.type === "ExpressionStatement" &&
-    n.expression.type === "ArrowFunctionExpression"
-  )
-    return n.expression;
-  else if (n.type === "FunctionDeclaration") return n;
-  else throw new Error("empty");
-};
 export type n3<OT: {} = {}> = {
   N: null[],
   a: mixed[][],
@@ -61,79 +45,18 @@ export function C(f: mixed, ...args: Array<mixed>): mixed {
     });
     proto.type += "]";
   }
-  return static_cast<({}) => mixed>(f).call(this, aob);
+  return static_cast<({}) => mixed>(f)(aob);
 }
 export function B(...funs: Array<mixed>): ({}) => mixed {
-  var code = `const [funs] = arguments;\nreturn a => {\n`;
+  var code = `const funs = arguments[0];\nreturn a => {\n`;
   funs.forEach((f, i) => {
-    const af = parseArrow(static_cast<() => void>(f));
-    if (af.params.length === 1 && af.params[0].type === "ObjectPattern") {
-      let bexr = "true";
-      ObjectPattern(af.params[0], "a", (r) => {
-        bexr = bexr + " && \n\t" + r;
-      });
-      code += `if(${bexr.slice(8)}\n) return funs[${i}].call(a, a);\n`;
-    } else if (af.params.length === 0) {
-      code += `return funs[${i}].call(a);\n`;
-    } else throw new Error("empty");
+    if (typeof f === "function")
+      code += `if(${bexp(
+        static_cast<() => void>(f),
+        "a"
+      )}\n) return funs[${i}].call(a, a);\n`;
+    else throw new Error("arg for B is not a function");
   });
   code += `throw new Error('empty');\n}\n`;
   return new Function(code).call(null, funs);
-  function ObjectPattern(n, mae, o) {
-    var lexp = `typeof ${mae} === 'object' && ${mae} !== null`;
-    if (n.properties[n.properties.length - 1]?.type === "RestElement") {
-      lexp += ` && Object.keys(${mae}).length >= ${n.properties.length - 1}`;
-    } else {
-      lexp += ` && Object.keys(${mae}).length === ${n.properties.length}`;
-    }
-    o(lexp);
-    n.properties.forEach((n, i) => {
-      if (n.type === "ObjectProperty") {
-        if (n.key.type !== "Identifier") throw new Error("empty");
-        const id = n.key.name;
-        const v = n.value;
-        if (v.type === "Identifier") {
-          o(`Array.isArray(${mae}.${id})`);
-        } else if (v.type === "ObjectPattern") {
-          ObjectPattern(v, mae + "." + id, o);
-        } else if (v.type === "ArrayPattern") {
-          ArrayPattern(v, mae + "." + id, o);
-        } else {
-          throw new Error("empty");
-        }
-      } else if (n.type === "RestElement") {
-      } else {
-        throw new Error("empty");
-      }
-    });
-    function ArrayPattern(n, mae, o) {
-      var lexp = `Array.isArray(${mae})`;
-      if (n.elements[n.elements.length - 1]?.type === "RestElement") {
-        lexp += ` && ${mae}.length >= ${n.elements.length - 1}`;
-      } else {
-        lexp += ` && ${mae}.length === ${n.elements.length}`;
-      }
-      o(lexp);
-      n.elements.forEach((n, i) => {
-        if (n == null) {
-        } else if ("ArrayPattern" === n.type) {
-          ArrayPattern(n, mae + "[" + i + "]", o);
-        } else if ("ObjectPattern" === n.type) {
-          ObjectPattern(n, mae + "[" + i + "]", o);
-        } else if ("RestElement" === n.type) {
-        } else if ("Identifier" === n.type) {
-        } else if ("AssignmentPattern" === n.type) {
-          if ("StringLiteral" === n.right.type) {
-            o(`${mae}[${i}] === "${n.right.value}"`);
-          } else if ("NumericLiteral" === n.right.type) {
-            o(`${mae}[${i}] === ${n.right.value}`);
-          } else {
-            throw new Error(n.type);
-          }
-        } else {
-          throw new Error(n?.type);
-        }
-      });
-    }
-  }
 }
