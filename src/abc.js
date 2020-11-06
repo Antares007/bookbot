@@ -1,5 +1,6 @@
 // @flow strict
 const ast = require("../lib/babel");
+const { static_cast } = require("./utils/static_cast");
 const parseArrow = (f: {}) => {
   var code = f.toString();
   if (/^function\s*\(/.test(code)) code = "function anon" + code.slice(8);
@@ -25,17 +26,32 @@ export type n3<OT: {} = {}> = {
   u: void[],
   o: OT[],
 };
-export const coll = (f: ({}) => mixed, ...args: Array<mixed>): mixed => {
+export function A(f: mixed, ...aies: Array<mixed>): mixed {
+  var args = [];
+  for (let a of aies) {
+    if (a !== null && typeof a === "object" && typeof a.type === "string")
+      if (aies.length === 1)
+        return static_cast<(mixed) => void>(f).call(this, a);
+      else
+        Object.keys(a).forEach((k) => {
+          args = args.concat(a[k]);
+        });
+    else args.push(a);
+  }
+  return C.call(this, f, ...args);
+}
+export function C(f: mixed, ...args: Array<mixed>): mixed {
   const proto = { type: "" };
   const aob = Object.create(proto);
   for (let a of args) {
-    const tn = Array.isArray(a) ? "a" : a === null ? "N" : (typeof a)[0];
+    const tn = (typeof a)[0];
     if (Array.isArray(aob[tn])) aob[tn].push(a);
     else aob[tn] = [a];
   }
   proto.type = "";
-  for (let tn of "aNnsbuf")
-    if (aob[tn]?.length) proto.type += tn + aob[tn].length;
+  for (let tn of "nsbuf")
+    if (aob[tn]?.length)
+      proto.type += tn + (aob[tn].length > 1 ? aob[tn].length : "");
   if (aob.o?.length) {
     proto.type += "o[";
     aob.o.forEach((x, i) => {
@@ -45,12 +61,12 @@ export const coll = (f: ({}) => mixed, ...args: Array<mixed>): mixed => {
     });
     proto.type += "]";
   }
-  return f(aob);
-};
-export const bolk = <F: {}>(...funs: Array<F>): (({}) => mixed) => {
+  return static_cast<({}) => mixed>(f).call(this, aob);
+}
+export function B(...funs: Array<mixed>): ({}) => mixed {
   var code = `const [funs] = arguments;\nreturn a => {\n`;
   funs.forEach((f, i) => {
-    const af = parseArrow(f);
+    const af = parseArrow(static_cast<() => void>(f));
     if (af.params.length === 1 && af.params[0].type === "ObjectPattern") {
       let bexr = "true";
       ObjectPattern(af.params[0], "a", (r) => {
@@ -77,6 +93,7 @@ export const bolk = <F: {}>(...funs: Array<F>): (({}) => mixed) => {
         const id = n.key.name;
         const v = n.value;
         if (v.type === "Identifier") {
+          o(`Array.isArray(${mae}.${id})`);
         } else if (v.type === "ObjectPattern") {
           ObjectPattern(v, mae + "." + id, o);
         } else if (v.type === "ArrayPattern") {
@@ -107,9 +124,9 @@ export const bolk = <F: {}>(...funs: Array<F>): (({}) => mixed) => {
         } else if ("Identifier" === n.type) {
         } else if ("AssignmentPattern" === n.type) {
           if ("StringLiteral" === n.right.type) {
-            o(`${mae}[${i}] === "${n.right.value}"`)
+            o(`${mae}[${i}] === "${n.right.value}"`);
           } else if ("NumericLiteral" === n.right.type) {
-            o(`${mae}[${i}] === ${n.right.value}`)
+            o(`${mae}[${i}] === ${n.right.value}`);
           } else {
             throw new Error(n.type);
           }
@@ -119,4 +136,4 @@ export const bolk = <F: {}>(...funs: Array<F>): (({}) => mixed) => {
       });
     }
   }
-};
+}
