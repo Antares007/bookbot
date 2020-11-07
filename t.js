@@ -10,14 +10,6 @@ export type n3<OT: {} = {}> = {
   f: mixed[],
   o: OT[],
 };
-const pstr = B(({ s: [match] }: n3<>) =>
-  B(({ s: [input], f: [o] }: n3<>) => {
-    let i = 0;
-    while (i < match.length && match[i] === input[i]) i++;
-    if (i === match.length) C(o, "pstr", i);
-    else C(o, "error", "cant match", match);
-  })
-);
 const purry = B(
   ({ f: [f] }) => f,
   ({ f: funs }) =>
@@ -34,19 +26,6 @@ const purry = B(
       C(funs[i++], pith);
     })
 );
-C(
-  C(
-    purry,
-    B(({ f: [o] }) => C(o, "hello")),
-    B(({ s: [s], f: [o] }) => C(o, s.length)),
-    B(({ n: [n], f: [o] }) => C(o, n + n + "")),
-    B(({ s: [s], f: [o] }) => C(o, s + "okeeey")),
-    B(({ s: [s], f: [o] }) => C(o, s + "babe"))
-  ),
-  B(function () {
-    console.log(this.s);
-  })
-);
 const pid = B(({ s: [input], f: [o] }) => {
   if (!id.isIdentifierStart(input.charCodeAt(0)))
     return C(o, "error", "not identifier start", input[0]);
@@ -54,10 +33,14 @@ const pid = B(({ s: [input], f: [o] }) => {
   while (i < input.length && id.isIdentifierChar(input.charCodeAt(i))) i++;
   C(o, "pid", i);
 });
-const pspace = B(function ({ s: [input], f: [o] }) {
-  if (input[0] === " ") C(o, "pspace", 1);
-  else C(o, "error", "not a space", input[0]);
-});
+const pstr = B(({ s: [match] }) =>
+  B(({ s: [input], f: [o] }) => {
+    let i = 0;
+    while (i < match.length && match[i] === input[i]) i++;
+    if (i === match.length) C(o, "pstr", i);
+    else C(o, "error", "cant match string", match);
+  })
+);
 const pand = B(
   ({ f: [f] }) => f,
   ({ f: funs }) =>
@@ -81,6 +64,10 @@ const pand = B(
       C(funs[i++], input, pith);
     })
 );
+const pspace = B(function ({ s: [input], f: [o] }) {
+  if (input[0] === " ") C(o, "pspace", 1);
+  else C(o, "error", "not a space", input[0]);
+});
 const por = B(
   ({ f: [f] }) => f,
   ({ f: funs }) =>
@@ -108,9 +95,29 @@ const pith = B(
     console.info(this);
   }
 );
+C(require("./b"), 1, "a");
+
+//
+// ns = { s:[''], n:[1] }
+// {n[1]o[{n[1]},{},...]}
+//
+//
+///C(
+///  C(
+///    purry,
+///    B(({ f: [o] }) => C(o, "hello")),
+///    B(({ s: [s], f: [o] }) => C(o, s.length)),
+///    B(({ n: [n], f: [o] }) => C(o, n + n + "")),
+///    B(({ s: [s], f: [o] }) => C(o, s + "okeeey")),
+///    B(({ s: [s], f: [o] }) => C(o, s + "babe"))
+///  ),
+///  B(function () {
+///    console.log(this.s);
+///  })
+///);
 C(
   C(por, C(pand, pid, pspace, pid, pspace), C(pand, pspace, pid, pspace, pid)),
   pith,
   " aaa bbb ccc ddd eee{_ა9d"
 );
-C(C(pstr, "abo"), pith, "abo");
+///C(C(pstr, "abo"), pith, "abo");
