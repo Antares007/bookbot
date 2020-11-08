@@ -5,7 +5,7 @@ const { static_cast } = require("./utils/static_cast");
 export function A(f: mixed, ...aies: Array<mixed>): mixed {
   var args = [f];
   for (let a of aies)
-    if (a !== null && typeof a === "object" && typeof a.type === "string")
+    if (a !== null && typeof a === "object" && a.constructor.name === 'Object')
       if (aies.length === 1) return static_cast<(mixed) => void>(f)(a);
       else for (let k of Object.keys(a)) args = args.concat(a[k]);
     else args.push(a);
