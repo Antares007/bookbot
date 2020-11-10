@@ -65,7 +65,7 @@ module.exports = (B(
   ({ s: [t = "str", match, input], f: [o] }) => {
     let len = 0;
     while (len < match.length && match[len] === input[len]) len++;
-    if (len === match.length) C(o, "pstr", len);
+    if (len === match.length) C(o, len);
     else C(o, "error", `cant match string "${match}"`);
   },
   ({ s: [t = "anyOf", chars, input], f: [o] }) =>
@@ -92,11 +92,12 @@ module.exports = (B(
     );
     C(nar, input.slice(length), pith);
   },
-  ({ s: [t = "and"], f: [f] }) => f,
-  ({ s: [t = "and"], f: funs }) =>
-    B(function ({ s: [input], f: [o] }) {
+  ({ s: [t = "and", input], f: [f] }) => C(f, input),
+  ({ s: [t = "and", input], f: funs }) =>
+     {
       var i = 0;
       var length = 0;
+      const o = funs[funs.length-1]
       const toks = [];
       const pith = B(
         function ({ s: [t = "error", ...ss], ...rest }) {
@@ -105,12 +106,12 @@ module.exports = (B(
         function ({ n, ...rest }) {
           length += n[0];
           toks.push(this);
-          if (i < funs.length) C(funs[i++], input.slice(length), pith);
+          if (i < funs.length-1) C(funs[i++], input.slice(length), pith);
           else C(o, length, ...toks);
         }
       );
       C(funs[i++], input, pith);
-    }),
+    },
   ({ s: [t = "or"], f: [f] }) => f,
   ({ s: [t = "or"], f: funs }) =>
     B(({ s: [input], f: [o] }) => {
