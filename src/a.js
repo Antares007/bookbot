@@ -104,20 +104,6 @@ const see = (o: N<rring_rays_t<[number, string, boolean]>>) => {
   o({ m: "get", a: (childdivelm) => {} });
   o({ m: "end" });
 };
-const { A, B, C } = require("./abc");
-const mp = B(({ n: [depth], o: [elm] }) => {
-  var childs_count = 0;
-  const { childNodes } = elm;
-  const childPiths = [];
-  return B(
-    ({ s: [t = "element", ...ss], f: [nar] }) => {},
-    ({ s: [t = "get"], f: [f] }) => {
-      f(elm);
-    },
-    ({ s: [text] }) => {},
-    ({}) => {}
-  );
-});
 function pith(elm: HTMLElement, depth: number = 0): N<element_rays_t> {
   var childs_count = 0;
   const { childNodes } = elm;
