@@ -1,20 +1,19 @@
 // @flow strict
 const { A, B, C } = require("./abc");
 module.exports = (B(
-  ({ s: [t = "purry"], f: [f] }) => f,
-  ({ s: [t = "purry"], f: funs }) =>
-    B(({ f: [o] }) => {
-      var i = 0;
-      const pith = B(
-        function ({ s: [t = "error", ...ss], ...rest }) {
-          A(o, this);
-        },
-        function () {
-          C(A(funs[i++], this), i < funs.length ? pith : o);
-        }
-      );
-      C(funs[i++], pith);
-    }),
+  ({ s: [t = "purry"], f: [onar] }) => onar,
+  ({ s: [t = "purry"], f: [onar, ...bnars] }) => (o) => {
+    var i = 0;
+    const pith = B(
+      function ({ s: [t = "error", ...ss], ...rest }) {
+        A(o, this);
+      },
+      function () {
+        A(bnars[i++], this)(i < bnars.length ? pith : o);
+      }
+    );
+    onar(pith);
+  },
   ({ s: [t = "all"], f: [f] }) => f,
   ({ s: [t = "all"], f: funs }) =>
     B(({ f: [o] }) => {
@@ -93,25 +92,24 @@ module.exports = (B(
     C(nar, input.slice(length), pith);
   },
   ({ s: [t = "and", input], f: [f] }) => C(f, input),
-  ({ s: [t = "and", input], f: funs }) =>
-     {
-      var i = 0;
-      var length = 0;
-      const o = funs[funs.length-1]
-      const toks = [];
-      const pith = B(
-        function ({ s: [t = "error", ...ss], ...rest }) {
-          A(o, this);
-        },
-        function ({ n, ...rest }) {
-          length += n[0];
-          toks.push(this);
-          if (i < funs.length-1) C(funs[i++], input.slice(length), pith);
-          else C(o, length, ...toks);
-        }
-      );
-      C(funs[i++], input, pith);
-    },
+  ({ s: [t = "and", input], f: funs }) => {
+    var i = 0;
+    var length = 0;
+    const o = funs[funs.length - 1];
+    const toks = [];
+    const pith = B(
+      function ({ s: [t = "error", ...ss], ...rest }) {
+        A(o, this);
+      },
+      function ({ n, ...rest }) {
+        length += n[0];
+        toks.push(this);
+        if (i < funs.length - 1) C(funs[i++], input.slice(length), pith);
+        else C(o, length, ...toks);
+      }
+    );
+    C(funs[i++], input, pith);
+  },
   ({ s: [t = "or"], f: [f] }) => f,
   ({ s: [t = "or"], f: funs }) =>
     B(({ s: [input], f: [o] }) => {

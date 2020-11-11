@@ -46,17 +46,7 @@ const Identifier: mixed = B(({ s: [input], f: [o] }) => {
 //digit: one of
 //  0 1 2 3 4 5 6 7 8 9
 
-(
-
-  {
-    a,      
-    b = 1,  
-    c: o,
-    d: {},
-    ...r
-  }
-
-) => {};
+({ a, b = 1, c: o, d: {}, ...r }) => {};
 
 const ObjectProperty = B(({ s: [input], f: [o] }) => {});
 
@@ -70,4 +60,11 @@ const ObjectPattern = B(({ s: [input], f: [o] }) => {
   C(p, "and", openBrace, closeBrace, input, o);
 });
 console.log("________");
-C(ObjectPattern, pith, "{}");
+//C(ObjectPattern, pith, "{}");
+
+C(
+  purry,
+  (o) => C(o, 1),
+  ({ n: [v] }) => (o) => C(o, v * v + ""),
+  ({ s: [v] }) => (o) => C(o, v + v)
+)(pith);
