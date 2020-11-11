@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 const p = require("./src/p");
 const { A, B, C } = require("./src/abc");
 const { isIdentifierStart, isIdentifierChar } = require("./lib/id");

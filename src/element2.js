@@ -1,12 +1,12 @@
 // @flow strict
-const { A, B, C } = require("./abc");
+const { B, C } = require("./abc");
 const makePith:mixed = B(({ n: [depth], o: [elm] }) => {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
   const pith = B(
-    ({ s: [t = "element", tag], f: [nar] }) => C(pith, t, tag, nar, ""),
-    ({ s: [t = "element", tag, key], f: [nar] }) => {
+    ({ s: [t = "element", tag], f: [onar] }) => C(pith, t, tag, onar, ""),
+    ({ s: [t = "element", tag, key], f: [onar] }) => {
       let n, ob;
       const index = childs_count++;
       const TAG = tag.toUpperCase();
@@ -23,15 +23,15 @@ const makePith:mixed = B(({ n: [depth], o: [elm] }) => {
 
           if ((ob = childPiths[index]))
             if (key !== '') return;
-            else return C(nar,ob), C(ob);
+            else return onar(ob), C(ob);
           childPiths.splice(index, 0, (ob = C(makePith,n, depth + 1)));
-          return C(nar,ob), C(ob);
+          return onar(ob), C(ob);
         }
       n = document.createElement(TAG);
       if (key !== '') n.setAttribute("key", key);
       elm.insertBefore(n, childNodes[index]),
         childPiths.splice(index, 0, (ob = C(makePith,n, depth + 1)));
-      C(nar,ob), C(ob);
+      onar(ob), C(ob);
     },
     ({ s: [text] }) => {
       const index = childs_count++;
@@ -45,7 +45,7 @@ const makePith:mixed = B(({ n: [depth], o: [elm] }) => {
       elm.insertBefore(document.createTextNode(text), childNodes[index]),
         childPiths.splice(index, 0, null);
     },
-    ({ s: [t = "get"], f: [f] }) => C(f,elm),
+    ({ s: [t = "get"], f: [f] }) => f(elm),
     ({}) => {
       for (let l = childNodes.length; l > childs_count; l--)
         elm.removeChild(childNodes[childs_count]);

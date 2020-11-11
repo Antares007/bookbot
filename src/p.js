@@ -1,5 +1,6 @@
 // @flow strict
 const { A, B, C } = require("./abc");
+const { static_cast } = require("./utils/static_cast");
 module.exports = (B(
   ({ s: [t = "purry"], f: [onar] }) => onar,
   ({ s: [t = "purry"], f: [onar, ...bnars] }) => (o) => {
@@ -9,7 +10,7 @@ module.exports = (B(
         A(o, this);
       },
       function () {
-        A(bnars[i++], this)(i < bnars.length ? pith : o);
+        static_cast<(mixed)=>void>(A(bnars[i++], this))(i < bnars.length ? pith : o);
       }
     );
     onar(pith);
