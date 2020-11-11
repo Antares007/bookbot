@@ -20,29 +20,68 @@ const ring = B(({ f: [reduce, onar] }) => (o) => {
   );
   onar(pith);
 });
-
-const counter = B(({ n: [depth] }) =>
-  C(id, "relement", "div", "counter" + depth, (o) => {
-    C(o, "relement", "button", (o) => {
-      C(o, "+");
-      C(o, "get", (elm) => console.log(elm));
-      depth && o(C(counter, depth - 1));
+const rmap = B(({ s: [key], o: [init], f: [o] }) =>
+  B(function ({ s: [t = "reduce"], f: [rb] }) {
+    C(o, "reduce", (a) => {
+      const ob = a[key] || init;
+      const nb = rb(ob);
+      if (ob === nb) return a;
+      const ns = { ...a, [key]: nb };
+      return ns;
     });
-    C(o, "relement", "button", (o) => {
-      C(o, "-");
-      depth && o(C(counter, depth - 1));
-    });
-    C(o, depth + "");
   })
 );
 
+const counter = B(({ n: [depth] }) =>
+  C(id, "relement", "div", "counter" + depth, (o) => {
+    var op;
+    C(o, "relement", "button", (o) => {
+      C(o, "+");
+      C(o, "get", (elm) => {
+        elm.addEventListener("click", (e) => {
+          C(o, "reduce", (s) => {
+            C(op, s.n + 1 + "");
+            C(op);
+            return { ...s, n: s.n + 1 };
+          });
+        });
+      });
+      depth &&
+        C(ring, C(rmap, "+", { n: 0 }, o), (o) => o(C(counter, depth - 1)))(o);
+    });
+    C(o, "relement", "button", (o) => {
+      C(o, "-");
+      C(o, "get", (elm) => {
+        elm.addEventListener("click", (e) => {
+          C(o, "reduce", (s) => {
+            C(op, s.n - 1 + "");
+            C(op);
+            return { ...s, n: s.n - 1 };
+          });
+        });
+      });
+      depth &&
+        C(ring, C(rmap, "-", { n: 0 }, o), (o) => o(C(counter, depth - 1)))(o);
+    });
+    C(o, "relement", "div", (o) => {
+      op = o;
+      C(o, "reduce", (s) => {
+        C(o, s.n + "");
+        return s;
+      });
+    });
+  })
+);
+var state = { n: 0 };
 C(
   ring,
   B(({ s: [t = "reduce"], f: [r] }) => {
-    console.log(r);
+    const oldstate = state;
+    state = r(state);
+    oldstate !== state && console.log(state);
   }),
   (o) => {
-    o(C(counter, 3));
+    o(C(counter, 2));
   }
 )(o);
 

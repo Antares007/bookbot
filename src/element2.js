@@ -1,6 +1,6 @@
 // @flow strict
 const { B, C } = require("./abc");
-const makePith:mixed = B(({ n: [depth], o: [elm] }) => {
+const makePith: mixed = B(({ n: [depth], o: [elm] }) => {
   var childs_count = 0;
   const { childNodes } = elm;
   const childPiths = [];
@@ -15,28 +15,31 @@ const makePith:mixed = B(({ n: [depth], o: [elm] }) => {
           (n = childNodes[i]) &&
           n instanceof HTMLElement &&
           n.nodeName === TAG &&
-          (key === '' || n.getAttribute("key") === key)
+          (key === "" || n.getAttribute("key") === key)
         ) {
           if (index < i)
             elm.insertBefore(n, childNodes[index]),
               childPiths.splice(index, 0, ...childPiths.splice(i, 1));
 
           if ((ob = childPiths[index]))
-            if (key !== '') return;
+            if (key !== "") return;
             else return onar(ob), C(ob);
-          childPiths.splice(index, 0, (ob = C(makePith,n, depth + 1)));
+          childPiths.splice(index, 0, (ob = C(makePith, n, depth + 1)));
           return onar(ob), C(ob);
         }
       n = document.createElement(TAG);
-      if (key !== '') n.setAttribute("key", key);
+      if (key !== "") n.setAttribute("key", key);
       elm.insertBefore(n, childNodes[index]),
-        childPiths.splice(index, 0, (ob = C(makePith,n, depth + 1)));
+        childPiths.splice(index, 0, (ob = C(makePith, n, depth + 1)));
       onar(ob), C(ob);
     },
     ({ s: [text] }) => {
       const index = childs_count++;
       for (let i = index, l = childNodes.length; i < l; i++)
-        if (childNodes[i].nodeType === 3 && childNodes[i].textContent === text) {
+        if (
+          childNodes[i].nodeType === 3 &&
+          childNodes[i].textContent === text
+        ) {
           if (index < i)
             elm.insertBefore(childNodes[i], childNodes[index]),
               childPiths.splice(index, 0, ...childPiths.splice(i, 1));
@@ -59,4 +62,4 @@ const makePith:mixed = B(({ n: [depth], o: [elm] }) => {
   );
   return pith;
 });
-module.exports = makePith
+module.exports = makePith;
