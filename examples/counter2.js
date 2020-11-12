@@ -6,20 +6,6 @@ const o = C(makePith, document.body, 0);
 
 const id = (a) => a;
 
-const ring = B(({ f: [reduce, onar] }) => (o) => {
-  const pith = B(
-    ({ s: [t = "relement", tag], f: [onar] }) => C(pith, t, tag, "", onar),
-    ({ s: [t = "relement", tag, key], f: [onar] }) =>
-      C(o, "element", tag, key, C(ring, reduce, onar)),
-    function ({ s: [t = "reduce"], f: [r] }) {
-      reduce(this);
-    },
-    function () {
-      o(this);
-    }
-  );
-  onar(pith);
-});
 const rmap = B(({ s: [key], o: [init], f: [o] }) =>
   B(function ({ s: [t = "reduce"], f: [rb] }) {
     C(o, "reduce", (a) => {
@@ -31,9 +17,25 @@ const rmap = B(({ s: [key], o: [init], f: [o] }) =>
     });
   })
 );
+const ring = B(({ f: [rpith, onar] }) => (o) => {
+  const pith = B(
+    ({ s: [t = "relement", tag], f: [onar] }) => C(pith, t, tag, "", onar),
+    ({ s: [t = "relement", tag, key], f: [onar] }) =>
+      C(o, "element", tag, key, C(ring, rpith, onar)),
+    ({ s: [t = "relement", tag, key], f: [onar], o: [init] }) =>
+      C(o, "element", tag, key, C(ring, C(rmap, key, init, rpith), onar)),
+    function ({ s: [t = "reduce"], f: [r] }) {
+      rpith(this);
+    },
+    function () {
+      o(this);
+    }
+  );
+  onar(pith);
+});
 
-const counter = B(({ n: [depth] }) =>
-  C(id, "relement", "div", "counter" + depth, (o) => {
+const counter = B(({ s: [key], n: [depth] }) =>
+  C(id, "relement", "div", key, { n: 9 }, (o) => {
     var op;
     C(o, "relement", "button", (o) => {
       C(o, "+");
@@ -46,8 +48,7 @@ const counter = B(({ n: [depth] }) =>
           });
         });
       });
-      depth &&
-        C(ring, C(rmap, "+", { n: 0 }, o), (o) => o(C(counter, depth - 1)))(o);
+      depth && o(C(counter, "+", depth - 1));
     });
     C(o, "relement", "button", (o) => {
       C(o, "-");
@@ -60,8 +61,7 @@ const counter = B(({ n: [depth] }) =>
           });
         });
       });
-      depth &&
-        C(ring, C(rmap, "-", { n: 0 }, o), (o) => o(C(counter, depth - 1)))(o);
+      depth && o(C(counter, "-", depth - 1));
     });
     C(o, "relement", "div", (o) => {
       op = o;
@@ -72,7 +72,7 @@ const counter = B(({ n: [depth] }) =>
     });
   })
 );
-var state = { n: 0 };
+var state = {};
 C(
   ring,
   B(({ s: [t = "reduce"], f: [r] }) => {
@@ -81,7 +81,7 @@ C(
     oldstate !== state && console.log(state);
   }),
   (o) => {
-    o(C(counter, 2));
+    o(C(counter, 2, "counter"));
   }
 )(o);
 

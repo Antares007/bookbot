@@ -12,6 +12,7 @@ export function A(f: mixed, ...aies: Array<mixed>): mixed {
   return C.apply(null, args);
 }
 export function B(...funs: Array<mixed>): mixed {
+  const body = JSON.stringify(funs.map(f => f.toString()).join('\n'))
   var code = `const funs = arguments[0];\nreturn a => {\n`;
   funs.forEach((f, i) => {
     if (typeof f === "function")
@@ -21,7 +22,7 @@ export function B(...funs: Array<mixed>): mixed {
       )}\n) return funs[${i}].call(a, a);\n`;
     else throw new Error(`args[${i}] for B is ${typeof f}`);
   });
-  code += `throw new Error('empty');\n}\n`;
+  code += `throw new Error(${body});\n}\n`;
   return new Function(code).call(null, funs);
 }
 export function C(f: mixed, ...args: Array<mixed>): mixed {
