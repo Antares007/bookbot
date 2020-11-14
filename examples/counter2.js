@@ -17,10 +17,40 @@ const rmap = B(({ s: [key], o: [init], f: [o] }) =>
     });
   })
 );
+const ering = B(({ f: [onar] }) => (o) => {
+  var count = 0;
+  const list = [];
+  const pith = B(
+    ({ s: [t = "element", tag, key = null], f: [onar] }) =>
+      C(o, t, tag, key, C(ering, onar)),
+    function ({ s: [t = "on", type], f: [listener], o: [options] }) {
+      const index = count++;
+      for (let i = index, l = list.length; i < l; i++)
+        if (list[i] === this) {
+          if (index < i) list.splice(index, 0, ...list.splice(i, 1));
+          return;
+        }
+      C(o, "get", (elm) => elm.addEventListener(type, listener, options));
+      list.splice(index, 0, null);
+    },
+    function ({}) {
+      const olist = list.splice(count, list.length - count);
+      count = 0;
+      C(o, "get", (elm) => {
+        for (let e of olist) elm.removeEventListener(e.s[1], e.f[0], e.o[0]);
+      });
+      o(this);
+    },
+    function () {
+      o(this);
+    }
+  );
+  onar(pith);
+});
+
 const ring = B(({ f: [rpith, onar] }) => (o) => {
   const pith = B(
-    ({ s: [t = "relement", tag], f: [onar] }) => C(pith, t, tag, "", onar),
-    ({ s: [t = "relement", tag, key], f: [onar] }) =>
+    ({ s: [t = "relement", tag, key = null], f: [onar] }) =>
       C(o, "element", tag, key, C(ring, rpith, onar)),
     ({ s: [t = "relement", tag, key], f: [onar], o: [init] }) =>
       C(o, "element", tag, key, C(ring, C(rmap, key, init, rpith), onar)),
@@ -35,30 +65,26 @@ const ring = B(({ f: [rpith, onar] }) => (o) => {
 });
 
 const counter = B(({ s: [key], n: [depth] }) =>
-  C(id, "relement", "div", key, { n: 9 }, (o) => {
+  C(id, "relement", "div", key, { n: depth * 3 + 3 }, (o) => {
     var op;
     C(o, "relement", "button", (o) => {
       C(o, "+");
-      C(o, "get", (elm) => {
-        elm.addEventListener("click", (e) => {
-          C(o, "reduce", (s) => {
-            C(op, s.n + 1 + "");
-            C(op);
-            return { ...s, n: s.n + 1 };
-          });
+      C(o, "on", "click", {}, (e) => {
+        C(o, "reduce", (s) => {
+          C(op, s.n + 1 + "");
+          C(op);
+          return { ...s, n: s.n + 1 };
         });
       });
       depth && o(C(counter, "+", depth - 1));
     });
     C(o, "relement", "button", (o) => {
       C(o, "-");
-      C(o, "get", (elm) => {
-        elm.addEventListener("click", (e) => {
-          C(o, "reduce", (s) => {
-            C(op, s.n - 1 + "");
-            C(op);
-            return { ...s, n: s.n - 1 };
-          });
+      C(o, "on", "click", {}, (e) => {
+        C(o, "reduce", (s) => {
+          C(op, s.n - 1 + "");
+          C(op);
+          return { ...s, n: s.n - 1 };
         });
       });
       depth && o(C(counter, "-", depth - 1));
@@ -74,15 +100,18 @@ const counter = B(({ s: [key], n: [depth] }) =>
 );
 var state = {};
 C(
-  ring,
-  B(({ s: [t = "reduce"], f: [r] }) => {
-    const oldstate = state;
-    state = r(state);
-    oldstate !== state && console.log(state);
-  }),
-  (o) => {
-    o(C(counter, 2, "counter"));
-  }
+  ering,
+  C(
+    ring,
+    B(({ s: [t = "reduce"], f: [r] }) => {
+      const oldstate = state;
+      state = r(state);
+      oldstate !== state && console.log(state);
+    }),
+    (o) => {
+      o(C(counter, 2, "counter"));
+    }
+  )
 )(o);
 
 Object.assign(window, { o, A, B, C });

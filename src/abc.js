@@ -1,7 +1,7 @@
 // @flow strict
 const { bexp } = require("./bexp");
 const { static_cast } = require("./utils/static_cast");
-const r = /(\(\)|\({.*}\))/;
+const emptylist = [];
 
 export function A(f: mixed, ...aies: Array<mixed>): mixed {
   var args = [f];
@@ -13,22 +13,6 @@ export function A(f: mixed, ...aies: Array<mixed>): mixed {
   return C.apply(null, args);
 }
 export function B(...funs: Array<mixed>): mixed {
-  const body =
-    "->\n" +
-    funs
-      .map((f) => {
-        const s = r.exec(
-          f
-            .toString()
-            .replace(/\n/g, " ")
-            .replace(/  /g, " ")
-            .replace(/  /g, " ")
-            .replace(/  /g, " ")
-        );
-        if (s) return s[0].replace(/"/g, "");
-        return f.toString();
-      })
-      .join("\n");
   var code = `const funs = arguments[0];\nreturn a => {\n`;
   funs.forEach((f, i) => {
     if (typeof f === "function")
@@ -38,19 +22,27 @@ export function B(...funs: Array<mixed>): mixed {
       )}\n) return funs[${i}].call(a, a);\n`;
     else throw new Error(`args[${i}] for B is ${typeof f}`);
   });
-  code += `throw new Error(JSON.stringify(a)+\`${body}\`);\n}\n`;
+  code += `throw new Error(JSON.stringify(a));\n}\n`;
   return new Function(code).call(null, funs);
 }
 export function C(f: mixed, ...args: Array<mixed>): mixed {
-  const proto = { type: "" };
+  const proto = {
+    type: "",
+    n: emptylist,
+    s: emptylist,
+    b: emptylist,
+    f: emptylist,
+    o: emptylist,
+  };
   const abc = Object.create(proto);
   for (let a of args) {
+    if (a == null) continue;
     const tn = (typeof a)[0];
-    if (Array.isArray(abc[tn])) abc[tn].push(a);
+    if (abc.hasOwnProperty(tn)) abc[tn].push(a);
     else abc[tn] = [a];
   }
   proto.type = "";
-  for (let tn of "nsbuf")
+  for (let tn of "nsbf")
     if (abc[tn]?.length)
       proto.type += tn + (abc[tn].length > 1 ? abc[tn].length : "");
   if (abc.o?.length) {

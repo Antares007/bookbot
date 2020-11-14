@@ -5,8 +5,7 @@ const makePith: mixed = B(({ n: [depth], o: [elm] }) => {
   const { childNodes } = elm;
   const childPiths = [];
   const pith = B(
-    ({ s: [t = "element", tag], f: [onar] }) => C(pith, t, tag, onar, ""),
-    ({ s: [t = "element", tag, key], f: [onar] }) => {
+    ({ s: [t = "element", tag, key = null], f: [onar] }) => {
       let n, ob;
       const index = childs_count++;
       const TAG = tag.toUpperCase();
@@ -15,20 +14,20 @@ const makePith: mixed = B(({ n: [depth], o: [elm] }) => {
           (n = childNodes[i]) &&
           n instanceof HTMLElement &&
           n.nodeName === TAG &&
-          (key === "" || n.getAttribute("key") === key)
+          (key == null || n.getAttribute("key") === key)
         ) {
           if (index < i)
             elm.insertBefore(n, childNodes[index]),
               childPiths.splice(index, 0, ...childPiths.splice(i, 1));
 
           if ((ob = childPiths[index]))
-            if (key !== "") return;
-            else return onar(ob), C(ob);
+            if (key == null) return onar(ob), C(ob);
+            else return;
           childPiths.splice(index, 0, (ob = C(makePith, n, depth + 1)));
           return onar(ob), C(ob);
         }
       n = document.createElement(TAG);
-      if (key !== "") n.setAttribute("key", key);
+      if (key != null) n.setAttribute("key", key);
       elm.insertBefore(n, childNodes[index]),
         childPiths.splice(index, 0, (ob = C(makePith, n, depth + 1)));
       onar(ob), C(ob);
