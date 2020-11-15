@@ -14,15 +14,15 @@ export function A(f: mixed, ...aies: Array<mixed>): mixed {
 }
 export function B(...funs: Array<mixed>): mixed {
   var code = `const funs = arguments[0];\nreturn a => {\n`;
+  var pats = "";
   funs.forEach((f, i) => {
-    if (typeof f === "function")
-      code += `if(${bexp(
-        static_cast<() => void>(f),
-        "a"
-      )}\n) return funs[${i}].call(a, a);\n`;
-    else throw new Error(`args[${i}] for B is ${typeof f}`);
+    if (typeof f === "function") {
+      const [exp, pat] = bexp(static_cast<() => void>(f), "a");
+      pats += "\n" + pat;
+      code += `if(${exp}\n) return funs[${i}].call(a, a);\n`;
+    } else throw new Error(`args[${i}] for B is ${typeof f}`);
   });
-  code += `throw new Error(JSON.stringify(a));\n}\n`;
+  code += `throw new Error(a.type+\` ${pats}\`);\n}\n`;
   return new Function(code).call(null, funs);
 }
 export function C(f: mixed, ...args: Array<mixed>): mixed {
@@ -43,9 +43,9 @@ export function C(f: mixed, ...args: Array<mixed>): mixed {
   }
   proto.type = "";
   for (let tn of "nsbf")
-    if (abc[tn]?.length)
+    if (abc[tn].length)
       proto.type += tn + (abc[tn].length > 1 ? abc[tn].length : "");
-  if (abc.o?.length) {
+  if (abc.o.length) {
     proto.type += "o[";
     abc.o.forEach((x, i) => {
       if (typeof x?.type === "string") proto.type += x.type;

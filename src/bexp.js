@@ -1,37 +1,20 @@
 // @flow strict
 const ast = require("../lib/babel");
 export function bexp(f: (...args: Array<mixed>) => mixed, mae: string): string {
-  let bexp = "false";
-  const af = parseArrow(f);
-  if (af.params.length === 1) {
-    if (af.params[0].type === "ObjectPattern") {
-      bexp = true;
-      var pc = [];
-      ObjectPattern(af.params[0], mae, pc.push.bind(pc));
-      bexp = pc.join(" &&\n\t");
-    } else if (af.params[0].type === "Identifier") {
-      bexp = "true";
-    }
-  } else if (af.params.length === 0) {
-    bexp = "true";
+  const code = `(${f.toString()})`;
+  const params = ast.parse(code).program.body[0].expression.params;
+  if (params.length === 1 && params[0].type === "ObjectPattern") {
+    var pc = [];
+    ObjectPattern(params[0], mae, pc.push.bind(pc));
+    return [
+      pc.join(" &&\n\t"),
+      code.slice(params[0].start, params[0].end).replace(/\n| |"/g, ""),
+    ];
+  } else if (params.length === 0) {
+    return ["true", "true"];
+  } else {
+    return ["false", "false"];
   }
-  return bexp;
-}
-function parseArrow(f) {
-  var code = f.toString();
-  if (/^function\s*\(/.test(code)) code = "function anon" + code.slice(8);
-  const {
-    program: {
-      body: [n],
-    },
-  } = ast.parse(code);
-  if (
-    n.type === "ExpressionStatement" &&
-    n.expression.type === "ArrowFunctionExpression"
-  )
-    return n.expression;
-  else if (n.type === "FunctionDeclaration") return n;
-  else throw new Error("empty");
 }
 function ObjectPattern({ properties }, mae, o) {
   var len = properties.length;
@@ -67,12 +50,9 @@ function ArrayPattern({ elements }, mae, o) {
       len--;
     else break;
   }
-  if(elements.length === len)
-    o(`${mae}.length === ${len}`);
-  else if(hasrest)
-    o(`${mae}.length >= ${len}`);
-  else
-    o(`${mae}.length >= ${len} && ${mae}.length <= ${elements.length}`);
+  if (elements.length === len) o(`${mae}.length === ${len}`);
+  else if (hasrest) o(`${mae}.length >= ${len}`);
+  else o(`${mae}.length >= ${len} && ${mae}.length <= ${elements.length}`);
   for (let i = 0; i < len; i++) {
     n = elements[i];
     if ("Identifier" === n.type);
