@@ -1,4 +1,29 @@
 // args ""
+
+const ab = (id, 'archil', 'bolkvadze', 45)
+// typeof ab == "ns2"
+
+
+ab.s[0] == 'archil'
+ab.s[1] == 'bolkvadze'
+ab.n[0] == 45
+
+const ob = (id, 'bolkvadze', 'otar', 65)
+
+(+ 1 2) == 3
+
+
+// typeof rez1 == nns2
+const rez1 = (+, 1, 2, 3, 5.5, ab, ob)
+rez1.n[0] == 11.5
+rez1.ns2[0]s[0] = 'archilbolkvadze'
+rez1.ns2[0]s[1] = 'bolkvadzeotar'
+rez1.ns2[0]n[0] = 110
+
+const rez2 = (+, ob, ab)
+rez2.s[0] = 'bolkvadzearchil'
+rez2.s[1] = 'otarbolkvadze'
+rez2.n[0] = 110
 id := true a
 
 pstr :=
