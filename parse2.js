@@ -33,7 +33,7 @@ tdd({
   [`S → A / c b
     A → c B
     B → a            `]: ["cb", "ca"],
-  [`S → b / S a      `]: ["baaa"],
+//  [`S → b / S a      `]: ["baaa"],
 })
 function oplr(cyto, input) {
   return (o) => {
@@ -41,7 +41,7 @@ function oplr(cyto, input) {
     const stack = [];
     const tails = [];
     var pos = 0;
-    const γ = (a) => o(pos === input.length, configuration());
+    const γ = (a) => o(pos === input.length, a);
     p(cyto, (o) => o(γ));
     function n(s, t) {
       if (guanine !== typeOf(s)) t(n);
@@ -68,7 +68,7 @@ function oplr(cyto, input) {
           pos = peek(stack)[1]
           t(n);
         } else {
-          stack.push([type, len, s]);
+          stack.push([type, pos, s]);
           pos = pos + len;
           t(p);
         }
@@ -78,11 +78,11 @@ function oplr(cyto, input) {
         let se
         while ((se = stack.pop()) && se[0] !== cytosine) {
           args.unshift(
-            adenine === se[0] ? se[2] : input.slice(endpos - se[1], endpos)
+            adenine === se[0] ? se[2] : input.slice(se[1], endpos)
           );
-          endpos = endpos - se[1];
+          endpos = se[1];
         }
-        stack.push([adenine, pos - endpos, s(...args)]);
+        stack.push([adenine, endpos || 0, s(...args)]);
         if(peek(tails)) tails.pop()(p);
       } else {
         o("error");
@@ -198,13 +198,13 @@ function makeFun(x) {
 function tdd(tests) {
   for (let g in tests) {
     const cyto = makeCytosine(g);
-    const S = cyto((...args) => args.join("."));
+    const S = cyto((...args) => args.join(""));
     for (let input of tests[g]) {
       const parser = oplr(S, input);
       const log = [];
       var rez = false;
-      parser((x) => {
-        if (typeof x === "boolean") rez = x;
+      parser((x, v) => {
+        if (typeof x === "boolean") rez = x && v === input;
         else log.push(x);
       });
       if (!rez) {
