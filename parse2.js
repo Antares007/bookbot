@@ -15,16 +15,15 @@ const E = makeCytosine(`
 
 // prettier-ignore
 function B(o) {
-  o("a", (o) => {
-  o( B , (o) => {
-  o( γ , (o) => {
-  o("o", (o) => {
-  o( B , (o) => {
-  o( γ , (o) => {
-  o("b", (o) => {
-  o( γ , null);
-  })})})})})})})
-  function γ() {}
+  o("a", o=>{
+  o( B , o=>{
+  o( γ , o=>{
+  o("o", o=>{
+  o( B , o=>{
+  o( γ , o=>{
+  o("b", o=>{
+  o( γ , null)})})})})})})})
+  function γ(){}
 }
 tdd({
   [`B → a B / o B / b`]: ["aob", "aaoob", "aaaooob"],
@@ -34,7 +33,7 @@ tdd({
   [`S → A / c b
     A → c B
     B → a            `]: ["cb", "ca"],
-  [`S → b / S a      `]: ["ba", "baa", "baaa"],
+  [`S → b / S a      `]: ["baaa"],
 })
 function oplr(cyto, input) {
   return (o) => {
@@ -48,14 +47,13 @@ function oplr(cyto, input) {
       if (guanine !== typeOf(s)) t(n);
       else if (t) t(p);
       else {
-        let tmp;
-        while ((tmp = stack.pop())[0] !== cytosine);
-        pos = tmp[1];
+        let se;
+        while ((se = stack.pop())[0] !== cytosine);
+        pos = se[1];
         tails.pop()(n);
       }
     }
     function p(s, t) {
-      let tmp;
       if (counter-- === 0) return o("counter 0");
       o(configuration() + "  " + nameOf(s) + " " + toString(t));
       const type = typeOf(s);
@@ -64,26 +62,28 @@ function oplr(cyto, input) {
         tails.push(t);
         s(p);
       } else if (thymine === type) {
-        if ((tmp = match(s, input, pos)) < 0) {
-          while (stack[stack.length - 1][0] !== cytosine)
-            pos = pos - stack.pop()[1];
+        let len
+        if ((len = match(s, input, pos)) < 0) {
+          while (peek(stack)[0] !== cytosine) stack.pop()
+          pos = peek(stack)[1]
           t(n);
         } else {
-          stack.push([type, tmp, s]);
-          pos = pos + tmp;
+          stack.push([type, len, s]);
+          pos = pos + len;
           t(p);
         }
       } else if (guanine === type) {
         let args = [];
         let endpos = pos;
-        while ((tmp = stack.pop()) && tmp[0] !== cytosine) {
+        let se
+        while ((se = stack.pop()) && se[0] !== cytosine) {
           args.unshift(
-            adenine === tmp[0] ? tmp[2] : input.slice(endpos - tmp[1], endpos)
+            adenine === se[0] ? se[2] : input.slice(endpos - se[1], endpos)
           );
-          endpos = endpos - tmp[1];
+          endpos = endpos - se[1];
         }
         stack.push([adenine, pos - endpos, s(...args)]);
-        (tmp = tails.pop()) && tmp(p);
+        if(peek(tails)) tails.pop()(p);
       } else {
         o("error");
       }
@@ -103,14 +103,8 @@ function oplr(cyto, input) {
     }
   };
 }
-function next(a) {
-  if (a == null) return a;
-  var rez = null;
-  a(function pith(h, t) {
-    if (guanine === typeOf(h)) rez = t;
-    else t && t(pith);
-  });
-  return rez;
+function peek(s) {
+  return s[s.length-1];
 }
 function toString(c) {
   if (c == null) return "N";
