@@ -203,10 +203,14 @@ function tdd(tests) {
       const parser = oplr(S, input);
       const log = [];
       var rez = false;
-      parser((x, v) => {
-        if (typeof x === "boolean") rez = x && v === input;
-        else log.push(x);
-      });
+      try {
+        parser((x, v) => {
+          if (typeof x === "boolean") rez = x && v === input;
+          else log.push(x);
+        });
+      } catch (e) {
+        log.push(e.stack.split(" at ").slice(0, 2));
+      }
       if (!rez) {
         console.log(g);
         console.log(log.join("\n"));
