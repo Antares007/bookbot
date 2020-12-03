@@ -26,34 +26,34 @@ function B(o) {
   })})})})})})})
   function γ() {}
 }
-`B → a B / o B / b`;
-'S → S a / b';
-const input = "abaa";
-const text = `           S → A B / B A
-                         A → a a
-                         B → a b`;
-
+tdd({
+  [`B → a B / o B / b`]: ["aob", "aaoob", "aaaooob"],
+  [`S → A B / B A
+    A → a a
+    B → a b          `]: ["aaab", "abaa"],
+  [`S → A / c b
+    A → c B
+    B → a            `]: ["cb", "ca"],
+  [`S → b / S a      `]: ["ba", "baa", "baaa"],
+})
 function oplr(cyto, input) {
   return (o) => {
-    var counter = 19;
+    var counter = 39;
     const stack = [];
     const tails = [];
     var pos = 0;
-    const configuration = () => {
-      const cols = [30, 5, 15];
-      const s = stack.map((a) => a[0]+a[2]).join("");
-      const t = tails.map((t) => toString(t)).join(",");
-      const i = input.slice(pos);
-      return (
-        s.padStart(cols[0], " ").slice(-cols[0]) +
-        " " +
-        i.padStart(cols[1], " ").slice(-cols[1]) +
-        " " +
-        t.padEnd(cols[2], " ").slice(0, cols[2])
-      );
-    };
-    const γ = (a) => o(a);
+    const γ = (a) => o(pos === input.length, configuration());
     p(cyto, (o) => o(γ));
+    function n(s, t) {
+      if (guanine !== typeOf(s)) t(n);
+      else if (t) t(p);
+      else {
+        let tmp;
+        while ((tmp = stack.pop())[0] !== cytosine);
+        pos = tmp[1];
+        tails.pop()(n);
+      }
+    }
     function p(s, t) {
       let tmp;
       if (counter-- === 0) return o("counter 0");
@@ -67,8 +67,7 @@ function oplr(cyto, input) {
         if ((tmp = match(s, input, pos)) < 0) {
           while (stack[stack.length - 1][0] !== cytosine)
             pos = pos - stack.pop()[1];
-          if ((tmp = next(t))) tmp(p);
-          else stack.pop(), next(tails.pop())(p);
+          t(n);
         } else {
           stack.push([type, tmp, s]);
           pos = pos + tmp;
@@ -89,16 +88,21 @@ function oplr(cyto, input) {
         o("error");
       }
     }
+    function configuration() {
+      const cols = [20, 5, 10];
+      const s = stack.map((a) => a[0] + a[2]).join("");
+      const t = tails.map((t) => toString(t)).join(",");
+      const i = input.slice(pos);
+      return (
+        s.padStart(cols[0], " ").slice(-cols[0]) +
+        " " +
+        i.padStart(cols[1], " ").slice(-cols[1]) +
+        " " +
+        t.padEnd(cols[2], " ").slice(0, cols[2])
+      );
+    }
   };
 }
-const S = makeCytosine(text)((...args) => args.join("."));
-print(S);
-const parser = oplr(S, input);
-var state = {};
-parser((r) => {
-  if ("function" === typeof r) state = r(state);
-  else console.log(r);
-});
 function next(a) {
   if (a == null) return a;
   var rez = null;
@@ -168,9 +172,9 @@ function makeCytosine(description) {
   const Sname = description.slice(0, description.indexOf("→")).trim();
   return new Function(`
 return function(r=console.log.bind(console)) {
+function γ(...args) {return r(...args)}
 return ${Sname};
 ${funstr}
-function γ(...args) {return r(...args)}
 }`)();
 }
 function makeFun(x) {
@@ -180,7 +184,7 @@ function makeFun(x) {
         .split(" ")
         .map((s) => s.trim())
         .filter(Boolean);
-  if (x.length === 0) return "o=>{\no(γ,\t\tnull)\n}";
+  if (x.length === 0) return "o=>{\no(γ,\t\tnull)}";
   const name = description[1] === "→" ? description.splice(0, 2)[0] : "";
   const symbol = description.shift();
   return (
@@ -196,4 +200,23 @@ function makeFun(x) {
     makeFun(description) +
     ")}"
   );
+}
+function tdd(tests) {
+  for (let g in tests) {
+    const cyto = makeCytosine(g);
+    const S = cyto((...args) => args.join("."));
+    for (let input of tests[g]) {
+      const parser = oplr(S, input);
+      const log = [];
+      var rez = false;
+      parser((x) => {
+        if (typeof x === "boolean") rez = x;
+        else log.push(x);
+      });
+      if (!rez) {
+        console.log(g);
+        console.log(log.join("\n"));
+      }
+    }
+  }
 }
