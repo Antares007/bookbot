@@ -30,7 +30,7 @@ module.exports = function programmer(t, ...args) {
         let term = str.slice(start, spos);
         if (term === "|" || term === "/")
           toks[toks.length - 1][0] !== "G" && toks.push(["G"]);
-        else toks.push(["T", term]);
+        else toks.push(["T", term === "ε" ? "" : term]);
       }
     } else {
       tpos++;
@@ -51,7 +51,7 @@ module.exports = function programmer(t, ...args) {
         ? toks[i][1]
         : JSON.stringify(toks[i][1]);
     const tail = !toks[++i] || toks[i][0] === "C" ? null : n(++j);
-    code += `\n  const ${name}=(s,o)=>\to(s, '${mol}', ${head}, ${tail});`;
+    code += `\n  const ${name}=(s,o)=>o(s,\t${head},\t${tail},\t'${mol}');`;
   }
   return new Function(`
 return (_) => (__ = (...terms) => terms.join('')) => {${code}
