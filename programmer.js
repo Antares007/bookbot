@@ -1,13 +1,9 @@
 module.exports = function programmer(t, ...args) {
   const ws = " \n\r\t";
   const toks = [];
-  const n = (i) => "λ" + i.toString(16);
   var spos = 0,
     tpos = 0,
     apos = 0;
-  var code = "";
-  var j = 0;
-  var i = 0;
   while (tpos < t.length) {
     let str = t[tpos];
     while (ws.includes(str[spos])) spos++;
@@ -35,26 +31,41 @@ module.exports = function programmer(t, ...args) {
     } else {
       tpos++;
       spos = 0;
-      if (apos < args.length) toks.push(["G", apos++]);
+      if (apos < args.length) toks.push(["G", args[apos++].name]);
       else toks[toks.length - 1][0] !== "G" && toks.push(["G"]);
     }
   }
-  while (i < toks.length) {
-    const name = toks[i][0] === "C" ? toks[i++][1] : n(j);
-    const mol = toks[i][0];
-    const head =
-      toks[i][0] === "G"
-        ? typeof toks[i][1] === "number"
-          ? `_[${toks[i][1]}]`
-          : "__"
-        : toks[i][0] === "A"
-        ? toks[i][1]
-        : JSON.stringify(toks[i][1]);
-    const tail = !toks[++i] || toks[i][0] === "C" ? null : n(++j);
-    code += `\n  const ${name}=(s,o)=>o(s,\t${head},\t${tail},\t'${mol}');`;
+  toks.reverse();
+  const n = (i) => "λ" + i.toString(16);
+  var i = 0;
+  let code = "";
+  let hastail = false;
+  for (let tok of [...toks]) {
+    if (tok[0] === "C") {
+      code += `\nconst ${tok[1]}=${n(i)}`;
+      hastail = false;
+    } else {
+      const m = tok[0];
+      const name =
+        m === "A"
+          ? tok[1]
+          : m === "T"
+          ? JSON.stringify(tok[1])
+          : `_.${tok.length === 1 ? "_" : tok[1]}`;
+      const tail = hastail ? n(i) : "null";
+      code += `\nconst ${n(i + 1)}\t=(s,o)=>o(s,\t${name},\t${tail},\t'${m}')`;
+      hastail = true;
+      i++;
+    }
   }
+  code += "\nreturn " + n(i);
   return new Function(`
-return (_) => (__ = (...terms) => terms.join('')) => {${code}
-  return ${toks[0][1]};
-}`)()(args);
+return (_) => (__ = (...terms) => terms.join('')) => {\n_._ = __;\n${code}\n}`)()(
+    args.reduce((m, f) => {
+      if (typeof f !== "function" || !f.name.length)
+        throw new Error("args must be named functions!");
+      m[f.name] = f;
+      return m;
+    }, {})
+  );
 };

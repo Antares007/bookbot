@@ -1,47 +1,111 @@
+console.clear();
 const programmer = require("./programmer");
-const E = programmer`
-  E → E + T ${0} | T ${function Σ() {}}
-  T → T * F | F
-  F → ( E ) | id 
-`;
+//const E = programmer`
+//  E → E + T ${0} | T ${function Σ() {}}
+//  T → T * F | F
+//  F → ( E ) | id
+//`;
 // L = {aⁿbⁿcⁿ | n ≥ 0}
 
-const ABCn = programmer`
-  L → ABC ${(a, b, c) => {
-    if (a === b && b == c) return a;
-    else throw new Error("abc");
-  }}
-  A → A a ${(a, v) => a + 1} | ε ${0}
-  B → B b ${(a, v) => a + 1} | ε ${0}
-  C → C c ${(a, v) => a + 1} | ε ${0}
-`;
+//const ABCn = programmer`
+//  L → ABC ${(a, b, c) => {
+//    if (a === b && b == c) return a;
+//    else throw new Error("abc");
+//  }}
+//  A → A a ${(a, v) => a + 1} | ε ${0}
+//  B → B b ${(a, v) => a + 1} | ε ${0}
+//  C → C c ${(a, v) => a + 1} | ε ${0}
+//`;
+//
+const createNumber = (s) => parseInt(s, 10);
+const createString = (l, s, r) => s;
+const product = (...a) => {};
+const sum = (...a) => {};
+const id = (...a) => {};
+const assign = (...a) => {};
+const lhsOperationRhs = (lhs, op, rhs) =>
+  match(op, {
+    "+": (l, o, r) => l + r,
+    "-": (l, o, r) => l - r,
+    "*": (l, o, r) => l * r,
+    "/": (l, o, r) => l / r,
+  });
+// prettier-ignore
+//const ABO = programmer`
+//  S       → ^[\\x20\\n\\r\\t]+
+//  Number  → ^[1-9][0-9]* ${createNumber}
+//  String  → " ^[^"]* " ${createString}
+//  E       → E S ^[\\+-] S T ${lhsOperationRhs} T ${id}
+//  T       → T S ^[\\*/] S F ${lhsOperationRhs} F ${id}
+//  F       → ( S E S )
+//          | C
+//          | Number
+//          | String
+//  Es      → Es S E | E
+//  N       → ^[A-Z]+[A-Z|a-z|0-9]*
+//  OP      → {}
+//  BO      → {}
+//  Nar     → N ( S OP S ) BO
+//  C       → *( S   Es S ) ${product}
+//          | +( S   Es S ) ${sum}
+//          | =( S N Es S ) ${id}
+//          |  ( S N Es S ) ${id}
+//`;
+//const xx = programmer`
+//  S → S a ${function cons(){}}| a ${function unit(){}}
+//  B → z ${function Σ(){}}
+//      b
+//      S
+//`
+//console.log(xx.toString());
 
-console.clear();
-const B = programmer`
-B → a B | o B | b`;
-console.log(subscript(B.toString()));
-const c = {
-  stack: [[]],
-  tails: [],
-  pos: 0,
-  input: "aob",
-};
-var counter = 19;
-
-parse_pith(
-  c,
-  B((...a) => a),
-  function Z0(c, o) {
-    console.log(JSON.stringify(c));
-  }
-);
+//const G = programmer`B → a B | o B | b`;
+//console.log(subscript(G.toString()));
+//const c = {
+//  stack: [[]],
+//  tails: [],
+//  pos: 0,
+//  input: "aob",
+//};
+//parse_pith(
+//  c,
+//  G((...a) => a.join("")),
+//  function Z0(c, o) {
+//    console.log(JSON.stringify(c));
+//  }
+//);
+const tdda = ()=>{}
+tdd({
+  [`S → ab            `]: ["ab"],
+  [`S → a | ε         `]: ["a"],
+  [`B → a B | o B | b `]: ["aob", "aaoob", "aaaooob"],
+  [`S → A B | B A
+    A → a a
+    B → a b           `]: ["aaab", "abaa"],
+  [`S → A / c b
+    A → c B
+    B → a             `]: ["cb", "ca"],
+  [`C → c S
+    A → a S
+    B → b S
+    S → A / B / ε     `]: ["cab"],
+  [`S → ^a+ ^b* | ε   `]: ["", "a", "aaabbb", "abbbb"],
+  [`S → b A
+    A → a A | ε       `]: ["baaa"],
+  //[`S → S a / b
+  //  A → S a / S b   `]: ["baaa"],
+  //[`
+  //  A → C a
+  //  B → C b
+  //  C → A | B | c   `]: ["cab"],
+});
 
 function parse_pith(c, h, t = null, m = "A") {
-  if (counter-- === 0) return console.log("stackoverflow");
-  console.log(m + configToString(c));
+  if ((c.so = (c.so || 0) + 1) > 39) return c.o(-19, "stackoverflow");
+  c.o(("P" + m + ">").padStart(5, " ") + configToString(c));
   match(m, {
     A() {
-      c.stack.unshift([["A", h, c.pos]]);
+      c.stack.unshift([["", nameof(h), c.pos]]);
       c.tails.unshift(t);
       h(c, parse_pith);
     },
@@ -49,7 +113,7 @@ function parse_pith(c, h, t = null, m = "A") {
       let len = match_term(h, c.input, c.pos);
       if (len < 0) t(c, find_next_production_pith);
       else {
-        c.stack[0].push(["T", h, c.pos]);
+        c.stack[0].push(["T", h, len]);
         c.pos += len;
         t(c, parse_pith);
       }
@@ -57,46 +121,46 @@ function parse_pith(c, h, t = null, m = "A") {
     G() {
       const terms = c.stack.shift();
       const lhs = terms.shift();
+      let start = lhs[2];
       const r = h(
-        ...terms.map(([m, t, p], i) =>
-          m === "U"
-            ? t
-            : c.input.slice(p, i + 1 === terms.length ? c.pos : terms[i + 1][2])
+        ...terms.map(([m, t, l], i) =>
+          match(m, {
+            U: () => ((start += l), t),
+            T: () => c.input.slice(start, (start += l)),
+          })
         )
       );
-      c.stack[0].push(["U", r, lhs[2]]);
-      c.tails.shift()(c, parse_pith);
+      const u = ["U", r, start - lhs[2], lhs[1]];
+      if (c.stack.length) c.stack[0].push(u), c.tails.shift()(c, parse_pith);
+      else if (c.tails[0] === null) c.o(u);
+      else c.o(-1);
     },
   });
 }
 function skip_matched_terms_pith(c, h, t, m) {
+  c.o(("SMT" + m + ">").padStart(5, " ") + configToString(c));
   parse_pith(c, h, t, m);
 }
 function find_next_production_pith(c, h, t, m) {
-  console.log("n");
+  c.o(("FNP" + m + ">").padStart(5, " ") + configToString(c));
   match(m, {
     G() {
-      t(c, skip_matched_terms_pith);
+      if (t) return t(c, skip_matched_terms_pith);
+      c.pos = c.stack.shift()[0][2];
+      if (c.tails[0] === null) return c.o(-1);
+      c.tails.shift()(c, find_next_production_pith);
     },
     default() {
-      if (t) t(c, find_next_production_pith);
-      else {
-        console.log("not implemented");
-        //       let se;
-        //       while ((se = stack.pop())[0] !== cytosine);
-        //       pos = se[1];
-        //       t = tails.pop();
-        //       if (t == null)
-        //         return o(
-        //           -1,
-        //           `cant parse [${input.slice(pos)}] with [${toString(cyto)}]`
-        //         );
-        //       bark(t, n);
-      }
+      t(c, find_next_production_pith);
     },
   });
 }
 function match_term(str, input, offset) {
+  if (str[0] === "^") {
+    const r = new RegExp(str);
+    const rez = r.exec(input.slice(offset));
+    return rez ? rez[0].length : -1;
+  }
   const l = str.length;
   if (input.length < l + offset) return -1;
   var i = 0;
@@ -106,23 +170,24 @@ function match_term(str, input, offset) {
 }
 
 function configToString(c) {
-  const cols = [25, 9, 10, 10];
+  const cols = [36, 9, 63];
   const s = subscript(
     [...c.stack]
       .reverse()
-      .map((a) => a.map((a) => a[0] + nameof(a[1]) + a[2]).join(""))
-      .join(";")
+      .map((a) => a.map((a) => a[0] + nameof(a[1])).join(""))
+      .join(" ")
   );
-  const t = subscript(c.tails.map((t) => nameof(t)).join(""));
+  const t = subscript(c.tails.map((t) => nameof(t)).join(" "));
   const i = c.input.slice(c.pos);
   const p = c.pos.toString().padStart(2, " ");
+
   //prettier-ignore
   return `${s.padStart(cols[0], " ").slice(-cols[0])} ${p} ${
-             i.padStart(cols[1], " ").slice(-cols[1])} ${
-             t.padEnd  (cols[2], " ").slice(0, cols[2])}`;
+            i.padStart(cols[1], " ").slice(-cols[1])} ${
+            t.padEnd  (cols[2], " ").slice(0, cols[2])}`;
 }
 function match(v, map) {
-  (map[v] || map.default)();
+  return (map[v] || map.default)();
 }
 function nameof(x) {
   return typeof x === "function"
@@ -147,4 +212,37 @@ function subscript(x) {
     .replace(/7/g, "₇")
     .replace(/8/g, "₈")
     .replace(/9/g, "₉");
+}
+function tdd(tests) {
+  const tasks = [];
+  for (let key in tests) {
+    const gr = programmer([key]);
+    const g = gr((...a) => a.join(""));
+    for (let input of tests[key]) tasks.push([g, input, gr.toString()]);
+  }
+  setImmediate(next);
+  function next() {
+    const t = tasks.shift();
+    if (!t) return;
+    const logs = [];
+    const c = { stack: [], tails: [], pos: 0, input: t[1], o };
+    var gotrez = false;
+    function o(rez) {
+      if (typeof rez === "string") return logs.push(rez);
+      gotrez = true;
+      if (rez < 0 || rez[1] !== t[1]) {
+        console.log(t[1]);
+        console.log(t[2]);
+        console.log(logs.join("\n"));
+        console.log(JSON.stringify(rez));
+      } else process.stdout.write(".");
+      setImmediate(next);
+    }
+    try {
+      parse_pith(c, t[0]);
+      if (!gotrez) console.log("dont have rez");
+    } catch (e) {
+      console.log(e);
+    }
+  }
 }
