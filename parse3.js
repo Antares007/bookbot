@@ -99,8 +99,32 @@ tdd({
   //  B → C b
   //  C → A | B | c   `]: ["cab"],
 });
+const _ = (...a) => a.join("");
 
-function parse_pith(c, h, t = null, m = "A") {
+//const _0	    =(s,o)=>o(s,	_,	  null,	'G')
+//const ε_0	    =(s,o)=>o(s,	"",	  _0,	  'T')
+//const _ε_0	  =(s,o)=>o(s,	_,	  ε_0,	'G')
+//const A_ε_0	  =(s,o)=>o(s,	A,	  _ε_0,	'A')
+//const aA_ε_0	=(s,o)=>o(s,	"a",	A_ε_0,'T')
+//
+//const A_0	    =(s,o)=>o(s,	A,	  _0,	  'A')
+//const bA_0	  =(s,o)=>o(s,	"b",	A_0,	'T')
+
+const c = {
+  stack: [],
+  tails: [],
+  pos: 0,
+  input: "baaa",
+  o: console.log.bind(console),
+};
+//const _0 = (s, o) => o(s, _, null, "G");
+//const b_0 = (s, o) => o(s, "b", _0, "T");
+//const _b_0 = (s, o) => o(s, _, b_0, "G");
+//const a_b_0 = (s, o) => o(s, "a", _b_0, "T");
+//const Sa_b_0 = (s, o) => o(s, Sa_b_0, a_b_0, "A");
+//
+//parse_pith(c, Sa_b_0);
+function parse_pith(c, m, h, t = null) {
   if ((c.so = (c.so || 0) + 1) > 39) return c.o(-19, "stackoverflow");
   c.o(("P" + m + ">").padStart(5, " ") + configToString(c));
   match(m, {
@@ -137,11 +161,11 @@ function parse_pith(c, h, t = null, m = "A") {
     },
   });
 }
-function skip_matched_terms_pith(c, h, t, m) {
+function skip_matched_terms_pith(c, m, h, t) {
   c.o(("SMT" + m + ">").padStart(5, " ") + configToString(c));
-  parse_pith(c, h, t, m);
+  parse_pith(c, m, h, t);
 }
-function find_next_production_pith(c, h, t, m) {
+function find_next_production_pith(c, m, h, t) {
   c.o(("FNP" + m + ">").padStart(5, " ") + configToString(c));
   match(m, {
     G() {
@@ -239,7 +263,7 @@ function tdd(tests) {
       setImmediate(next);
     }
     try {
-      parse_pith(c, t[0]);
+      parse_pith(c, "A", t[0], null);
       if (!gotrez) console.log("dont have rez");
     } catch (e) {
       console.log(e);
