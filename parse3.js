@@ -1,5 +1,7 @@
 console.clear();
 const programmer = require("./programmer");
+const mn = require("./mn");
+const rna = require("./rna");
 //const E = programmer`
 //  E → E + T ${0} | T ${function Σ() {}}
 //  T → T * F | F
@@ -75,7 +77,7 @@ const lhsOperationRhs = (lhs, op, rhs) =>
 //  }
 //);
 const tdda = ()=>{}
-tdd({
+tdda({
   [`S → ab            `]: ["ab"],
   [`S → a | ε         `]: ["a"],
   [`B → a B | o B | b `]: ["aob", "aaoob", "aaaooob"],
@@ -95,10 +97,19 @@ tdd({
   //[`S → S a / b
   //  A → S a / S b   `]: ["baaa"],
   //[`
-  //  A → C a
+  //  A → C a | e
   //  B → C b
   //  C → A | B | c   `]: ["cab"],
 });
+// A    C
+// C a  A
+// A    C a
+// C a  A
+// A    C a
+// C a  A
+// A    C a
+// e    c
+
 const _ = (...a) => a.join("");
 
 //const _0	    =(s,o)=>o(s,	_,	  null,	'G')
@@ -117,29 +128,34 @@ const c = {
   input: "baaa",
   o: console.log.bind(console),
 };
-//const _0 = (s, o) => o(s, _, null, "G");
-//const b_0 = (s, o) => o(s, "b", _0, "T");
-//const _b_0 = (s, o) => o(s, _, b_0, "G");
-//const a_b_0 = (s, o) => o(s, "a", _b_0, "T");
-//const Sa_b_0 = (s, o) => o(s, Sa_b_0, a_b_0, "A");
-//
-//parse_pith(c, Sa_b_0);
+const g = rna(mn`
+S → A B | B A
+    A → a a
+    B → a b`);
+console.log(g.toString());
+parse_pith(
+  { input: "aaab", pos: 0, o: console.log.bind(console) },
+  "A",
+  g(),
+  null
+);
 function parse_pith(c, m, h, t = null) {
   if ((c.so = (c.so || 0) + 1) > 39) return c.o(-19, "stackoverflow");
-  c.o(("P" + m + ">").padStart(5, " ") + configToString(c));
+  c.o(("P" + m + ">").padStart(5, " "), c);
   match(m, {
     A() {
-      c.stack.unshift([["", nameof(h), c.pos]]);
-      c.tails.unshift(t);
-      h(c, parse_pith);
+      h({ ...c, vh: [h, c.vh], vt: [t, c.vt], tail: c }, parse_pith);
     },
     T() {
       let len = match_term(h, c.input, c.pos);
-      if (len < 0) t(c, find_next_production_pith);
-      else {
-        c.stack[0].push(["T", h, len]);
-        c.pos += len;
-        t(c, parse_pith);
+      if (len < 0) {
+        throw new Error('na')
+        t(c, find_next_production_pith);
+      } else {
+        t(
+          { ...c, stack: [["T", h, len], c.stack], pos: c.pos + len, tail: c },
+          parse_pith
+        );
       }
     },
     G() {
