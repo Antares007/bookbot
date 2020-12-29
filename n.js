@@ -42,33 +42,22 @@ function GE() {
   }
   return E;
 }
+// prettier-ignore
 function GS() {
   return S;
-  function S2(o) {
-    o((o) => {
-      o("b", (o) => {
-        o(_, null);
-      });
-    }, null);
-  }
-  function S1(o) {
-    o((o) => {
-      o(S, (o) => {
-        o("o", (o) => {
-          o(_, null);
-        });
-      });
-    }, S2);
-  }
-  function S(o) {
-    o((o) => {
-      o(S, (o) => {
-        o("a", (o) => {
-          o(_, null);
-        });
-      });
-    }, S1);
-  }
+  function S (o) { o(A1,  S1); }
+  function A1(o) { o(S,   A2); }
+  function A2(o) { o("a", A3); }
+  function A3(o) { o(_,   null); }
+
+  function S1(o) { o(B1,  S2); }
+  function B1(o) { o(S,   B2); }
+  function B2(o) { o("o", B3); }
+  function B3(o) { o(_,   null); }
+
+  function S2(o) { o(C1,  null); }
+  function C1(o) { o("b", C2); }
+  function C2(o) { o(_,   null); }
 }
 console.clear();
 for (let i = 0; i < 15; i++) {
