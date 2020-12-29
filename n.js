@@ -1,63 +1,114 @@
-const mn = require("./mn");
-const rna = require("./rna");
+const _ = () => {};
+function GE() {
+  function I(o) {
+    o((o) => {
+      o("id", (o) => {
+        o(_);
+      });
+    });
+  }
+  function F(o) {
+    o((o) => {
+      o("(", (o) => {
+        o(E, (o) => {
+          o(")", (o) => {
+            o(_);
+          });
+        });
+      });
+    }, I);
+  }
+  function T(o) {
+    o((o) => {
+      o(T, (o) => {
+        o("*", (o) => {
+          o(F, (o) => {
+            o(_);
+          });
+        });
+      });
+    }, F);
+  }
+  function E(o) {
+    o((o) => {
+      o(E, (o) => {
+        o("+", (o) => {
+          o(T, (o) => {
+            o(_);
+          });
+        });
+      });
+    }, T);
+  }
+  return E;
+}
+function GS() {
+  return S;
+  function S2(o) {
+    o((o) => {
+      o("b", (o) => {
+        o(_, null);
+      });
+    }, null);
+  }
+  function S1(o) {
+    o((o) => {
+      o(S, (o) => {
+        o("o", (o) => {
+          o(_, null);
+        });
+      });
+    }, S2);
+  }
+  function S(o) {
+    o((o) => {
+      o(S, (o) => {
+        o("a", (o) => {
+          o(_, null);
+        });
+      });
+    }, S1);
+  }
+}
 console.clear();
-
-const dna = mn`
-  E → E + T
-    | T
-  T → T * F
-    | F
-  F → ( E )
-    | id
-`;
-const s = rna(mn`S → S a / b / ε`);
-//console.log(s.toString());
-function rotate(l) {
-  let r = null;
-
-  while (l) {
-    r = [l[0], r];
-    l = l[1];
+for (let i = 0; i < 15; i++) {
+  process.stdout.write(i + " ");
+  generate(GE());
+  process.stdout.write(i + " ");
+  generate(GS());
+}
+function generate(V) {
+  let c = 39;
+  let s = null;
+  V(first);
+  function first(h, t) {
+    if (t && (Math.floor(Math.random() * 2) || c < 0)) t(first);
+    else h(follow);
   }
-  return r;
-}
-console.log(rotate([2, [1, [0, null]]]));
-first_pith(
-  { h: [], t: [], f: [], o: console.log.bind(console) },
-  "A",
-  s(),
-  null
-);
-function first_pith(c, m, h, t) {
-  match(m, {
-    A() {
-      if (c.h.indexOf(h) < 0) {
-        c.h.push(h);
-        c.t.push(t);
-        h(c, first_pith);
-      } else {
-        t(c, skip_pith);
-      }
-    },
-    T() {
-      c.f.push(h);
-      t(c, skip_pith);
-    },
-  });
-}
-function skip_pith(c, m, h, t) {
-  if (m !== "G") t(c, skip_pith);
-  else if (t) t(c, first_pith);
-  else {
-    c.o(c.h, c.f);
-    c.h.pop();
-    t = c.t.pop();
-    c.f = [];
-    if (t) t(c, skip_pith);
+  function follow(h, t) {
+    match(h, {
+      A() {
+        s = [t, s];
+        c = c - 1;
+        h(first);
+      },
+      T() {
+        process.stdout.write(h);
+        t(follow);
+      },
+      G() {
+        if (s) {
+          const next = s[0];
+          s = s[1];
+          next(follow);
+        } else process.stdout.write("\n");
+      },
+    });
   }
 }
-
-console.log("done");
-function match(m, s, d) {
-  return (s[m] || d)();
+function match(v, map) {
+  return (
+    map["string" === typeof v ? "T" : v.name[0] === "_" ? "G" : "A"] ||
+    map.default
+  )();
 }

@@ -77,7 +77,7 @@ const lhsOperationRhs = (lhs, op, rhs) =>
 //  }
 //);
 const tdda = () => {}
-tdd({
+tdda({
   [`S → ab              `]: ["ab"],
   [`S → a | ε           `]: ["a"],
   [`B → a B | o B | b   `]: ["aob", "aaoob", "aaaooob"],
@@ -128,35 +128,45 @@ tdd({
 //            ↓
 //      S a | b |
 
-//const gtxt = `S → A B C
-//A → a
-//B → b
-//C → c`
-//// S → C
-//// C → C b | C a | a_ | c_ | b_
-//const dna = mn([gtxt])
-//const g = rna(dna);
-//// seen output path head input
-//// SOPHI
-//console.log(g.toString());
-//const S = g() 
-//S(
-//  {
-//    head: [[0, "A", null], null],
-//    tail: [null, null],
-//    input: "abc",
-//    o: console.log.bind(console),
-//  },
-//  parse_pith
-//);
+const gtxt = `S → S a | b`;
+const dna = mn([gtxt]);
+const g = rna(dna);
+// seen output path head input
+// SOPHI
+console.log(g.toString());
+function parse(S, input, pos = 0) {
+  return (o) =>
+    S(
+      {
+        head: [[pos, "A", S]],
+        tail: [null],
+        input,
+        ident: 0,
+        o,
+      },
+      parse_pith
+    );
+}
+parse(g(), "baaa")(console.log.bind(console));
+function skip(c, m, h, t) {
+  if (m === "G") t(c[0], c[1]);
+  else t(c, skip);
+}
 function parse_pith(c, m, h, t = null) {
-  if ((c.so = (c.so || 0) + 1) > 39) return c.o(-39, "stackoverflow");
-  c.o((c.so+'').padStart(2,"0")+("P" + m + ">").padStart(5, " ") + configToString(c));
+  if ((c.so = (c.so || 0) + 1) > 9) return c.o(-39, "stackoverflow");
+  c.o(
+    (c.so + "").padStart(2, "0") +
+      (" " + m) +
+      (nameof(h).padStart(4, " ") + nameof(t).padStart(4, " ") + ">") +
+      configToString(c)
+  );
   match(m, {
     A() {
+      const islr = c.head[0][2] === h;
       c.head = [[c.head[0][0], "A", h], c.head];
       c.tail = [t, c.tail];
-      h(c, parse_pith);
+      if (!islr) h(c, parse_pith);
+      else t([c, parse_pith], skip);
     },
     T() {
       let len = match_term(h, c.input, c.head[0][0]);
@@ -216,18 +226,29 @@ function match_term(str, input, offset) {
   if (i === l) return l;
   return -1;
 }
-function toArray(l){
-  const a = []
-  while(l){
-    a.push(l[0])
-    l = l[1]
+function toArray(l) {
+  const a = [];
+  while (l) {
+    a.push(l[0]);
+    l = l[1];
   }
-  return a
+  return a;
+}
+function configStep(s) {
+  return match(s[1], {
+    A: () => "α" + s[2].name,
+    U: () => "υ" + s[3].name + s[2],
+    T: () => "τ" + s[2],
+  });
 }
 function configToString(c) {
-  const cols = [12, 9, 12];
-  const s = subscript(toArray(c.head).reverse().map(h =>  nameof(h[1])+nameof(h[2])).join(';'));
-  const t = subscript(toArray(c.tail).map(t => nameof(t)).join(';'));
+  const cols = [18, 9, 12];
+  const s = subscript(toArray(c.head).reverse().map(configStep).join(";"));
+  const t = subscript(
+    toArray(c.tail)
+      .map((t) => nameof(t))
+      .join(";")
+  );
   const i = c.input.slice(c.head[0][0]);
   const p = c.head[0][0].toString().padStart(2, " ");
 
