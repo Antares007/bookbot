@@ -77,7 +77,7 @@ const lhsOperationRhs = (lhs, op, rhs) =>
 //  }
 //);
 const tdda = () => {}
-tdda({
+tdd({
   [`S → ab              `]: ["ab"],
   [`S → a | ε           `]: ["a"],
   [`B → a B | o B | b   `]: ["aob", "aaoob", "aaaooob"],
@@ -133,27 +133,27 @@ const dna = mn([gtxt]);
 const g = rna(dna);
 // seen output path head input
 // SOPHI
-console.log(g.toString());
-function parse(S, input, pos = 0) {
-  return (o) =>
-    S(
-      {
-        head: [[pos, "A", S]],
-        tail: [null],
-        input,
-        ident: 0,
-        o,
-      },
-      parse_pith
-    );
-}
-parse(g(), "baaa")(console.log.bind(console));
+//console.log(g.toString());
+//function parse(S, input, pos = 0) {
+//  return (o) =>
+//    S(
+//      {
+//        head: [[pos, "A", S]],
+//        tail: [null],
+//        input,
+//        ident: 0,
+//        o,
+//      },
+//      parse_pith
+//    );
+//}
+//parse(g(), "baaa")(console.log.bind(console));
 function skip(c, m, h, t) {
   if (m === "G") t(c[0], c[1]);
   else t(c, skip);
 }
 function parse_pith(c, m, h, t = null) {
-  if ((c.so = (c.so || 0) + 1) > 9) return c.o(-39, "stackoverflow");
+  if ((c.so = (c.so || 0) + 1) > 99) return c.o(-39, "stackoverflow");
   c.o(
     (c.so + "").padStart(2, "0") +
       (" " + m) +
@@ -235,6 +235,7 @@ function toArray(l) {
   return a;
 }
 function configStep(s) {
+  return s
   return match(s[1], {
     A: () => "α" + s[2].name,
     U: () => "υ" + s[3].name + s[2],

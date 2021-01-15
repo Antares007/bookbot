@@ -933,7 +933,7 @@ function enumvars(s, o) {
   }
 }
 function logvar(v, i) {
-  i=0
+  i = 0;
   console.log("".padStart(i * 2 + " ") + v.name + "→");
   v((...p) =>
     console.log(
@@ -942,8 +942,32 @@ function logvar(v, i) {
     )
   );
 }
-function print(g) {
-  enumvars(g, logvar);
+function logasm(v) {
+  console.log("global " + v.name);
+  console.log(v.name + ":");
+  const a = [];
+  v((...args) => a.push(args));
+  for (let p of a) {
+    const islast = p === a[a.length - 1];
+    let str = "Ξ ";
+    str += islast ? "0" : "Ν";
+    str += ", ";
+    str += p
+      .map(
+        (s) =>
+          "{" +
+          (typeof s === "string"
+            ? "Τ " + (s.includes('"') ? "'" + s + "'" : '"' + s + '"')
+            : "Α " + s.name) +
+          "}"
+      )
+      .join(", ");
+    str += ", {Γ _}";
+    console.log(str);
+  }
 }
-print(translation_unit);
-console.log("done!");
+function print(g) {
+  enumvars(g, logasm);
+}
+console.clear();
+print(declaration);
