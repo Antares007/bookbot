@@ -10,108 +10,86 @@ const nor = (a) => (b) => (o) => {
   });
   if (f) b(o);
 };
+
+const button = (o) => {
+  const [d, text] = S();
+  A("text", text), o.o();
+  if (d) A(d - 1), counter(o);
+  else A(), o.o();
+};
 const counter = (o) => {
   const [d] = S();
-  A("element", "button", (o) => {
-    A("on", "click", (e) => {
-      console.log(e.target);
-    }),
-      o();
-    A("text", "+"), o();
-    if (d) A(d - 1), counter(o);
-  }),
-    o();
-  A("element", "button", (o) => {
-    A("text", "-"), o();
-    if (d) A(d - 1), counter(o);
-  }),
-    o();
-  A("text", "0"), o();
+  A(d, window.aaa ? "+" : "-"), A("element", "button", button), o.o();
+  A(d, window.aaa ? "-" : "+"), A("element", "button", button), o.o();
+  A("text", "0"), o.o();
+  A(), o.o();
 };
-const makePith = (elm) => {
-  const { childNodes } = elm;
-  const childPiths = [];
-  var childs_count = 0;
-  const listeners = [];
-  var listeners_count = 0;
-  return function pith() {
-    const [m, ...rest] = S();
-    if (m === "element") {
-      const [tag, onar, key] = rest;
-      let n, ob;
-      const index = childs_count++;
-      const TAG = tag.toUpperCase();
-      for (let i = index, l = childNodes.length; i < l; i++)
-        if (
-          (n = childNodes[i]) &&
-          n instanceof HTMLElement &&
-          n.nodeName === TAG &&
-          (key == null || n.getAttribute("key") === key)
-        ) {
-          if (index < i)
-            elm.insertBefore(n, childNodes[index]),
-              childPiths.splice(index, 0, ...childPiths.splice(i, 1));
-
-          if ((ob = childPiths[index]))
-            if (key == null) return onar(ob), A(), ob();
-            else return;
-          childPiths.splice(index, 0, (ob = makePith(n)));
-          return onar(ob), A(), ob();
-        }
-      n = document.createElement(TAG);
-      if (key != null) n.setAttribute("key", key);
-      elm.insertBefore(n, childNodes[index]),
-        childPiths.splice(index, 0, (ob = makePith(n)));
-      onar(ob), A(), ob();
-    } else if (m === "text") {
-      const [text] = rest;
-      const index = childs_count++;
-      for (let i = index, l = childNodes.length; i < l; i++)
-        if (
-          childNodes[i].nodeType === 3 &&
-          childNodes[i].textContent === text
-        ) {
-          if (index < i)
-            elm.insertBefore(childNodes[i], childNodes[index]),
-              childPiths.splice(index, 0, ...childPiths.splice(i, 1));
-          return;
-        }
-      elm.insertBefore(document.createTextNode(text), childNodes[index]),
-        childPiths.splice(index, 0, null);
-    } else if (m === "on") {
-      const index = listeners_count++;
-      for (let i = index, l = listeners.length; i < l; i++)
-        if (
-          listeners[i][0] === rest[0] &&
-          listeners[i][1] === rest[1] &&
-          listeners[i][2] === rest[2]
-        ) {
-          if (index < i) listeners.splice(index, 0, ...listeners.splice(i, 1));
-          return;
-        }
-      elm.addEventListener(...rest), listeners.splice(index, 0, rest);
-    } else if (m === void 0) {
-      for (let l = childNodes.length; l > childs_count; l--)
-        elm.removeChild(childNodes[childs_count]);
-      const oldChildPiths = childPiths.splice(
-        childs_count,
-        childPiths.length - childs_count
-      );
-      childs_count = 0;
-      for (let ocp of oldChildPiths) ocp && (A(), ocp());
-      const oldListeners = listeners.splice(
-        listeners_count,
-        listeners.length - listeners_count
-      );
-      listeners_count = 0;
-      for (let ol of oldListeners) elm.removeEventListener(...ol);
-    } else {
-      //console.error("na");
-    }
-  };
-};
+function o() {
+  const [m, ...rest] = S();
+  if (m === "element") {
+    const [tag, nar] = rest;
+    const index = this.childs_count++;
+    const TAG = tag.toUpperCase();
+    let n;
+    for (let i = index, l = this.childNodes.length; i < l; i++)
+      if (
+        (n = this.childNodes[i]) &&
+        n.nodeName === TAG &&
+        n.nar === nar &&
+        eq(n.args, atack[atack.length - 1])
+      ) {
+        if (index < i) this.insertBefore(n, this.childNodes[index]);
+        return;
+      }
+    n = makePith(document.createElement(TAG));
+    n.nar = nar;
+    n.args = atack[atack.length - 1];
+    nar(n);
+    this.insertBefore(n, this.childNodes[index]);
+  } else if (m === "text") {
+    const [text] = rest;
+    const index = this.childs_count++;
+    for (let i = index, l = this.childNodes.length; i < l; i++)
+      if (
+        this.childNodes[i].nodeType === 3 &&
+        this.childNodes[i].textContent === text
+      ) {
+        if (index < i)
+          this.insertBefore(this.childNodes[i], this.childNodes[index]);
+        return;
+      }
+    this.insertBefore(document.createTextNode(text), this.childNodes[index]);
+  } else if (m === void 0) {
+    for (let l = this.childNodes.length; l > this.childs_count; l--)
+      this.removeChild(this.childNodes[this.childs_count]);
+    this.childs_count = 0;
+  } else {
+    console.error("na");
+  }
+}
 const body = (document.body = document.createElement("body"));
-const ob = makePith(body);
-A(2), counter(ob);
-A(), ob();
-Object.assign(window, { A, S, o: ob, C: counter, atack });
+const makePith = (elm) => {
+  elm.o = o;
+  elm.childs_count = 0;
+  return elm;
+};
+A(2), counter(makePith(body));
+Object.assign(window, { A, S, C: counter, o: body, atack });
+function eq(a, b) {
+  return a === b
+    ? true
+    : a == null || b == null
+    ? false
+    : Array.isArray(a)
+    ? Array.isArray(b) &&
+      a.length === b.length &&
+      a.every((v, i) => eq(v, b[i]))
+    : a instanceof Date
+    ? b instanceof Date && a.getTime() === b.getTime()
+    : typeof a === "object"
+    ? typeof b === "object" &&
+      a.constructor === b.constructor &&
+      Object.keys(a).length === Object.keys(b).length &&
+      Object.keys(a).every((k) => eq(a[k], b[k]))
+    : false;
+}
