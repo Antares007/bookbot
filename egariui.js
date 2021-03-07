@@ -9,7 +9,7 @@ const nor = (a) => (b) => (o) => {
   if (f) b(o);
 };
 
-const button = (o) => {
+const button1 = (o) => {
   const [d, text] = S();
   A("text", text), o.o();
   if (d) A(d - 1), counter(o);
@@ -17,10 +17,19 @@ const button = (o) => {
 };
 const counter = (o) => {
   const [d] = S();
-  A(d, window.aaa ? "+" : "-"), A("element", "button", button), o.o();
-  A(d, window.aaa ? "-" : "+"), A("element", "button", button), o.o();
+  A(d, window.aaa ? "+" : "-"), A("element", "button", button1), o.o();
+  A(d, window.aaa ? "-" : "+"), A("element", "button", button1), o.o();
   A("text", "0"), o.o();
   A(), o.o();
+};
+const button2 = (o, d, l) => {
+  o.text(l);
+  if (d) counter2(o, d - 1);
+};
+const counter2 = (o, d) => {
+  o.element("button", button2, d, "+");
+  o.element("button", button2, d, "-");
+  o.text("0");
 };
 function o() {
   const [m, ...rest] = S();
@@ -72,6 +81,14 @@ const makePith = (elm) => {
   return elm;
 };
 A(2), counter(makePith(body));
+
+const makeBark = () => {
+  const [elm] = S();
+  A(elm);
+};
+const [elm] = (A(1), makeBark(), S());
+console.log(elm);
+
 Object.assign(window, { A, S, C: counter, o: body, atack });
 function eq(a, b) {
   return a === b
