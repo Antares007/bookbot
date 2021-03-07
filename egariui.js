@@ -1,6 +1,4 @@
-const atack = [];
-const A = (...args) => atack.push(args);
-const S = () => atack.pop();
+const { atack, A, S } = require("./atack");
 const nand = (a) => (b) => (o) => a(() => b(o));
 const nor = (a) => (b) => (o) => {
   var f = true;
