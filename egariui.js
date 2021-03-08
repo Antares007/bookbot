@@ -82,10 +82,6 @@ const makePith = (elm) => {
 };
 A(2), counter(makePith(body));
 
-const makeBark = () => {
-  const [elm] = S();
-  A(elm);
-};
 const [elm] = (A(1), makeBark(), S());
 console.log(elm);
 

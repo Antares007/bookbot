@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 const { A, B, C } = require("./abc");
 const { static_cast } = require("./utils/static_cast");
 module.exports = (B(

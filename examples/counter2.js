@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 const { A, B, C } = require("../src/abc");
 const makePith = require("../src/element2");
 

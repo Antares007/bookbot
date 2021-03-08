@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 import type { N } from "../src/purry";
 const { static_cast } = require("../src/utils/static_cast");
 const remove = [
@@ -17,7 +17,7 @@ const code = require("fs").readFileSync(
   "utf8"
 );
 const n = ast.parse(code);
-require('fs').writeFileSync(__dirname + '/aaa.js',JSON.stringify(n))
+require("fs").writeFileSync(__dirname + "/aaa.js", JSON.stringify(n));
 const ids: {
   [string]: ast.DeclareClass | ast.TypeAlias,
 } = n.program.body.reduce((s, n) => {
@@ -31,12 +31,9 @@ Object.keys(ids).forEach((key) => {
 });
 //Object.assign(window||process, { ids });
 
-const nmap = {
-};
+const nmap = {};
 
-const node = (n: mixed) => (o) => {
-
-};
+const node = (n: mixed) => (o) => {};
 node(n)((...args) => {
   console.log(...args);
 });
@@ -56,7 +53,7 @@ function collectids(n: mixed, out_ids: {}) {
   else if (Array.isArray(n)) n.forEach((n) => collectids(n, out_ids));
   else if (typeof n === "object")
     if (n.type === "Identifier") {
-      const name = static_cast<string>(n.name);
+      const name = static_cast < string > n.name;
       if (out_ids[name] == null) {
         out_ids[name] = n;
         const n2 = ids[name];

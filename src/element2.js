@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 const { B, C } = require("./abc");
 const makePith: mixed = B(({ n: [depth], o: [elm] }) => {
   var childs_count = 0;

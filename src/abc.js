@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 const { bexp } = require("./bexp");
 const { static_cast } = require("./utils/static_cast");
 const emptylist = [];

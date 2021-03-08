@@ -1,4 +1,4 @@
-// @flow strict
+// flow strict
 const ast = require("../lib/babel");
 export function bexp(f: (...args: Array<mixed>) => mixed, mae: string): string {
   const code = `(${f.toString()})`;
