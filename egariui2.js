@@ -1,10 +1,10 @@
 const button2 = (o, d, l) => {
-  if (o.Reduce) o.Reduce("aba" + d + l);
+  if (o.reduce) o.reduce("aba" + d + l);
   o.text(l);
   if (d) counter2(o, d - 1);
 };
 const counter2 = (o, d) => {
-  if (o.Reduce) o.Reduce("abo" + d);
+  if (o.reduce) o.reduce("abo" + d);
   o.element("button", button2, d, "+");
   o.element("button", button2, d, "-");
   o.text("0");
@@ -12,9 +12,9 @@ const counter2 = (o, d) => {
 const ring = (nar) => (o, ...args) => {
   nar(
     {
-      element: (tag, nar, ...args) => o.element(tag, ring(nar), ...args),
-      text: (...args) => o.text(...args),
-      Reduce: (r) => console.log(r),
+      ...o,
+      relement: (tag, nar, ...args) => o.element(tag, ring(nar), ...args),
+      reduce: (r) => console.log(r),
     },
     ...args
   );
@@ -27,7 +27,8 @@ Object.assign(window, { counter2 });
 function text(text) {
   const o = this;
   const elm = o.elm;
-  const index = o.childs_count++;
+  const s = elm.s;
+  const index = s.childs_count++;
   for (let i = index, l = elm.childNodes.length; i < l; i++)
     if (
       elm.childNodes[i].nodeType === 3 &&
@@ -41,7 +42,8 @@ function text(text) {
 function element(tag, nar, ...args) {
   const o = this;
   const elm = o.elm;
-  const index = o.childs_count++;
+  const s = elm.s;
+  const index = s.childs_count++;
   const TAG = tag.toUpperCase();
   let n;
   for (let i = index, l = elm.childNodes.length; i < l; i++)
@@ -57,25 +59,29 @@ function element(tag, nar, ...args) {
 function b(nar, ...args) {
   const elm = this;
   const o = elm.o;
-  if (o.nar === nar && eq(o.args, args)) return console.log(elm.nodeName, args);
-  o.nar = nar;
-  o.args = args;
+  const s = elm.s;
+  if (s.nar === nar && eq(s.args, args)) return console.log(elm.nodeName, args);
+  s.nar = nar;
+  s.args = args;
   nar(o, ...args);
-  for (let l = elm.childNodes.length; l > o.childs_count; l--)
-    elm.removeChild(elm.childNodes[o.childs_count]);
-  o.childs_count = 0;
+  for (let l = elm.childNodes.length; l > s.childs_count; l--)
+    elm.removeChild(elm.childNodes[s.childs_count]);
+  s.childs_count = 0;
 }
 function makeBark(elm) {
   const o = {
     element,
     text,
+    elm,
+  };
+  const s = {
     childs_count: 0,
     args: [],
     nar: enar,
-    elm,
   };
   elm.b = b;
   elm.o = o;
+  elm.s = s;
   return elm;
 }
 function eq(a, b) {
