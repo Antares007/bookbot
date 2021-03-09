@@ -1,29 +1,4 @@
-const button2 = (o, d, l) => {
-  if (o.reduce) o.reduce("aba" + d + l);
-  o.text(l);
-  if (d) counter2(o, d - 1);
-};
-const counter2 = (o, d) => {
-  if (o.reduce) o.reduce("abo" + d);
-  o.element("button", button2, d, "+");
-  o.element("button", button2, d, "-");
-  o.text("0");
-};
-const ring = (nar) => (o, ...args) => {
-  nar(
-    {
-      ...o,
-      relement: (tag, nar, ...args) => o.element(tag, ring(nar), ...args),
-      reduce: (r) => console.log(r),
-    },
-    ...args
-  );
-};
-const body = makeBark((document.body = document.createElement("body")));
-body.b(ring(counter2), 1);
-
-Object.assign(window, { counter2 });
-
+module.exports = makeBark;
 function text(text) {
   const o = this;
   const elm = o.elm;
