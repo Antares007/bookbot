@@ -23,4 +23,4 @@ const ring = (nar) => (o, ...args) => {
 const body = makeBark((document.body = document.createElement("body")));
 body.b(ring(counter2), 1);
 
-Object.assign(window, { counter2 });
+Object.assign(window, { counter2: ring(counter2), ring });

@@ -1,8 +1,8 @@
 module.exports = makeBark;
 function text(text) {
   const o = this;
-  const elm = o.elm;
-  const s = elm.s;
+  const s = o.s;
+  const elm = s.elm;
   const index = s.childs_count++;
   for (let i = index, l = elm.childNodes.length; i < l; i++)
     if (
@@ -16,8 +16,8 @@ function text(text) {
 }
 function element(tag, nar, ...args) {
   const o = this;
-  const elm = o.elm;
-  const s = elm.s;
+  const s = o.s;
+  const elm = s.elm;
   const index = s.childs_count++;
   const TAG = tag.toUpperCase();
   let n;
@@ -34,7 +34,7 @@ function element(tag, nar, ...args) {
 function b(nar, ...args) {
   const elm = this;
   const o = elm.o;
-  const s = elm.s;
+  const s = o.s;
   if (s.nar === nar && eq(s.args, args)) return console.log(elm.nodeName, args);
   s.nar = nar;
   s.args = args;
@@ -47,16 +47,15 @@ function makeBark(elm) {
   const o = {
     element,
     text,
-    elm,
-  };
-  const s = {
-    childs_count: 0,
-    args: [],
-    nar: enar,
+    s: {
+      childs_count: 0,
+      args: [],
+      nar: enar,
+      elm,
+    },
   };
   elm.b = b;
   elm.o = o;
-  elm.s = s;
   return elm;
 }
 function eq(a, b) {
