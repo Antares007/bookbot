@@ -14,6 +14,11 @@ function text(text) {
     }
   elm.insertBefore(document.createTextNode(text), elm.childNodes[index]);
 }
+function on(eventtype, listener, options) {
+  const o = this;
+  const s = o.s;
+  const elm = s.elm;
+}
 function element(tag, nar, ...args) {
   const o = this;
   const s = o.s;
@@ -24,17 +29,17 @@ function element(tag, nar, ...args) {
   for (let i = index, l = elm.childNodes.length; i < l; i++)
     if ((n = elm.childNodes[i]) && n.nodeName === TAG) {
       if (index < i) elm.insertBefore(n, elm.childNodes[index]);
-      n.b(nar, ...args);
+      n.o.b(nar, ...args);
       return;
     }
   n = makeBark(document.createElement(TAG));
-  n.b(nar, ...args);
+  n.o.b(nar, ...args);
   elm.insertBefore(n, elm.childNodes[index]);
 }
 function b(nar, ...args) {
-  const elm = this;
-  const o = elm.o;
+  const o = this;
   const s = o.s;
+  const elm = s.elm;
   if (s.nar === nar && eq(s.args, args)) return console.log(elm.nodeName, args);
   s.nar = nar;
   s.args = args;
@@ -47,6 +52,8 @@ function makeBark(elm) {
   const o = {
     element,
     text,
+    on,
+    b,
     s: {
       childs_count: 0,
       args: [],
@@ -54,7 +61,6 @@ function makeBark(elm) {
       elm,
     },
   };
-  elm.b = b;
   elm.o = o;
   return elm;
 }
