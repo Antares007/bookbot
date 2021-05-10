@@ -917,14 +917,10 @@ function enumvars(s, o) {
   var d = 0;
   const sent = {};
   bark(s);
-  function end() {}
-  function error(msg) {}
-  function shift(term) {}
-  function reduce(nt, prod) {}
   function bark(s) {
     if (!isVar(s) || sent[s.name]) return;
     sent[s.name] = true;
-    o(s, d++, shift, reduce, end, error);
+    o(s, d++);
     s(pith);
     d--;
   }
@@ -966,8 +962,40 @@ function logasm(v) {
     console.log(str);
   }
 }
-function print(g) {
-  enumvars(g, logasm);
+function logfun(v, i) {
+  i = 0;
+  console.log("function " + v.name + "(o) {");
+  v((...p) =>
+    console.log(
+      "  o(" +
+        p
+          .map((s) =>
+            "function" === typeof s ? s.name : s ? JSON.stringify(s) : "ε"
+          )
+          .join(", ") +
+        ");"
+    )
+  );
+  console.log("}");
 }
-console.clear();
-print(declaration);
+function print(g) {
+  enumvars(g, logvar);
+}
+print(translation_unit);
+//gen(direct_declarator);
+function gen(v) {
+  const prods = [];
+  v(pushpith);
+  const simbols = prods[Math.floor(Math.random() * 999) % prods.length];
+  for (let sim of simbols) {
+    if (typeof sim === "string")
+      process.stdout.write(
+        sim + (sim.length > 1 && sim[0] !== "\\" ? " " : "")
+      );
+    else gen(sim);
+  }
+
+  function pushpith(...simbols) {
+    prods.push(simbols);
+  }
+}
