@@ -37,25 +37,6 @@ function compute_atom(tokenizer) {
     return tok.value;
   }
 }
-function compute_op(op, lhs, rhs) {
-  if (op == "+") return lhs + rhs;
-  else if (op == "-") return lhs - rhs;
-  else if (op == "*") return lhs * rhs;
-  else if (op == "/") return lhs / rhs;
-  else if (op == "^") return lhs ** rhs;
-  else parse_error(`unknown operator "${op}"`);
-}
-// For each operator, a (precedence, associativity) pair.
-const OPINFO_MAP = {
-  "+": { prec: 1, assoc: "LEFT" },
-  "-": { prec: 1, assoc: "LEFT" },
-  "*": { prec: 2, assoc: "LEFT" },
-  "/": { prec: 2, assoc: "LEFT" },
-  "^": { prec: 3, assoc: "RIGHT" },
-};
-function assert(b) {
-  if (!b) throw new Error("assert");
-}
 function compute_expr(tokenizer, min_prec = 1) {
   var atom_lhs = compute_atom(tokenizer);
   while (true) {
@@ -64,8 +45,9 @@ function compute_expr(tokenizer, min_prec = 1) {
       cur === null ||
       cur.name !== "BINOP" ||
       OPINFO_MAP[cur.value].prec < min_prec
-    )
+    ) {
       break;
+    }
     // Inside this loop the current token is a binary operator
     assert(cur.name === "BINOP");
     // Get the operator's precedence and associativity, and compute a
@@ -87,9 +69,34 @@ function compute_expr(tokenizer, min_prec = 1) {
   }
   return atom_lhs;
 }
-const expr = "2^(9+3)*6+5*2";
-const tokenizer = new Tokenizer(expr);
-tokenizer.get_next_token();
-console.log(
-  require("util").inspect(compute_expr(tokenizer), { depth: 10, colors: true })
-);
+// For each operator, a (precedence, associativity) pair.
+const OPINFO_MAP = {
+  "+": { prec: 1, assoc: "LEFT" },
+  "-": { prec: 1, assoc: "LEFT" },
+  "*": { prec: 2, assoc: "LEFT" },
+  "/": { prec: 2, assoc: "LEFT" },
+  "^": { prec: 3, assoc: "RIGHT" },
+};
+parse("1*2+3");
+
+function compute_op(op, lhs, rhs) {
+  if (op == "+") return lhs + rhs;
+  else if (op == "-") return lhs - rhs;
+  else if (op == "*") return lhs * rhs;
+  else if (op == "/") return lhs / rhs;
+  else if (op == "^") return lhs ** rhs;
+  else parse_error(`unknown operator "${op}"`);
+}
+function assert(b) {
+  if (!b) throw new Error("assert");
+}
+function parse(expr) {
+  const tokenizer = new Tokenizer(expr);
+  tokenizer.get_next_token();
+  console.log(
+    require("util").inspect(compute_expr(tokenizer), {
+      depth: 10,
+      colors: true,
+    })
+  );
+}
