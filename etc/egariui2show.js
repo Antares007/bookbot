@@ -21,6 +21,7 @@ const ring = (o, nar, ...args) => {
     ...args
   );
 };
+console.log('avoe')
 const ring2 = (o, nar, ...args) => {
   nar(
     {

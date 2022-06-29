@@ -1,8 +1,8 @@
 {
   "presets": [
-    "/usr/lib/node_modules/@babel/preset-flow",
+    "@babel/preset-flow",
     [
-      "/usr/lib/node_modules/@babel/preset-env",
+      "@babel/preset-env",
       {
         "targets": {
           "node": true
